@@ -49,7 +49,7 @@ if (!isset($version)) $version = "";
 if (!isset($search)) $search = "";
 if (!isset($type)) $type = "";
 
-if ($bundleidentifier == "" && ($version == "" || $type = "")) die(end_with_result('Wrong parameters'));
+if ($bundleidentifier == "" && ($version == "" || $type = "" || $fixversion = "-1" || $description = "-1")) die(end_with_result('Wrong parameters'));
 
 $whereclause = "";
 $pagelink = "";
@@ -94,10 +94,13 @@ if ($groupid != "") {
 	$numrows = mysql_num_rows($result);
 	if ($numrows == 1) {
         $row = mysql_fetch_row($result);
-        $title = $row[0];
-        if (strlen($title) > 20) {
-            $title = substr($title,0,20)."...";
-        }
+        $title = substr($row[0], 0, strpos($row[0], "("));
+        if ($title == "") {
+            $title = $row[0];
+            if (strlen($title) > 20) {
+                $title = substr($title,0,20)."...";
+            }
+        }       
         echo create_link($title, 'crashes.php', false, $pagelink).'</h2>';
 	} else {
         echo create_link('Crashes', 'crashes.php', false, $pagelink).'</h2>';
@@ -121,7 +124,7 @@ $crashvalues = "";
 if ($groupid !='') {
     $cols2 = '<colgroup><col width="280"/><col width="340"/><col width="340"/></colgroup>';
 
-    $query = "SELECT fix, description FROM ".$dbgrouptable." WHERE id = '".$groupid."'";
+    $query = "SELECT fix, description, pattern FROM ".$dbgrouptable." WHERE id = '".$groupid."'";
     $result = mysql_query($query) or die(end_with_result('Error in SQL '.$query));
 
     $numrows = mysql_num_rows($result);
@@ -130,6 +133,7 @@ if ($groupid !='') {
         while ($row = mysql_fetch_row($result)) {
             $fix = $row[0];
             $description = $row[1];
+            $pattern = $row[2];
             
             $cols2 = '<colgroup><col width="316"/><col width="316"/><col width="315"/></colgroup>';
 			echo '<table>'.$cols2.'<tr><th>Platform Overview</th><th>Crashes over time</th><th>System OS Overview</th></tr>';
@@ -183,10 +187,16 @@ if ($groupid !='') {
 			echo '<tr><td>';
             
             echo '<form name="groupmetadata" action="" method="get">';
-            echo '<b style="vertical-align: top;">Description:</b><textarea id="description'.$groupid.'" cols="50" rows="2" name="description" class="description" style="margin-left: 10px;">'.$description.'</textarea>';
+            echo '<b style="vertical-align: top;">Description:</b><textarea id="description'.$groupid.'" cols="50" rows="2" name="description" class="description" style="margin-left: 10px;">'.$description.'</textarea>'; 
             echo '<b style="vertical-align: top; margin-left:20px;">Assigned Fix Version:</b><input style="vertical-align: top; margin-left:10px;" type="text" id="fixversion'.$groupid.'" name="fixversion" size="20" maxlength="20" value="'.$fix.'"/>';
             echo "<a href=\"javascript:updateGroupMeta(".$groupid.",'".$bundleidentifier."')\" class='button' style='float: right;'>Update</a>";
-         	  echo create_issue($bundleidentifier, currentPageURL());
+         	echo create_issue($bundleidentifier, currentPageURL());
+
+            $rest = str_replace(") ","} ",$pattern);
+            $rest = str_replace(")",")<br/>",$rest);
+            $rest = str_replace("} ",") ",$rest);
+         	echo "<br/>".$rest;
+         	
             echo '</form></td>';
             
             // get the amount of crashes

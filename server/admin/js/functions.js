@@ -97,3 +97,17 @@ function updateGroupMeta (groupid, bundleidentifier) {
         }
     });
 }
+
+function expandCollapse (groupid) {
+    if ($('#expandfix' + groupid).css("display") == "none") {
+        $('#descriptionpreview' + groupid).css("display", "none");
+        $('.expandcallstack' + groupid).css("display", "");
+        $('#expandfix' + groupid).css("display", "");
+        $('#expanddescription' + groupid).css("display", "");
+    } else {
+        $('#descriptionpreview' + groupid).css("display", "");
+        $('.expandcallstack' + groupid).css("display", "none");
+        $('#expandfix' + groupid).css("display", "none");
+        $('#expanddescription' + groupid).css("display", "none");
+    }
+}

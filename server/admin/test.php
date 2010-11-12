@@ -36,31 +36,10 @@
 
 require_once('../config.php');
 
-function end_with_result($result) {
+function end_with_result($result)
+{
 	return '<html><body>'.$result.'</body></html>'; 
 }
-
-function parseblock($matches, $appString) {
-    $result_offset = "";
-    //make sure $matches[1] exists
-	if (is_array($matches) && count($matches) >= 2) {
-		$result = explode("\n", $matches[1]);
-		foreach ($result as $line) {
-			// search for the first occurance of the application name
-			if (strpos($line, $appString) !== false) {
-				preg_match('/[0-9]+\s+[^\s]+\s+([^\s]+)\s+[^\s]+\s+([^\s]+)/', $line, $matches);
-                if (count($matches) >= 2) {
-                    if ($result_offset != "")
-                        $result_offset .= "%";
-                    $result_offset .= $matches[1];
-                }
-			}
-		}
-	}
-	
-	return $result_offset;
-}
-
 
 $allowed_args = ',bundleidentifier,version,';
 
@@ -75,10 +54,11 @@ foreach(array_keys($_GET) as $k) {
 
 if (!isset($bundleidentifier)) $bundleidentifier = "";
 if (!isset($version)) $version = "";
+$applicationname = "";
 
-if ($bundleidentifier == "" || $version == "") die(end_with_result('Wrong parameters' ));
+if ($bundleidentifier == "" || $version == "") die(end_with_result('Wrong parameters'));
 
-$query1 = "SELECT id, applicationname FROM ".$dbcrashtable." WHERE groupid = 0 and version = '".$version."' and bundleidentifier = '".$bundleidentifier."'";
+$query1 = "SELECT id, applicationname FROM ".$dbcrashtable." WHERE groupid = 76 and version = '".$version."' and bundleidentifier = '".$bundleidentifier."'";
 $result1 = mysql_query($query1) or die(end_with_result('Error in SQL '.$query1));
 
 $numrows1 = mysql_num_rows($result1);
@@ -109,20 +89,6 @@ if ($numrows1 > 0) {
         $crash_offset = "";
 	
         // extract the block which contains the data of the crashing thread
-        preg_match('%Thread [0-9]+ Crashed:  Dispatch queue: com.apple.main-thread\n(.*?)\n\n%is', $logdata, $matches);
-        $crash_offset = parseblock($matches, $applicationname);	
-        if ($crash_offset == "") {
-            $crash_offset = parseblock($matches, $bundleidentifier);
-        }
-        if ($crash_offset == "") {
-            preg_match('%Thread [0-9]+ Crashed:\n(.*?)\n\n%is', $logdata, $matches);
-            $crash_offset = parseblock($matches, $applicationname);
-        }
-        if ($crash_offset == "") {
-            $crash_offset = parseblock($matches, $bundleidentifier);
-        }
-
-/*
         preg_match('%Thread [0-9]+ Crashed:\n(.*?)\n\n%s', $logdata, $matches);
 
         //make sure $matches[1] exists
@@ -144,7 +110,7 @@ if ($numrows1 > 0) {
                 }
             }
         }
-*/
+
         // stores the group this crashlog is associated to, by default to none
         $log_groupid = 0;
     
@@ -279,11 +245,3 @@ if ($numrows1 > 0) {
 mysql_close($link);
 
 ?>
-<html>
-<head>
-    <META http-equiv="refresh" content="0;URL=groups.php?&bundleidentifier=<?php echo $bundleidentifier ?>&version=<?php echo $version ?>">
-</head>
-<body>
-Redirecting...
-</body>
-</html>
