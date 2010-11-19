@@ -155,7 +155,7 @@ function show_search($text, $currenttype, $break, $style = "float: right;")
     add_option('ID', SEARCH_TYPE_ID, $currenttype);
     add_option('Description', SEARCH_TYPE_DESCRIPTION, $currenttype);
     add_option('Crashlog', SEARCH_TYPE_CRASHLOG, $currenttype);
-    echo '</select><button type="submit" class="button" style="'.$style.'">Search</button><br/>';
+    echo '</select>&nbsp;&nbsp;<button type="submit" class="button" style="'.$style.'">Search</button><br/>';
     echo '</form>';
 }
 

@@ -56,7 +56,7 @@ function parseSymbolicated($matches, $appString) {
                     preg_match('/([0-9]+)\s+([^\s]+)\s+([^\s]+)\s+([^\s]+)\s+\(([^\s]+):([^\s]+)\)/', $line, $matches);
                     print_r($matches);
                     if (count($matches) >= 6) {
-                        $result_source .= "[".$matches[4]."] (".$matches[5].":".$matches[6].")";
+                        $result_source .= $matches[4]." (".$matches[5].":".$matches[6].")";
                     }
                 }
 			}
@@ -104,9 +104,11 @@ if ($result) {
 
     $applicationname = "";
     $groupid = 0;
+    $bundleidentifier = "";
+    $version = "";
     
     // get app name
-    $query = "SELECT applicationname, groupid FROM ".$dbcrashtable." WHERE id = ".$id;
+    $query = "SELECT applicationname, groupid, bundleidentifier, version FROM ".$dbcrashtable." WHERE id = ".$id;
 	$result = mysql_query($query) or die('Error in SQL '.$dbsymbolicatetable);
     
     $numrows = mysql_num_rows($result);
@@ -114,11 +116,13 @@ if ($result) {
     	$row = mysql_fetch_row($result);
    		$applicationname = $row[0];
    		$groupid = $row[1];
+   		$bundleidentifier = $row[2];
+   		$version = $row[3];
     }
     mysql_free_result($result);
 
 	// get new grouping
-    if ($applicationname != "") {
+    if ($applicationname != "" && $bundleidentifier != "" && $version != "") {
     	// this stores the offset which we need for grouping
         $crash_group = "";
         

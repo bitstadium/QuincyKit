@@ -114,12 +114,12 @@ if ($numrows > 0) {
 mysql_free_result($result);
 
 
-$cols2 = '<colgroup><col width="320"/><col width="320"/><col width="320"/></colgroup>';
+$cols2 = '<colgroup><col width="316"/><col width="316"/><col width="315"/></colgroup>';
 echo '<table>'.$cols2.'<tr><th>Platform Overview</th><th>Crashes over time</th><th>System OS Overview</th></tr>';
 
-echo "<tr><td><div id=\"platformdiv\" style=\"height:280px;width:310px; \"></div></td>";
-echo "<td><div id=\"crashdiv\" style=\"height:280px;width:310px; \"></div></td>";
-echo "<td><div id=\"osdiv\" style=\"height:280px;width:310px; \"></div></td></tr>"; 
+echo "<tr><td><div id=\"platformdiv\" style=\"height:280px;width:306px; \"></div></td>";
+echo "<td><div id=\"crashdiv\" style=\"height:280px;width:306px; \"></div></td>";
+echo "<td><div id=\"osdiv\" style=\"height:280px;width:305px; \"></div></td></tr>"; 
 
 // get the amount of crashes per system version
 $crashestime = true;
@@ -163,14 +163,14 @@ echo '</table>';
 
 // START Group Deta
 $cols2 = '<colgroup><col width="950"/></colgroup>';
-echo '<table>'.$cols2.'<tr><th>Group Details</th></tr>';
-echo '<tr><td>';
+echo '<table>'.$cols2.'<tr><th>Global</th></tr>';
+echo '<tr><td><div style="float:left;">';
             
-show_search("", -1, true, "");
+show_search("", -1, false);
 
-echo " <a href=\"javascript:deleteGroups('$bundleidentifier','$version')\" style=\"float: right; margin-top:-35px;\" class=\"button redButton\" onclick=\"return confirm('Do you really want to delete all items?');\">Delete All</a>";
+echo "</div><div><a href=\"javascript:deleteGroups('$bundleidentifier','$version')\" style=\"float: right;\" class=\"button redButton\" onclick=\"return confirm('Do you really want to delete all items?');\">Delete All</a>";
 
-echo '</tr></td></table>';
+echo '</div></td></tr></table>';
 // END Group Details
 
 

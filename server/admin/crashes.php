@@ -135,12 +135,12 @@ if ($groupid !='') {
             $description = $row[1];
             $pattern = $row[2];
             
-            $cols2 = '<colgroup><col width="316"/><col width="316"/><col width="315"/></colgroup>';
+            $cols2 = '<colgroup><col width="310"/><col width="310"/><col width="310"/></colgroup>';
 			echo '<table>'.$cols2.'<tr><th>Platform Overview</th><th>Crashes over time</th><th>System OS Overview</th></tr>';
 			
-			echo "<tr><td><div id=\"platformdiv\" style=\"height:280px;width:306px; \"></div></td>";
-			echo "<td><div id=\"crashdiv\" style=\"height:280px;width:306px; \"></div></td>";
-			echo "<td><div id=\"osdiv\" style=\"height:280px;width:305px; \"></div></td></tr></table>"; 
+			echo "<tr><td><div id=\"platformdiv\" style=\"height:280px;width:300px; \"></div></td>";
+			echo "<td><div id=\"crashdiv\" style=\"height:280px;width:300px; \"></div></td>";
+			echo "<td><div id=\"osdiv\" style=\"height:280px;width:300px; \"></div></td></tr></table>"; 
 			
 			// get the amount of crashes per system version
 			$crashestime = true;
@@ -180,23 +180,23 @@ if ($groupid !='') {
 			}
 			mysql_free_result($result2);
 			
-			
-			
-			$cols2 = '<colgroup><col width="950"/></colgroup>';
-			echo '<table>'.$cols2.'<tr><th>Group Details</th></tr>';
+			$cols2 = '<colgroup><col width="470"/><col width="470"/></colgroup>';
+			echo '<table>'.$cols2.'<tr><th>Stack Trace</th><th>Group Details</th></tr>';
 			echo '<tr><td>';
             
-            echo '<form name="groupmetadata" action="" method="get">';
-            echo '<b style="vertical-align: top;">Description:</b><textarea id="description'.$groupid.'" cols="50" rows="2" name="description" class="description" style="margin-left: 10px;">'.$description.'</textarea>'; 
-            echo '<b style="vertical-align: top; margin-left:20px;">Assigned Fix Version:</b><input style="vertical-align: top; margin-left:10px;" type="text" id="fixversion'.$groupid.'" name="fixversion" size="20" maxlength="20" value="'.$fix.'"/>';
-            echo "<a href=\"javascript:updateGroupMeta(".$groupid.",'".$bundleidentifier."')\" class='button' style='float: right;'>Update</a>";
-         	echo create_issue($bundleidentifier, currentPageURL());
-
-            $rest = str_replace(") ","} ",$pattern);
+            $rest = str_replace("%0x","\n<br\>0x",$pattern);
+            $rest = str_replace(") ","} ",$rest);
             $rest = str_replace(")",")<br/>",$rest);
             $rest = str_replace("} ",") ",$rest);
-         	echo "<br/>".$rest;
-         	
+            echo $rest;
+            
+			echo '</td>';
+            echo '<td><form name="groupmetadata" action="" method="get">';
+            echo '<b style="vertical-align: top;">Description:</b><textarea id="description'.$groupid.'" cols="50" rows="2" name="description" class="description" style="margin-left: 10px;">'.$description.'</textarea><br/>'; 
+            echo '<b style="vertical-align: top;">Assigned Fix Version:</b><input style="vertical-align: top; margin-left:10px;" type="text" id="fixversion'.$groupid.'" name="fixversion" size="20" maxlength="20" value="'.$fix.'"/>';
+            echo "<a href=\"javascript:updateGroupMeta(".$groupid.",'".$bundleidentifier."')\" class='button' style='float: right;'>Update</a>";
+            echo create_issue($bundleidentifier, currentPageURL());
+         	         	
             echo '</form></td>';
             
             // get the amount of crashes

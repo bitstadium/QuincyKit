@@ -101,12 +101,12 @@ $osvalues = "";
 $crashvaluesarray = array();
 $crashvalues = "";
 
-$cols2 = '<colgroup><col width="320"/><col width="320"/><col width="320"/></colgroup>';
+$cols2 = '<colgroup><col width="310"/><col width="310"/><col width="310"/></colgroup>';
 echo '<table>'.$cols2.'<tr><th>Platform Overview</th><th>Crashes over time</th><th>System OS Overview</th></tr>';
 
-echo "<tr><td><div id=\"platformdiv\" style=\"height:280px;width:310px; \"></div></td>";
-echo "<td><div id=\"crashdiv\" style=\"height:280px;width:310px; \"></div></td>";
-echo "<td><div id=\"osdiv\" style=\"height:280px;width:310px; \"></div></td></tr>"; 
+echo "<tr><td><div id=\"platformdiv\" style=\"height:280px;width:300px; \"></div></td>";
+echo "<td><div id=\"crashdiv\" style=\"height:280px;width:300px; \"></div></td>";
+echo "<td><div id=\"osdiv\" style=\"height:280px;width:300px; \"></div></td></tr>"; 
 
 // get the amount of crashes per system version
 $crashestime = true;
@@ -170,12 +170,12 @@ mysql_free_result($result);
 echo '</table>';
 
 $cols2 = '<colgroup><col width="950"/></colgroup>';
-echo '<table>'.$cols2.'<tr><th>Group Details</th></tr>';
-echo '<tr><td>';
+echo '<table>'.$cols2.'<tr><th>Global</th></tr>';
+echo '<tr><td><div style="float:right;">';
             
-show_search("", -1, true, "");
+show_search("", -1, false);
 
-echo '</tr></td></table>';
+echo '</div></td></tr></table>';
 
 
 $cols = '<colgroup><col width="220"/><col width="80"/><col width="120"/><col width="80"/><col width="80"/><col width="80"/><col width="160"/></colgroup>';
@@ -240,7 +240,7 @@ if ($numrows > 0) {
 		$totalcrashes = 0;
 		
 		// get the number of groups
-		$query2 = "SELECT count(*) FROM ".$dbgrouptable." WHERE bundleidentifier = '".$bundleidentifier."' and affected = '".$version."'";
+		$query2 = "SELECT count(*) FROM ".$dbgrouptable." WHERE bundleidentifier = '".$bundleidentifier."' and affected = '".$version."' and amount > 0";
 		$result2 = mysql_query($query2) or die(end_with_result('Error in SQL '.$$query2));
 		
 		$numrows2 = mysql_num_rows($result2);
