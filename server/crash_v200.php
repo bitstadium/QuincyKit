@@ -378,7 +378,14 @@ if ($logdata != "" && $version != "" & $applicationname != "" && $bundleidentifi
 	
 	// this stores the offset which we need for grouping
 	$crash_offset = "";
+	$appcrashtext = "";
 	
+	preg_match('%Application Specific Information:.*?\n(.*?)\n\n%is', $logdata, $appcrashinfo);
+	if (is_array($appcrashinfo) && count($appcrashinfo) == 2) {
+        $appcrashtext = str_replace("\\", "", $appcrashinfo[1]);
+        $appcrashtext = str_replace("'", "\'", $appcrashtext);
+    }
+    
 	// extract the block which contains the data of the crashing thread
   	preg_match('%Thread [0-9]+ Crashed:.*?\n(.*?)\n\n%is', $logdata, $matches);
     $crash_offset = parseblock($matches, $applicationname);	
@@ -422,7 +429,7 @@ if ($logdata != "" && $version != "" & $applicationname != "" && $bundleidentifi
 	if (strlen($crash_offset) > 0)
 	{
 		// get all the known bug patterns for the current app version
-		$query = "SELECT id, fix, amount FROM ".$dbgrouptable." WHERE bundleidentifier = '".$bundleidentifier."' and affected = '".$version."' and pattern = '".mysql_real_escape_string($crash_offset)."'";
+		$query = "SELECT id, fix, amount, description FROM ".$dbgrouptable." WHERE bundleidentifier = '".$bundleidentifier."' and affected = '".$version."' and pattern = '".mysql_real_escape_string($crash_offset)."'";
 		$result = mysql_query($query) or die(xml_for_result(FAILURE_SQL_FIND_KNOWN_PATTERNS));
 
 		$numrows = mysql_num_rows($result);
@@ -433,12 +440,22 @@ if ($logdata != "" && $version != "" & $applicationname != "" && $bundleidentifi
 			$row = mysql_fetch_row($result);
 			$log_groupid = $row[0];
 			$amount = $row[2];
-
+            $desc = $row[3];
+            
 			mysql_free_result($result);
 
 			// update the occurances of this pattern
 			$query = "UPDATE ".$dbgrouptable." SET amount=amount+1, latesttimestamp = ".time()." WHERE id=".$log_groupid;
 			$result = mysql_query($query) or die(xml_for_result(FAILURE_SQL_UPDATE_PATTERN_OCCURANCES));
+
+            if ($desc != "" && $appcrashtext != "") {
+				$desc = str_replace("'", "\'", $desc);
+                if (strpos($desc, $appcrashtext) === false) {
+                    $appcrashtext = $desc."\n".$appcrashtext;
+                    $query = "UPDATE ".$dbgrouptable." SET description='".$appcrashtext."' WHERE id=".$log_groupid;
+                    $result = mysql_query($query) or die(end_with_result('Error in SQL '.$query));
+                }
+            }                       
 
 			// check the status of the bugfix version
 			$query = "SELECT status FROM ".$dbversiontable." WHERE bundleidentifier = '".$bundleidentifier."' and version = '".$row[1]."'";
@@ -489,7 +506,7 @@ if ($logdata != "" && $version != "" & $applicationname != "" && $bundleidentifi
             mysql_free_result($result);
         } else if ($numrows == 0) {
             // create a new pattern for this bug and set amount of occurrances to 1
-            $query = "INSERT INTO ".$dbgrouptable." (bundleidentifier, affected, pattern, amount, latesttimestamp) values ('".$bundleidentifier."', '".$version."', '".$crash_offset."', 1, ".time().")";
+            $query = "INSERT INTO ".$dbgrouptable." (bundleidentifier, affected, pattern, amount, latesttimestamp, description) values ('".$bundleidentifier."', '".$version."', '".$crash_offset."', 1, ".time().", '".$appcrashtext."')";
             $result = mysql_query($query) or die(xml_for_result(FAILURE_SQL_ADD_PATTERN));
 			
 			$log_groupid = mysql_insert_id($link);
