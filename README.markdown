@@ -104,7 +104,8 @@
     - `$updatecrashdataurl = '/admin/crash_update.php';`						// the path to the script updating the crashlog
 - Copy the symbolicatecrash executable into an accessable path, e.g. via
     `cp /Developer/Platforms/iPhoneOS.platform/Developer/Library/PrivateFrameworks/DTDeviceKit.framework/Versions/A/Resources/symbolicatecrash /usr/local/bin/`
-- Copy the `.app` package and `.app.dSYM` package of each version into any directory of your Mac
+- Create a directory somewhere on your Mac and name if e.g. by the app name and build number
+- Copy the `.app` package and `.app.dSYM` package of each version into the new directory created above (both files need to be in the same directory with the same name!)
   Best is to add the version number to the directory of each version, so multiple versions of the same app can be symbolicated.
   Example:
   
