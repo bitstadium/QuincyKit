@@ -161,7 +161,7 @@ mysql_free_result($result);
 echo '</table>';
 
 
-// START Group Deta
+// START Global data
 $cols2 = '<colgroup><col width="950"/></colgroup>';
 echo '<table>'.$cols2.'<tr><th>Global</th></tr>';
 echo '<tr><td><div style="float:left;">';
@@ -171,16 +171,10 @@ show_search("", -1, false);
 echo "</div><div><a href=\"javascript:deleteGroups('$bundleidentifier','$version')\" style=\"float: right;\" class=\"button redButton\" onclick=\"return confirm('Do you really want to delete all items?');\">Delete All</a>";
 
 echo '</div></td></tr></table>';
-// END Group Details
+// END Global data
 
 
 // START Group Listing
-$cols = '<colgroup><col width="90"/><col width="50"/><col width="100"/><col width="180"/><col width="360"/><col width="190"/></colgroup>';
-
-echo '<table>'.$cols;
-echo "<tr><th>Pattern</th><th>Amount</th><th>Last Update</th><th>Assigned Fix Version</th><th>Description</th><th>Actions</th></tr>";
-echo '</table>';
-
 echo '<div id="groups">';
 
 $classes = array();
@@ -202,7 +196,7 @@ if ($numrows > 0) {
 		
         $newpattern = array();
         $newpattern["groupid"] = $groupid;
-        $newpattern["desription"] = $description;
+        $newpattern["description"] = $description;
         $newpattern["fix"] = $fix;
         $newpattern["amount"] = $amount;
         $newpattern["lastupdate"] = $lastupdate;
@@ -314,7 +308,7 @@ if (count($classes) > 0) {
                     
                 // write the method
                 if ($filecount == 1)
-                    echo "<td>".$methodname."</td>";
+                    echo "<td>".str_replace(":", ": ", $methodname)."</td>";
                 else
                     echo "<td></td>";
 
@@ -345,7 +339,7 @@ if (count($classes) > 0) {
                 echo '</td><td>'.$filevalue["fix"].'</td></tr>';
                 
                 if ($filevalue["description"] != "") {
-                    echo "<tr id='descriptionpreview".$filevalue["groupid"]."'><td></td><td colspan='6'>".$filevalue["description"]."</td></tr>";
+                    echo "<tr id='descriptionpreview".$filevalue["groupid"]."'><td></td><td colspan='6'>".nl2br(substr($filevalue["description"],0,150))."...</td></tr>";
                 }
                                 
                 $lines = explode("\n", $filevalue["callstack"]);
