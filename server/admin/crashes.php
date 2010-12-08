@@ -75,7 +75,7 @@ if ($search != "" && $type != "") {
 
 show_header('- List');
 
-$cols = '<colgroup><col width="80"/><col width="140"/><col width="310"/><col width="350"/></colgroup>';
+$cols = '<colgroup><col width="80"/><col width="80"/><col width="370"/><col width="350"/></colgroup>';
 
 echo '<h2>';
 
@@ -219,7 +219,7 @@ echo "<thead><tr><th>System</th><th>Timestamp</th><th>User / Contact</th><th>Act
 echo '<tbody>';
 
 // get all crashes
-$query = "SELECT userid, contact, systemversion, timestamp, id FROM ".$dbcrashtable.$whereclause." ORDER BY systemversion desc, timestamp desc";
+$query = "SELECT userid, contact, systemversion, timestamp, id, jailbreak, platform FROM ".$dbcrashtable.$whereclause." ORDER BY systemversion desc, timestamp desc";
 $result = mysql_query($query) or die(end_with_result('Error in SQL '.$query));
 
 $numrows = mysql_num_rows($result);
@@ -231,7 +231,11 @@ if ($numrows > 0) {
 		$systemversion = $row[2];
 		$timestamp = $row[3];
 		$crashid = $row[4];
-				
+		$jailbreak = $row[5];
+		$platform = $row[6];
+		
+		if ($contact == "(null)") $contact="";
+
 		$todo = 2;
 		$query2 = "SELECT done FROM ".$dbsymbolicatetable." WHERE crashid = ".$crashid;
 		$result2 = mysql_query($query2) or die(end_with_result('Error in SQL '.$query));
@@ -249,6 +253,7 @@ if ($numrows > 0) {
 		if ($timestamp != "" && ($timestampvalue = strtotime($timestamp)) !== false)
 		{
             $timeindex = substr($timestamp, 0, 10);
+			$timestamp = str_replace(" ", "<br/>", $timestamp);
 
             if ($now - $timestampvalue < 60*24*24)
                 $timestamp = "<font color='".$color24h."'>".$timestamp."</font>";
@@ -267,7 +272,12 @@ if ($numrows > 0) {
             $crashvaluesarray[$timeindex]++;
 		}
 
-		echo "<tr id='crashrow".$crashid."' valign='top' align='center'><td>".$systemversion."</td><td>".$timestamp."</td><td>".$userid."<br/>".$contact."</td><td>";
+		echo "<tr id='crashrow".$crashid."' valign='top' align='center'>";
+		echo "<td>".$systemversion;
+		if ($platform != "") echo "<br/>".$platform;
+		if ($jailbreak == 1) echo "<br/>Jailbroken";
+		echo "</td>";
+		echo "<td>".$timestamp."</td><td>".$userid."<br/>".$contact."</td><td>";
 		echo "<a href='javascript:showCrashID(".$crashid.")' class='button'>View</a>";
 
 		echo "<a href='actionapi.php?action=downloadcrashid&id=".$crashid."' class='button'>Download</a> ";

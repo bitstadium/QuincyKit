@@ -348,6 +348,11 @@ if (sizeof($push_array) > 5) {
 // add the crash data to the database
 if ($logdata != "" && $version != "" & $applicationname != "" && $bundleidentifier != "" && $acceptlog == true)
 {
+	// is this a jailbroken device?
+	$jailbreak = 0;
+	if(strpos($logdata, "MobileSubstrate") !== false)
+		$jailbreak = 1;
+
     // Since analyzing the log data seems to have problems, first add it to the database, then read it, since it seems that one is fine then
 
     // first check if the version status is not discontinued
@@ -542,7 +547,7 @@ if ($logdata != "" && $version != "" & $applicationname != "" && $bundleidentifi
 	}
 	
     // now insert the crashlog into the database
-	$query = "INSERT INTO ".$dbcrashtable." (userid, contact, bundleidentifier, applicationname, systemversion, platform, senderversion, version, description, log, groupid, timestamp) values ('".$userid."', '".$contact."', '".$bundleidentifier."', '".$applicationname."', '".$systemversion."', '".$platform."', '".$senderversion."', '".$version."', '".$description."', '".mysql_real_escape_string($logdata)."', '".$log_groupid."', '".date("Y-m-d H:i:s")."')";
+	$query = "INSERT INTO ".$dbcrashtable." (userid, contact, bundleidentifier, applicationname, systemversion, platform, senderversion, version, description, log, groupid, timestamp, jailbreak) values ('".$userid."', '".$contact."', '".$bundleidentifier."', '".$applicationname."', '".$systemversion."', '".$platform."', '".$senderversion."', '".$version."', '".$description."', '".mysql_real_escape_string($logdata)."', '".$log_groupid."', '".date("Y-m-d H:i:s")."', ".$jailbreak.")";
 	$result = mysql_query($query) or die(xml_for_result(FAILURE_SQL_ADD_CRASHLOG));
 	
 	$new_crashid = mysql_insert_id($link);

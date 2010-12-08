@@ -71,6 +71,7 @@ CREATE TABLE IF NOT EXISTS `crash` (
   `log` text collate utf8_unicode_ci NOT NULL,
   `timestamp` timestamp NOT NULL default CURRENT_TIMESTAMP,
   `groupid` bigint(20) unsigned default '0',
+  `jailbreak` int(11) default '0',
   PRIMARY KEY  (`id`),
   KEY `timestamp` (`timestamp`),
   KEY `applicationname` (`applicationname`),
@@ -81,7 +82,9 @@ CREATE TABLE IF NOT EXISTS `crash` (
   KEY `contact` (`contact`),
   KEY `systemversion` (`systemversion`),
   KEY `bundleidentifier` (`bundleidentifier`),
-  FULLTEXT KEY `log` (`log`)
+  KEY `jailbreak` (`jailbreak`),
+  FULLTEXT KEY `log` (`log`),
+  FULLTEXT KEY `platform` (`platform`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- --------------------------------------------------------

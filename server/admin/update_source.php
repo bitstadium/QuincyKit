@@ -81,6 +81,10 @@ foreach(array_keys($_GET) as $k) {
     if(strpos($allowed_args,$temp) !== false) { $$k = $_GET[$k]; }
 }
 
+// update jailbreak tag on all crashlogs
+$query = "UPDATE ".$dbcrashtable." SET jailbreak=1 WHERE log like '%MobileSubstrate%'";
+$result = mysql_query($query) or die(end_with_result('Error in SQL '.$query));
+
 // go through all apps
 $queryapps = "SELECT id, bundleidentifier, name FROM ".$dbapptable." ORDER BY bundleidentifier asc, symbolicate desc";
 $resultapps = mysql_query($queryapps) or die(end_with_result('Error in SQL '.$queryapps));
