@@ -11,7 +11,7 @@
 #
 #
 
-use strict;
+# use strict;
 use warnings;
 use Getopt::Std;
 use Cwd qw(realpath);
