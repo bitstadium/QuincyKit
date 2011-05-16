@@ -45,3 +45,4 @@ profile
 
 
 /server/config.php
+/server/local/serverconfig.php
