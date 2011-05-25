@@ -108,6 +108,7 @@ CREATE TABLE IF NOT EXISTS `crash_groups` (
   `pattern` varchar(250) collate utf8_unicode_ci NOT NULL default '',
   `description` text collate utf8_unicode_ci,
   `amount` bigint(20) default '0',
+  `moreinfo` tinyint(4) default '0',
   `latesttimestamp` bigint(20) default '0',
   PRIMARY KEY  (`id`),
   KEY `affected` (`affected`,`fix`),
