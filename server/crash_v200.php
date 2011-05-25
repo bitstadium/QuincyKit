@@ -472,11 +472,28 @@ foreach ($crashes as $crash) {
             $crash_offset = parseblock($matches, $crash["bundleidentifier"]);
         }
         if ($crash_offset == "") {
+          # Catches our frameworks
+          $crash_offset = parseblock($matches, 'com.panic');
+        }
+        if ($crash_offset == "") {
+          # Catches Apple's frameworks
+          $crash_offset = parseblock($matches, 'com.apple');
+        }
+
+        if ($crash_offset == "") {
             preg_match('%Thread [0-9]+ Crashed:\n(.*?)\n\n%is', $crash["logdata"], $matches);
             $crash_offset = parseblock($matches, $crash["applicationname"]);
         }
         if ($crash_offset == "") {
             $crash_offset = parseblock($matches, $crash["bundleidentifier"]);
+        }
+        if ($crash_offset == "") {
+          # Catches our frameworks
+          $crash_offset = parseblock($matches, 'com.panic');
+        }
+        if ($crash_offset == "") {
+          # Catches Apple's frameworks
+          $crash_offset = parseblock($matches, 'com.apple');
         }
 
     	// stores the group this crashlog is associated to, by default to none
