@@ -153,7 +153,15 @@ echo '</tr></td></table>';
 
 
 // START Group Listing
-$cols = '<colgroup><col width="90"/><col width="50"/><col width="100"/><col width="50"/><col width="180"/><col width="360"/><col width="190"/></colgroup>';
+$cols = '<colgroup span="7">
+  <col width="171"/>
+  <col width="64"/>
+  <col width="112"/>
+  <col width="46"/>
+  <col width="121"/>
+  <col width="273"/>
+  <col width="164"/>
+</colgroup>';
 
 echo '<table>'.$cols;
 echo "<tr><th>Pattern</th><th>Amount</th><th>Last Update</th><th>More Info?</th><th>Assigned Fix Version</th><th>Description</th><th>Actions</th></tr>";
@@ -206,7 +214,11 @@ if ($numrows > 0) {
     	echo "-";
     }
         	
-		echo '</td><td><input type="checkbox" name="moreinfo" id="moreinfo'.$groupid.'" value="1" /></td><td><input type="text" id="fixversion'.$groupid.'" name="fixversion" size="20" maxlength="20" value="'.$fix.'"/></td><td><textarea id="description'.$groupid.'" cols="50" rows="2" name="description" class="description">'.$description.'</textarea></td><td>';
+		echo '</td><td><input type="checkbox" name="moreinfo" id="moreinfo'.$groupid.'" value="1" ';
+		if ($moreinfo) {
+		  echo 'checked="checked"';
+		}
+		echo '/></td><td><input type="text" id="fixversion'.$groupid.'" name="fixversion" size="10" maxlength="10" value="'.$fix.'"/></td><td><textarea id="description'.$groupid.'" cols="40" rows="2" name="description" class="description">'.$description.'</textarea></td><td>';
     echo "<a href=\"javascript:updateGroupMeta(".$groupid.",'".$bundleidentifier."')\" class='button'>Update</a> ";
 		echo "<a href='actionapi.php?action=downloadcrashid&groupid=".$groupid."' class='button'>Download</a> ";
 		$issuelink = currentPageURL();
