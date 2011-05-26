@@ -502,7 +502,7 @@ foreach ($crashes as $crash) {
     	// if the offset string is not empty, we try a grouping
     	if (strlen($crash_offset) > 0) {
     		// get all the known bug patterns for the current app version
-    		$query = "SELECT id, fix, amount, description FROM ".$dbgrouptable." WHERE bundleidentifier = '".$crash["bundleidentifier"]."' and affected = '".$crash["version"]."' and pattern = '".mysql_real_escape_string($crash_offset)."'";
+    		$query = "SELECT id, fix, amount, description, moreinfo FROM ".$dbgrouptable." WHERE bundleidentifier = '".$crash["bundleidentifier"]."' and affected = '".$crash["version"]."' and pattern = '".mysql_real_escape_string($crash_offset)."'";
     		$result = mysql_query($query) or die(xml_for_result(FAILURE_SQL_FIND_KNOWN_PATTERNS));
 
     		$numrows = mysql_num_rows($result);
@@ -512,8 +512,9 @@ foreach ($crashes as $crash) {
     			$row = mysql_fetch_row($result);
     			$log_groupid = $row[0];
     			$amount = $row[2];
-                $desc = $row[3];
-            
+          $desc = $row[3];
+          $crash['moreinfo'] = $row[4];
+          
     			mysql_free_result($result);
 
     			// update the occurances of this pattern
@@ -529,15 +530,19 @@ foreach ($crashes as $crash) {
                     }
                 }                       
 
-    			// check the status of the bugfix version
-    			$query = "SELECT status FROM ".$dbversiontable." WHERE bundleidentifier = '".$crash["bundleidentifier"]."' and version = '".$row[1]."'";
-    			$result = mysql_query($query) or die(xml_for_result(FAILURE_SQL_CHECK_BUGFIX_STATUS));
-			
-    			$numrows = mysql_num_rows($result);
-    			if ($numrows == 1) {
-    				$row = mysql_fetch_row($result);
-    				$crash["fix_status"] = $row[0];
-    			}
+          if (! $crash['moreinfo']) {
+      			// check the status of the bugfix version
+      			$query = "SELECT status FROM ".$dbversiontable." WHERE bundleidentifier = '".$crash["bundleidentifier"]."' and version = '".$row[1]."'";
+      			$result = mysql_query($query) or die(xml_for_result(FAILURE_SQL_CHECK_BUGFIX_STATUS));
+
+      			$numrows = mysql_num_rows($result);
+      			if ($numrows == 1) {
+      				$row = mysql_fetch_row($result);
+      				$crash["fix_status"] = $row[0];
+      			}
+          } else {
+    				$crash["fix_status"] = CRASH_STATUS_MORE_INFO;
+          }
 
     			if ($notify_amount_group > 1 && $notify_amount_group == $amount && $notify >= NOTIFY_ACTIVATED) {
                     // send prowl notification
