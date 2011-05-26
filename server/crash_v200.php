@@ -61,7 +61,7 @@ if ($push_activated || $boxcar_activated) {
   }
   
 } else {
-  $push_activated   = false;
+  $push_activated = false;
   $boxcar_activated = false;
 }
 
@@ -145,7 +145,7 @@ function doPost($url, $postdata)
     
     $response = preg_split('/\r\n\r\n/', $response);
     
-    $header          = $response[0];
+    $header = $response[0];
     $responsecontent = $response[1];
     
     if (!(strpos($header, "Transfer-Encoding: chunked") === false)) {
@@ -190,7 +190,7 @@ $reader = new XMLReader();
 $reader->XML($xmlstring);
 
 $crashIndex = -1;
-$crashes    = array();
+$crashes = array();
 
 function reading($reader, $tag)
 {
@@ -229,7 +229,7 @@ define('VALIDATE_PUNCTUATION', VALIDATE_SPACE . '\.,;\:&"\'\?\!\(\)');
  */
 function ValidateString($string, $options)
 {
-  $format     = null;
+  $format = null;
   $min_length = 0;
   $max_length = 0;
   
@@ -257,16 +257,16 @@ while ($reader->read()) {
     $crashIndex++;
     
     $crashes[$crashIndex]["bundleidentifier"] = "";
-    $crashes[$crashIndex]["applicationname"]  = "";
-    $crashes[$crashIndex]["systemversion"]    = "";
-    $crashes[$crashIndex]["platform"]         = "";
-    $crashes[$crashIndex]["senderversion"]    = "";
-    $crashes[$crashIndex]["version"]          = "";
-    $crashes[$crashIndex]["userid"]           = "";
-    $crashes[$crashIndex]["contact"]          = "";
-    $crashes[$crashIndex]["description"]      = "";
-    $crashes[$crashIndex]["logdata"]          = "";
-    $crashes[$crashIndex]["appname"]          = "";
+    $crashes[$crashIndex]["applicationname"] = "";
+    $crashes[$crashIndex]["systemversion"] = "";
+    $crashes[$crashIndex]["platform"] = "";
+    $crashes[$crashIndex]["senderversion"] = "";
+    $crashes[$crashIndex]["version"] = "";
+    $crashes[$crashIndex]["userid"] = "";
+    $crashes[$crashIndex]["contact"] = "";
+    $crashes[$crashIndex]["description"] = "";
+    $crashes[$crashIndex]["logdata"] = "";
+    $crashes[$crashIndex]["appname"] = "";
     
   } else if ($reader->name == "bundleidentifier" && $reader->nodeType == XMLReader::ELEMENT) {
     $crashes[$crashIndex]["bundleidentifier"] = mysql_real_escape_string(reading($reader, "bundleidentifier"));
@@ -331,7 +331,7 @@ foreach ($crashes as $crash) {
   $notify_emails = '';
   
   // check out if we accept this app and version of the app
-  $acceptlog   = false;
+  $acceptlog = false;
   $symbolicate = false;
   
   $hockeyappidentifier = '';
@@ -339,7 +339,7 @@ foreach ($crashes as $crash) {
   // shall we accept any crash log or only ones that are named in the database
   if ($acceptallapps) {
     // external symbolification is turned on by default when accepting all crash logs
-    $acceptlog   = true;
+    $acceptlog = true;
     $symbolicate = true;
     
     // get the app name
@@ -348,10 +348,10 @@ foreach ($crashes as $crash) {
     
     $numrows = mysql_num_rows($result);
     if ($numrows == 1) {
-      $crash["appname"]    = $row[0];
+      $crash["appname"] = $row[0];
       $hockeyappidentifier = $row[1];
-      $notify_emails       = $mail_addresses;
-      $notify_pushids      = $push_prowlids;
+      $notify_emails = $mail_addresses;
+      $notify_pushids = $push_prowlids;
     }
     mysql_free_result($result);
   } else {
@@ -373,7 +373,7 @@ foreach ($crashes as $crash) {
       // get the app name
       $crash["appname"] = $row[2];
       
-      $notify_emails  = $row[3];
+      $notify_emails = $row[3];
       $notify_pushids = $row[4];
       
       $hockeyappidentifier = $row[5];
@@ -450,9 +450,9 @@ foreach ($crashes as $crash) {
       $query = "INSERT INTO " . $dbversiontable . " (bundleidentifier, version, status, notify) values ('" . $crash["bundleidentifier"] . "', '" . $crash["version"] . "', " . VERSION_STATUS_UNKNOWN . ", " . $notify_default_version . ")";
       $result = mysql_query($query) or die(xml_for_result(FAILURE_SQL_ADD_VERSION));
     } else {
-      $row                     = mysql_fetch_row($result);
+      $row = mysql_fetch_row($result);
       $crash["version_status"] = $row[1];
-      $notify                  = $row[2];
+      $notify = $row[2];
       mysql_free_result($result);
     }
     
@@ -517,10 +517,10 @@ foreach ($crashes as $crash) {
       
       if ($numrows == 1) {
         // assign this bug to the group
-        $row               = mysql_fetch_row($result);
-        $log_groupid       = $row[0];
-        $amount            = $row[2];
-        $desc              = $row[3];
+        $row = mysql_fetch_row($result);
+        $log_groupid = $row[0];
+        $amount = $row[2];
+        $desc = $row[3];
         $crash['moreinfo'] = $row[4];
         
         mysql_free_result($result);
@@ -533,7 +533,7 @@ foreach ($crashes as $crash) {
           $desc = str_replace("'", "\'", $desc);
           if (strpos($desc, $appcrashtext) === false) {
             $appcrashtext = $desc . "\n" . $appcrashtext;
-            $query        = "UPDATE " . $dbgrouptable . " SET description='" . $appcrashtext . "' WHERE id=" . $log_groupid;
+            $query = "UPDATE " . $dbgrouptable . " SET description='" . $appcrashtext . "' WHERE id=" . $log_groupid;
             $result = mysql_query($query) or die(end_with_result('Error in SQL ' . $query));
           }
         }
@@ -545,7 +545,7 @@ foreach ($crashes as $crash) {
           
           $numrows = mysql_num_rows($result);
           if ($numrows == 1) {
-            $row                 = mysql_fetch_row($result);
+            $row = mysql_fetch_row($result);
             $crash["fix_status"] = $row[0];
           }
         } else {
