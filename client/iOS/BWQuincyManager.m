@@ -194,7 +194,6 @@ NSBundle *quincyBundle() {
     [self setSubmissionURL:@"https://beta.hockeyapp.net/"];
 }
 
-
 #pragma mark -
 #pragma mark private methods
 
@@ -202,10 +201,11 @@ NSBundle *quincyBundle() {
 - (void)startManager {
     if (!_sendingInProgress && [self hasPendingCrashReport]) {
         _sendingInProgress = YES;
+				NSString *appName = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleDisplayName"];
         if ([self hasNonApprovedCrashReports]) {
             if (![[NSUserDefaults standardUserDefaults] boolForKey: kAutomaticallySendCrashReports]) {
                 UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:BWQuincyLocalize(@"CrashDataFoundTitle")
-                                                                    message:BWQuincyLocalize(@"CrashDataFoundDescription")
+																																		message: [NSString stringWithFormat:BWQuincyLocalize(@"CrashDataFoundDescription"), appName]
                                                                    delegate:self
                                                           cancelButtonTitle:BWQuincyLocalize(@"No")
                                                           otherButtonTitles:BWQuincyLocalize(@"Yes"), nil];
@@ -296,6 +296,15 @@ NSBundle *quincyBundle() {
 											 cancelButtonTitle: BWQuincyLocalize(@"OK")
 											 otherButtonTitles: nil];
 				break;
+			case CrashReportStatusMoreInfo:
+				if ([MFMailComposeViewController canSendMail]) {
+					alertView = [[UIAlertView alloc] initWithTitle: [NSString stringWithFormat:BWQuincyLocalize(@"CrashResponseTitle"), appName ]
+															 message: [NSString stringWithFormat:BWQuincyLocalize(@"CrashResponseMoreInfo"), appName]
+															delegate: self
+										 cancelButtonTitle: BWQuincyLocalize(@"Skip")
+										 otherButtonTitles: BWQuincyLocalize(@"Send Email"), nil];
+				}
+				break;
 			default:
 				alertView = nil;
 				break;
@@ -314,21 +323,36 @@ NSBundle *quincyBundle() {
 #pragma mark UIAlertView Delegate
 
 - (void)alertView:(UIAlertView *)alertView didDismissWithButtonIndex:(NSInteger)buttonIndex {
-	if ([alertView tag] == QuincyKitAlertTypeSend) {
-		switch (buttonIndex) {
-			case 0:
-                _sendingInProgress = NO;
-				[self _cleanCrashReports];
-				break;
-			case 1:
-				[self _sendCrashReports];
-				break;
-			case 2:
-				[[NSUserDefaults standardUserDefaults] setBool:YES forKey:kAutomaticallySendCrashReports];
-				
-				[self _sendCrashReports];
-				break;
-		}
+	
+	switch ([alertView tag]) {
+		case QuincyKitAlertTypeSend:
+			switch (buttonIndex) {
+				case 0:
+					_sendingInProgress = NO;
+					[self _cleanCrashReports];
+					break;
+				case 1:
+					[self _sendCrashReports];
+					break;
+				case 2:
+					[[NSUserDefaults standardUserDefaults] setBool:YES forKey:kAutomaticallySendCrashReports];
+					
+					[self _sendCrashReports];
+					break;
+			}
+			break;
+		case QuincyKitAlertTypeFeedback:
+			switch (buttonIndex) {
+				case 0:
+					break;
+				case 1:
+						// Show the email compose sheet
+					break;
+			}
+			break;
+
+		default:
+			break;
 	}
 }
 
@@ -356,10 +380,9 @@ NSBundle *quincyBundle() {
 	if ([elementName isEqualToString: @"result"]) {
 		if ([_contentOfProperty intValue] > _serverResult) {
 			_serverResult = (CrashReportStatus)[_contentOfProperty intValue];
-		} else {
-            CrashReportStatus errorcode = (CrashReportStatus)[_contentOfProperty intValue];
-            NSLog(@"CrashReporter ended in error code: %i", errorcode);
-        }
+		}
+		CrashReportStatus errorcode = (CrashReportStatus)[_contentOfProperty intValue];
+		NSLog(@"CrashReporter ended in error code: %i", errorcode);
 	}
 }
 
@@ -376,7 +399,6 @@ NSBundle *quincyBundle() {
 
 #pragma mark -
 #pragma mark Private
-
 
 - (NSString *)_getDevicePlatform {
 	size_t size;

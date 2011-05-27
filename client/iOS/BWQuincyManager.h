@@ -28,6 +28,7 @@
  */
 
 #import <Foundation/Foundation.h>
+#import <MessageUI/MessageUI.h>
 
 #define kQuincyBundleName @"Quincy.bundle"
 
@@ -111,6 +112,11 @@ typedef enum CrashReportStatus {
     CrashReportStatusSubmitted = 2,
 	
     CrashReportStatusAvailable = 3,
+
+    CrashReportStatusDiscontinued = 4,
+
+    CrashReportStatusMoreInfo = 5,
+
 } CrashReportStatus;
 
 // This protocol is used to send the image updates
