@@ -547,6 +547,7 @@ foreach ($crashes as $crash) {
           if ($numrows == 1) {
             $row = mysql_fetch_row($result);
             $crash["fix_status"] = $row[0];
+            mysql_free_result($result);
           }
         } else {
           $crash["fix_status"] = CRASH_STATUS_MORE_INFO;
@@ -584,7 +585,6 @@ foreach ($crashes as $crash) {
           }
         }
         
-        mysql_free_result($result);
       } else if ($numrows == 0) {
         // create a new pattern for this bug and set amount of occurrances to 1
         $query = "INSERT INTO " . $dbgrouptable . " (bundleidentifier, affected, pattern, amount, latesttimestamp, description) values ('" . $crash["bundleidentifier"] . "', '" . $crash["version"] . "', '" . $crash_offset . "', 1, " . time() . ", '" . $appcrashtext . "')";
