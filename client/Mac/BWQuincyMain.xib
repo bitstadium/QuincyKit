@@ -12,6 +12,7 @@
 		</object>
 		<object class="NSMutableArray" key="IBDocument.EditedObjectIDs">
 			<bool key="EncodedWithXMLCoder">YES</bool>
+			<integer value="364"/>
 		</object>
 		<object class="NSArray" key="IBDocument.PluginDependencies">
 			<bool key="EncodedWithXMLCoder">YES</bool>
@@ -45,7 +46,7 @@
 				<string key="NSWindowContentMaxSize">{1.79769e+308, 1.79769e+308}</string>
 				<string key="NSWindowContentMinSize">{213, 107}</string>
 				<object class="NSView" key="NSWindowView" id="346017069">
-					<nil key="NSNextResponder"/>
+					<reference key="NSNextResponder"/>
 					<int key="NSvFlags">256</int>
 					<object class="NSMutableArray" key="NSSubviews">
 						<bool key="EncodedWithXMLCoder">YES</bool>
@@ -516,7 +517,8 @@
 							</object>
 						</object>
 					</object>
-					<string key="NSFrame">{{7, 11}, {571, 294}}</string>
+					<string key="NSFrameSize">{571, 294}</string>
+					<reference key="NSSuperview"/>
 					<reference key="NSNextKeyView" ref="828078923"/>
 				</object>
 				<string key="NSScreenRect">{{0, 0}, {2560, 1418}}</string>
@@ -524,6 +526,11 @@
 				<string key="NSMaxSize">{1.79769e+308, 1.79769e+308}</string>
 			</object>
 			<object class="NSUserDefaultsController" id="561136420">
+				<object class="NSMutableArray" key="NSDeclaredKeys">
+					<bool key="EncodedWithXMLCoder">YES</bool>
+					<string>NSFixedPitchFontSize</string>
+					<string>NSFixedPitchFont</string>
+				</object>
 				<bool key="NSSharedInstance">YES</bool>
 			</object>
 		</object>
@@ -798,6 +805,39 @@
 						</object>
 					</object>
 					<int key="connectionID">485</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBBindingConnection" key="connection">
+						<string key="label">fontName: values.NSFixedPitchFont</string>
+						<reference key="source" ref="436407902"/>
+						<reference key="destination" ref="561136420"/>
+						<object class="NSNibBindingConnector" key="connector" id="866369374">
+							<reference key="NSSource" ref="436407902"/>
+							<reference key="NSDestination" ref="561136420"/>
+							<string key="NSLabel">fontName: values.NSFixedPitchFont</string>
+							<string key="NSBinding">fontName</string>
+							<string key="NSKeyPath">values.NSFixedPitchFont</string>
+							<int key="NSNibBindingConnectorVersion">2</int>
+						</object>
+					</object>
+					<int key="connectionID">487</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBBindingConnection" key="connection">
+						<string key="label">fontSize: values.NSFixedPitchFontSize</string>
+						<reference key="source" ref="436407902"/>
+						<reference key="destination" ref="561136420"/>
+						<object class="NSNibBindingConnector" key="connector">
+							<reference key="NSSource" ref="436407902"/>
+							<reference key="NSDestination" ref="561136420"/>
+							<string key="NSLabel">fontSize: values.NSFixedPitchFontSize</string>
+							<string key="NSBinding">fontSize</string>
+							<string key="NSKeyPath">values.NSFixedPitchFontSize</string>
+							<reference key="NSPreviousConnector" ref="866369374"/>
+							<int key="NSNibBindingConnectorVersion">2</int>
+						</object>
+					</object>
+					<int key="connectionID">488</int>
 				</object>
 			</object>
 			<object class="IBMutableOrderedSet" key="objectRecords">
@@ -1232,7 +1272,7 @@
 				</object>
 			</object>
 			<nil key="sourceID"/>
-			<int key="maxID">485</int>
+			<int key="maxID">488</int>
 		</object>
 		<object class="IBClassDescriber" key="IBDocument.Classes">
 			<object class="NSMutableArray" key="referencedPartialClassDescriptions">
