@@ -321,12 +321,7 @@ const CGFloat kDetailsHeight = 285;
 }
 
 - (NSString *) applicationVersion {
-	NSString* string = [[[NSBundle mainBundle] localizedInfoDictionary] valueForKey: @"CFBundleVersion"];
-	
-	if (!string)
-		string = [[[NSBundle mainBundle] infoDictionary] valueForKey: @"CFBundleVersion"];
-	
-	return string;
+	return [[[NSBundle mainBundle] infoDictionary] valueForKey: @"CFBundleVersion"];
 }
 
 @end
