@@ -108,7 +108,7 @@ const CGFloat kDetailsHeight = 285;
 	NSSortDescriptor* dateSortDescriptor = [[[NSSortDescriptor alloc] initWithKey:@"modDate" ascending:YES] autorelease];
 	NSArray* sortedFiles = [filesWithModificationDate sortedArrayUsingDescriptors:[NSArray arrayWithObject:dateSortDescriptor]];
 	
-	NSPredicate* filterPredicate = [NSPredicate predicateWithFormat:@"name BEGINSWITH %@", [self applicationName]];
+	NSPredicate* filterPredicate = [NSPredicate predicateWithFormat:@"name BEGINSWITH %@", [[NSProcessInfo processInfo] processName]];
 	NSArray* filteredFiles = [sortedFiles filteredArrayUsingPredicate:filterPredicate];
 	
 	_crashFile = [[[filteredFiles valueForKeyPath:@"path"] lastObject] copy];
