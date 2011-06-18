@@ -163,7 +163,8 @@ const CGFloat kDetailsHeight = 285;
 - (void) startManager {
     NSString* crashFile = FindNewCrashFile();
     if (crashFile) {
-        _quincyUI = [[BWQuincyUI alloc] init:self crashFile:crashFile companyName:_companyName applicationName:[self applicationName]];
+        NSString* appDisplayName = [[[NSBundle mainBundle] localizedInfoDictionary] valueForKey: @"CFBundleName"] ?: [[NSProcessInfo processInfo] processName];
+        _quincyUI = [[BWQuincyUI alloc] init:self crashFile:crashFile companyName:_companyName applicationName:appDisplayName];
         [_quincyUI askCrashReportDetails];
     } else {
         [self returnToMainApplication];
