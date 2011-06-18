@@ -124,8 +124,6 @@ typedef enum CrashReportStatus {
 	NSString			*_companyName;
     NSString			*_appIdentifier;
 
-	NSString			*_crashFile;
-	
 	BWQuincyUI			*_quincyUI;
 }
 

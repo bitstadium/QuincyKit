@@ -30,11 +30,55 @@
 #import "BWQuincyManager.h"
 #import <sys/sysctl.h>
 
+static NSString* FindLatestCrashFileInPath (NSString* path) {
+	NSFileManager* fman = [NSFileManager defaultManager];
+
+	NSError* error;
+	NSMutableArray* filesWithModificationDate = [NSMutableArray array];
+	NSArray* crashLogFiles = [fman contentsOfDirectoryAtPath:path error:&error];
+	NSEnumerator* filesEnumerator = [crashLogFiles objectEnumerator];
+	NSString* crashFile;
+	while((crashFile = [filesEnumerator nextObject])) {
+		NSString* crashLogPath = [path stringByAppendingPathComponent:crashFile];
+		NSDate* modDate = [[[NSFileManager defaultManager] attributesOfItemAtPath:crashLogPath error:&error] fileModificationDate];
+		[filesWithModificationDate addObject:[NSDictionary dictionaryWithObjectsAndKeys:crashFile,@"name",crashLogPath,@"path",modDate,@"modDate",nil]];
+	}
+
+	NSSortDescriptor* dateSortDescriptor = [[[NSSortDescriptor alloc] initWithKey:@"modDate" ascending:YES] autorelease];
+	NSArray* sortedFiles = [filesWithModificationDate sortedArrayUsingDescriptors:[NSArray arrayWithObject:dateSortDescriptor]];
+
+	NSPredicate* filterPredicate = [NSPredicate predicateWithFormat:@"name BEGINSWITH %@", [[NSProcessInfo processInfo] processName]];
+	NSArray* filteredFiles = [sortedFiles filteredArrayUsingPredicate:filterPredicate];
+
+	return [[filteredFiles valueForKeyPath:@"path"] lastObject];
+}
+
+static NSString* FindLatestCrashFile () {
+	NSArray* libraryDirectories = NSSearchPathForDirectoriesInDomains(NSLibraryDirectory, NSUserDomainMask, TRUE);
+	NSString* postSnowLeopardPath = [[libraryDirectories lastObject] stringByAppendingPathComponent:@"Logs/DiagnosticReports"];
+	NSString* preSnowLeopardPath = [[libraryDirectories lastObject] stringByAppendingPathComponent:@"Logs/CrashReporter"];
+	return FindLatestCrashFileInPath(postSnowLeopardPath) ?: FindLatestCrashFileInPath(preSnowLeopardPath);
+}
+
+static NSString* FindNewCrashFile () {
+	NSString* crashFile = FindLatestCrashFile();
+	if(crashFile)
+	{
+		NSError* error;
+
+		NSDate* lastCrashDate = [[NSUserDefaults standardUserDefaults] valueForKey: @"CrashReportSender.lastCrashDate"];
+		NSDate* crashLogModificationDate = [[[NSFileManager defaultManager] attributesOfItemAtPath:crashFile error:&error] fileModificationDate];
+
+		if (!lastCrashDate || (lastCrashDate && crashLogModificationDate && ([crashLogModificationDate compare: lastCrashDate] == NSOrderedDescending))) {
+			[[NSUserDefaults standardUserDefaults] setValue: crashLogModificationDate forKey: @"CrashReportSender.lastCrashDate"];
+			return crashFile;
+		}
+	}
+	return nil;
+}
+
 @interface BWQuincyManager(private)
 - (void) startManager;
-
-- (void) searchCrashLogFile:(NSString *)path;
-- (BOOL) hasPendingCrashReport;
 - (void) returnToMainApplication;
 @end
 
@@ -71,8 +115,6 @@ const CGFloat kDetailsHeight = 285;
 		_submissionURL = nil;
         _appIdentifier = nil;
         
-        _crashFile = nil;
-        
 		self.delegate = nil;
 		self.companyName = @"";		
 	}
@@ -85,33 +127,9 @@ const CGFloat kDetailsHeight = 285;
 	_submissionURL = nil;
     _appIdentifier = nil;
     
-    [_crashFile release];
 	[_quincyUI release];
 	
 	[super dealloc];
-}
-
-- (void) searchCrashLogFile:(NSString *)path {
-	NSFileManager* fman = [NSFileManager defaultManager];
-	
-    NSError* error;
-	NSMutableArray* filesWithModificationDate = [NSMutableArray array];
-	NSArray* crashLogFiles = [fman contentsOfDirectoryAtPath:path error:&error];
-	NSEnumerator* filesEnumerator = [crashLogFiles objectEnumerator];
-	NSString* crashFile;
-	while((crashFile = [filesEnumerator nextObject])) {
-		NSString* crashLogPath = [path stringByAppendingPathComponent:crashFile];
-		NSDate* modDate = [[[NSFileManager defaultManager] attributesOfItemAtPath:crashLogPath error:&error] fileModificationDate];
-		[filesWithModificationDate addObject:[NSDictionary dictionaryWithObjectsAndKeys:crashFile,@"name",crashLogPath,@"path",modDate,@"modDate",nil]];
-	}
-	
-	NSSortDescriptor* dateSortDescriptor = [[[NSSortDescriptor alloc] initWithKey:@"modDate" ascending:YES] autorelease];
-	NSArray* sortedFiles = [filesWithModificationDate sortedArrayUsingDescriptors:[NSArray arrayWithObject:dateSortDescriptor]];
-	
-	NSPredicate* filterPredicate = [NSPredicate predicateWithFormat:@"name BEGINSWITH %@", [[NSProcessInfo processInfo] processName]];
-	NSArray* filteredFiles = [sortedFiles filteredArrayUsingPredicate:filterPredicate];
-	
-	_crashFile = [[[filteredFiles valueForKeyPath:@"path"] lastObject] copy];
 }
 
 #pragma mark -
@@ -137,43 +155,15 @@ const CGFloat kDetailsHeight = 285;
 #pragma mark -
 #pragma mark GetCrashData
 
-- (BOOL) hasPendingCrashReport {
-	BOOL returnValue = NO;
-    
-    NSArray* libraryDirectories = NSSearchPathForDirectoriesInDomains(NSLibraryDirectory, NSUserDomainMask, TRUE);
-    // Snow Leopard is having the log files in another location
-    [self searchCrashLogFile:[[libraryDirectories lastObject] stringByAppendingPathComponent:@"Logs/DiagnosticReports"]];
-    if (_crashFile == nil) {
-        [self searchCrashLogFile:[[libraryDirectories lastObject] stringByAppendingPathComponent:@"Logs/CrashReporter"]];
-    }		
-    
-    if (_crashFile) {
-        NSError* error;
-        
-        NSDate *lastCrashDate = [[NSUserDefaults standardUserDefaults] valueForKey: @"CrashReportSender.lastCrashDate"];
-        
-        NSDate *crashLogModificationDate = [[[NSFileManager defaultManager] attributesOfItemAtPath:_crashFile error:&error] fileModificationDate];
-        
-        if (!lastCrashDate || (lastCrashDate && crashLogModificationDate && ([crashLogModificationDate compare: lastCrashDate] == NSOrderedDescending))) {
-            returnValue = YES;
-        }
-        
-        [[NSUserDefaults standardUserDefaults] setValue: crashLogModificationDate
-                                                 forKey: @"CrashReportSender.lastCrashDate"];
-    }
-	
-	return returnValue;
-}
-
 - (void) returnToMainApplication {
 	if ( self.delegate != nil && [self.delegate respondsToSelector:@selector(showMainApplicationWindow)])
 		[self.delegate showMainApplicationWindow];
 }
 
 - (void) startManager {
-    if ([self hasPendingCrashReport]) {
-        
-        _quincyUI = [[BWQuincyUI alloc] init:self crashFile:_crashFile companyName:_companyName applicationName:[self applicationName]];
+    NSString* crashFile = FindNewCrashFile();
+    if (crashFile) {
+        _quincyUI = [[BWQuincyUI alloc] init:self crashFile:crashFile companyName:_companyName applicationName:[self applicationName]];
         [_quincyUI askCrashReportDetails];
     } else {
         [self returnToMainApplication];
