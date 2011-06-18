@@ -12,7 +12,7 @@
 		</object>
 		<object class="NSMutableArray" key="IBDocument.EditedObjectIDs">
 			<bool key="EncodedWithXMLCoder">YES</bool>
-			<integer value="364"/>
+			<integer value="378"/>
 		</object>
 		<object class="NSArray" key="IBDocument.PluginDependencies">
 			<bool key="EncodedWithXMLCoder">YES</bool>
@@ -632,22 +632,6 @@
 						<reference key="destination" ref="182606009"/>
 					</object>
 					<int key="connectionID">417</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBBindingConnection" key="connection">
-						<string key="label">value: self</string>
-						<reference key="source" ref="436407902"/>
-						<reference key="destination" ref="265051856"/>
-						<object class="NSNibBindingConnector" key="connector">
-							<reference key="NSSource" ref="436407902"/>
-							<reference key="NSDestination" ref="265051856"/>
-							<string key="NSLabel">value: self</string>
-							<string key="NSBinding">value</string>
-							<string key="NSKeyPath">self</string>
-							<int key="NSNibBindingConnectorVersion">2</int>
-						</object>
-					</object>
-					<int key="connectionID">419</int>
 				</object>
 				<object class="IBConnectionRecord">
 					<object class="IBBindingConnection" key="connection">
