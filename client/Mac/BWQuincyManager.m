@@ -494,7 +494,6 @@ const CGFloat kDetailsHeight = 285;
 	[crashLogTextView setString:[NSString stringWithFormat:@"%@\n\n%@", _crashLogContent, _consoleContent]];
 
 
-	NSBeep();
 	[NSApp runModalForWindow:[self window]];
 }
 
