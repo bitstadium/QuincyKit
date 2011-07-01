@@ -31,7 +31,7 @@
 
 #define kQuincyBundleName @"Quincy.bundle"
 
-NSBundle *quincyBundle();
+NSBundle *quincyBundle(void);
 
 #define BWQuincyLocalize(StringToken) NSLocalizedStringFromTableInBundle(StringToken, @"Quincy", quincyBundle(), @"")
 
@@ -142,6 +142,8 @@ typedef enum CrashReportStatus {
 
     BOOL _showAlwaysButton;
     BOOL _feedbackActivated;
+    BOOL _autoSubmitCrashReport;
+    BOOL _autoSubmitDeviceUDID;
 
     NSString *_appIdentifier;
 
@@ -187,6 +189,14 @@ typedef enum CrashReportStatus {
 // if YES, the user will be presented with a status of the crash, if known
 // if NO, the user will not see any feedback information (default)
 @property (nonatomic, assign, getter=isFeedbackActivated) BOOL feedbackActivated;
+
+// if YES, the crash report will be submitted without asking the user
+// if NO, the user will be asked if the crash report can be submitted (default)
+@property (nonatomic, assign, getter=isAutoSubmitCrashReport) BOOL autoSubmitCrashReport;
+
+// if YES, the device UDID will be submitted as the user id, without the need to define it in the crashReportUserID delegate (meant for beta versions!)
+// if NO, the crashReportUserID delegate defines what to be sent as user id (default)
+@property (nonatomic, assign, getter=isAutoSubmitDeviceUDID) BOOL autoSubmitDeviceUDID;
 
 // If you want to use HockeyApp instead of your own server, this is required
 @property (nonatomic, retain) NSString *appIdentifier;
