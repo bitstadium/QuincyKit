@@ -40,15 +40,23 @@
 
 
 - (void)applicationDidFinishLaunching:(NSNotification *)note {
-	// Launch the crash reporter task
-    
-    // setSubmissionURL for self hosted Example: http://yourserver.com/crash_v200.php
-    // setAppIdentifier for HockeyApp Example: 658b693ff4c164e65168fe0f43112ac0
-    //    [[BWQuincyManager sharedQuincyManager] setAppIdentifier:@"658b693ff4c164e65168fe0f43112ac0"];
-    //    [[BWQuincyManager sharedQuincyManager] setSubmissionURL:@"http://yourserver.com/crash_v200.php"];
-    
-    [[BWQuincyManager sharedQuincyManager] setCompanyName:@"My company"];
-    [[BWQuincyManager sharedQuincyManager] setDelegate:self];
+  
+  BWQuincyManager *quincy = [BWQuincyManager sharedQuincyManager];
+
+  // see the BWQuincyManagerDelegate protocol
+  [quincy setDelegate:self];
+  
+  // For use with hockeyapp.net
+  [quincy setAppIdentifier:@"af6282c7fb17ccc8da69925bf0133057"];
+  
+  // For your own hosted server
+  // [quincy setSubmissionURL:@"http://yourserver.com/crash_v200.php"];
+
+  // company name will be shown to the user (if user interaction is configured)
+  [quincy setCompanyName:@"serenity.de"];
+
+  // TODO: UI options
+  quincy.feedbackActivated = YES; 
 }
 
 

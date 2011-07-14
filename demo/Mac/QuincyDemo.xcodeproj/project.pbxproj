@@ -19,6 +19,9 @@
 		1EB61462102B8C4400B206A7 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0867D6A5FE840307C02AAC07 /* AppKit.framework */; };
 		1EB614AE102B927900B206A7 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0867D69BFE84028FC02AAC07 /* Foundation.framework */; };
 		8DC2EF570486A6940098B216 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7B1FEA5585E11CA2CBB /* Cocoa.framework */; };
+		DA4F159E13C9F4FB00667A7D /* BWQuincyUI.m in Sources */ = {isa = PBXBuildFile; fileRef = DA4F159D13C9F4FB00667A7D /* BWQuincyUI.m */; };
+		DA4F15A013C9F52500667A7D /* BWQuincyUI.h in Headers */ = {isa = PBXBuildFile; fileRef = DA4F159F13C9F52500667A7D /* BWQuincyUI.h */; };
+		DA4F15A613CA09C300667A7D /* BWQuincyServerAPI.h in Headers */ = {isa = PBXBuildFile; fileRef = DA4F15A513CA09C300667A7D /* BWQuincyServerAPI.h */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXBuildRule section */
@@ -65,6 +68,9 @@
 		1EB6127C102B787100B206A7 /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		1EB6127E102B787B00B206A7 /* QuincyDemo_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = QuincyDemo_Prefix.pch; sourceTree = "<group>"; };
 		8DC2EF5B0486A6940098B216 /* Quincy.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Quincy.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		DA4F159D13C9F4FB00667A7D /* BWQuincyUI.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = BWQuincyUI.m; path = ../../client/Mac/BWQuincyUI.m; sourceTree = "<group>"; };
+		DA4F159F13C9F52500667A7D /* BWQuincyUI.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = BWQuincyUI.h; path = ../../client/Mac/BWQuincyUI.h; sourceTree = "<group>"; };
+		DA4F15A513CA09C300667A7D /* BWQuincyServerAPI.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = BWQuincyServerAPI.h; path = ../../client/Mac/BWQuincyServerAPI.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -163,6 +169,9 @@
 			children = (
 				1E542D84135A4F31001D7981 /* BWQuincyManager.h */,
 				1E542D85135A4F31001D7981 /* BWQuincyManager.m */,
+				DA4F15A513CA09C300667A7D /* BWQuincyServerAPI.h */,
+				DA4F159F13C9F52500667A7D /* BWQuincyUI.h */,
+				DA4F159D13C9F4FB00667A7D /* BWQuincyUI.m */,
 				1E542D87135A4F31001D7981 /* BWQuincyMain.xib */,
 			);
 			name = Mac;
@@ -185,6 +194,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				1E542D88135A4F31001D7981 /* BWQuincyManager.h in Headers */,
+				DA4F15A013C9F52500667A7D /* BWQuincyUI.h in Headers */,
+				DA4F15A613CA09C300667A7D /* BWQuincyServerAPI.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -290,6 +301,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				1E542D89135A4F31001D7981 /* BWQuincyManager.m in Sources */,
+				DA4F159E13C9F4FB00667A7D /* BWQuincyUI.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -365,18 +377,12 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				COPY_PHASE_STRIP = NO;
-				FRAMEWORK_SEARCH_PATHS = (
-					"$(inherited)",
-					"\"$(SRCROOT)/build/Debug\"",
-				);
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_ENABLE_FIX_AND_CONTINUE = YES;
 				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = "$(SYSTEM_LIBRARY_DIR)/Frameworks/AppKit.framework/Headers/AppKit.h";
 				INFOPLIST_FILE = "QuincyDemo-Info.plist";
-				INSTALL_PATH = "$(HOME)/Applications";
 				OTHER_LDFLAGS = (
 					"-framework",
 					Foundation,
@@ -394,16 +400,10 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				COPY_PHASE_STRIP = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				FRAMEWORK_SEARCH_PATHS = (
-					"$(inherited)",
-					"\"$(SRCROOT)/build/Debug\"",
-				);
 				GCC_ENABLE_FIX_AND_CONTINUE = NO;
 				GCC_MODEL_TUNING = G5;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = "$(SYSTEM_LIBRARY_DIR)/Frameworks/AppKit.framework/Headers/AppKit.h";
 				INFOPLIST_FILE = "QuincyDemo-Info.plist";
-				INSTALL_PATH = "$(HOME)/Applications";
 				OTHER_LDFLAGS = (
 					"-framework",
 					Foundation,

@@ -34,5 +34,7 @@
 	<array/>
 	<key>UTImportedTypeDeclarations</key>
 	<array/>
+	<key>CFBundleName</key>
+	<string>${PRODUCT_NAME}</string>
 </dict>
 </plist>
