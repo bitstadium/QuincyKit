@@ -11,7 +11,7 @@
 const CGFloat kCommentsHeight = 105;
 const CGFloat kDetailsHeight = 285;
 
-@synthesize delegate=delegate_, companyName, applicationName;
+@synthesize delegate=delegate_, companyName, applicationName, crashFileContent, consoleContent;
 
 - (id)init:(id)delegate
 {
@@ -111,18 +111,15 @@ const CGFloat kDetailsHeight = 285;
 }
 
 
-- (void)askCrashReportDetails
+- (void)presentInterface
 {
 	[[self window] setTitle:[NSString stringWithFormat:NSLocalizedString(@"Problem Report for %@", @"Window title"), self.applicationName]];
   
 	[[descriptionTextField cell] setPlaceholderString:NSLocalizedString(@"Please describe any steps needed to trigger the problem", @"User description placeholder")];
 	[noteText setStringValue:NSLocalizedString(@"No personal information will be sent with this report.", @"Note text")];
   
-  NSString *crashFileContent = [delegate_ crashFileContent];
-  NSString *console = [delegate_ consoleContent];
-  [crashLogTextView setString:[NSString stringWithFormat:@"%@\n\n%@", crashFileContent, console]];
-
-	[NSApp runModalForWindow:[self window]];
+  [crashLogTextView setString:[NSString stringWithFormat:@"%@\n\n%@", self.crashFileContent, self.consoleContent]];
+	[NSApp runModalForWindow:self.window];
 }
 
 

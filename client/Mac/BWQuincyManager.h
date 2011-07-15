@@ -31,11 +31,12 @@
 #import <AvailabilityMacros.h>
 
 #import "BWQuincyServerAPI.h"
+#import "BWQuincyUIProtocol.h"
 
 #define CRASHREPORTSENDER_MAX_CONSOLE_SIZE 50000
 
-// TODO #define BWQuincyLocalize(StringToken) NSLocalizedStringFromTableInBundle(StringToken, @"Quincy", quincyBundle(), @"")
-#define BWQuincyLocalize(StringToken) StringToken
+// TODO test BWQuincyLocalize
+#define BWQuincyLocalize(StringToken) NSLocalizedStringFromTable(StringToken, @"Quincy", @"")
 
 typedef enum CrashAlertType {
 	CrashAlertTypeSend = 0,
@@ -89,7 +90,7 @@ typedef enum CrashAlertType {
   NSString *_companyName;
   NSString *_appIdentifier;
 
-  BWQuincyUI *_quincyUI;
+  id<BWQuincyUIProtocol> _quincyUI;
 
   NSURLConnection *urlConnection_;
   NSMutableData *responseData_;
@@ -97,6 +98,8 @@ typedef enum CrashAlertType {
   BOOL isCrashAppVersionIdenticalToAppVersion_;
   BOOL feedbackActivated_;
   NSString *_feedbackRequestID;
+  NSString *interfaceClassName_;
+  NSString *interfaceNibName_;
 }
 
 - (NSString*) modelVersion;
@@ -108,6 +111,12 @@ typedef enum CrashAlertType {
 
 // defines the company name to be shown in the crash reporting dialog
 @property (nonatomic, retain) NSString *companyName;
+
+// name of the class you want to handle the user interface, defaults to BWQuincyUI, set to nil to not show a UI
+@property (nonatomic, retain) NSString *interfaceClassName;
+
+// name of the xib file for use with interfaceClassName, defaults to BWQuincyMain
+@property (nonatomic, retain) NSString *interfaceNibName;
 
 // delegate is required
 @property (nonatomic, assign) id <BWQuincyManagerDelegate> delegate;

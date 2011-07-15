@@ -1,0 +1,21 @@
+/* 
+  Quincy.strings
+  QuincyDemo
+
+  Created by Stanley Rost on 15.07.11.
+  Copyright 2011 __MyCompanyName__. All rights reserved.
+*/
+
+/* Title for the alertview giving feedback about the crash */
+"CrashResponseTitle" = "Previously on %@";
+
+/* Full text telling the bug is fixed and will be available in the next release */
+"CrashResponseNextRelease" = "%@ quit unexpectedly. The good news? The cause of the crash has been found and fixed for a future update. Stay tuned.";
+
+/* Full text telling the bug is fixed and the new release is waiting at Apple */
+"CrashResponseWaitingApple" = "%@ quit unexpectedly. The good news? We’ve already fixed the bug, and submitted an update to Apple. Hang tight while it’s in review!";
+
+/* Full text telling the bug is fixed and an update is available in the AppStore */
+"CrashResponseAvailable" = "%@ quit unexpectedly. The good news? We've already fixed the bug! Please update to the latest version.";
+
+"OK" = "OK";

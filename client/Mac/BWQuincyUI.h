@@ -1,4 +1,7 @@
-@interface BWQuincyUI : NSWindowController
+
+#import "BWQuincyUIProtocol.h"
+
+@interface BWQuincyUI : NSWindowController <BWQuincyUIProtocol>
 {
   IBOutlet NSTextField *descriptionTextField;
   IBOutlet NSTextView *crashLogTextView;
@@ -15,12 +18,6 @@
   BOOL showComments;
   BOOL showDetails;
 }
-
-@property (nonatomic, assign) id delegate;
-@property (nonatomic, retain) NSString *applicationName;
-@property (nonatomic, retain) NSString *companyName;
-
-- (void) askCrashReportDetails;
 
 - (IBAction)cancelReport:(id)sender;
 - (IBAction)submitReport:(id)sender;

@@ -30,9 +30,6 @@
 #import "BWQuincyManager.h"
 #import <sys/sysctl.h>
 
-// TODO: do not require this specific class (BWQuincyUI), but a delegate that can be set/overridden by the user
-#import "BWQuincyUI.h"
-
 static NSString* FindLatestCrashFileInPath (NSString* path) {
 	NSFileManager* fman = [NSFileManager defaultManager];
 
@@ -96,6 +93,8 @@ static NSString* FindNewCrashFile () {
 @synthesize companyName = _companyName;
 @synthesize appIdentifier = _appIdentifier;
 @synthesize feedbackActivated = feedbackActivated_;
+@synthesize interfaceClassName = interfaceClassName_;
+@synthesize interfaceNibName = interfaceNibName_;
 
 + (BWQuincyManager *)sharedQuincyManager {
 	static BWQuincyManager *quincyManager = nil;
@@ -107,20 +106,24 @@ static NSString* FindNewCrashFile () {
 	return quincyManager;
 }
 
-- (id) init {
-    if ((self = [super init])) {
-		_serverResult = CrashReportStatusFailureDatabaseNotAvailable;
-		_quincyUI = nil;
-        
-		_submissionURL = nil;
-        _appIdentifier = nil;
-        
-		self.delegate = nil;
-		self.companyName = @"";		
-    
+- (id) init
+{
+  if ((self = [super init]))
+  {
+    _serverResult = CrashReportStatusFailureDatabaseNotAvailable;
+    _quincyUI = nil;
+
+    _submissionURL = nil;
+     _appIdentifier = nil;
+
+    self.delegate = nil;
+    self.companyName = @"";
+    self.interfaceClassName = @"BWQuincyUI";
+    self.interfaceNibName = @"BWQuincyMain";
+
     urlConnection_ = nil;
-	}
-	return self;
+  }
+  return self;
 }
 
 - (void)dealloc {
@@ -171,8 +174,7 @@ static NSString* FindNewCrashFile () {
 
 - (NSString *)consoleContent
 {
-  // TODO: console log
-  // TODO: cache console content, the UI (BWQuincyUI) wants it and we send it to the server
+  // TODO: console log, maybe cache console content, the UI (BWQuincyUI) wants it and we send it to the server
   NSMutableString *console = [NSMutableString string];
 
   // get the console log
@@ -206,24 +208,37 @@ static NSString* FindNewCrashFile () {
 #pragma mark GetCrashData
 
 - (void) returnToMainApplication {
-	if ( self.delegate != nil && [self.delegate respondsToSelector:@selector(showMainApplicationWindow)])
+	if ([self.delegate respondsToSelector:@selector(showMainApplicationWindow)])
 		[self.delegate showMainApplicationWindow];  // FIXME: remove showMainApplicationWindow
 }
 
 - (void) startManager
 {
   if (!FindNewCrashFile())
+  {
     [self returnToMainApplication];
+    return;
+  }
+    
   
   NSString *bundleName = [[[NSBundle mainBundle] localizedInfoDictionary] valueForKey: @"CFBundleName"];
   NSString* appDisplayName = bundleName ?: [[NSProcessInfo processInfo] processName];
-
-  _quincyUI = [[BWQuincyUI alloc] init];
   
-  _quincyUI.delegate        = self;
-  _quincyUI.companyName     = self.companyName;
-  _quincyUI.applicationName = appDisplayName;
-  [_quincyUI askCrashReportDetails];
+  if (!self.interfaceClassName || !self.interfaceNibName)
+  {
+    [self returnToMainApplication];
+    return;
+  }
+  
+  Class klass = NSClassFromString(self.interfaceClassName);
+  _quincyUI = [[klass alloc] initWithWindowNibName:self.interfaceNibName];
+  
+  _quincyUI.delegate         = self;
+  _quincyUI.companyName      = self.companyName;
+  _quincyUI.applicationName  = appDisplayName;
+  _quincyUI.consoleContent   = [self consoleContent];
+  _quincyUI.crashFileContent = [self crashFileContent];
+  [_quincyUI presentInterface];
 }
 
 - (NSString*) modelVersion {
@@ -298,18 +313,24 @@ static NSString* FindNewCrashFile () {
                     crashLogContent];
                     
   [self parseCrashLog:crashLogContent]; // TODO find out app version
-  isCrashAppVersionIdenticalToAppVersion_ = YES;
 
-  // FIXME version comparison in showCrashStatusMessage, I think this is wrong
-  // correct would be: if the crash
-	// BOOL identicalVersion = [[_delegate applicationVersion] compare:[[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleVersion"]] == NSOrderedSame;
-	
   [NSTimer scheduledTimerWithTimeInterval:0.0 target:self selector:@selector(postXML:) userInfo:xml repeats:NO];	 
 }
 
-- (void)parseCrashLog:report
+- (void)parseCrashLog:(NSString *)report
 {
-  NSLog(@"report: %@", report);
+  NSScanner *scanner = [NSScanner scannerWithString:report];
+
+  NSString *crashVersion = nil;
+
+  [scanner scanUpToString:@"Version:" intoString: NULL];
+  [scanner scanUpToString:@"(" intoString:NULL];
+  [scanner setScanLocation:[scanner scanLocation] + 1];
+  [scanner scanUpToString:@")" intoString:&crashVersion];
+  
+  NSString *cfBundleVersion = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleVersion"];
+
+  isCrashAppVersionIdenticalToAppVersion_ = [cfBundleVersion isEqualToString:crashVersion];
 }
 
 - (void) postXML:(NSTimer *) timer {
@@ -352,10 +373,10 @@ static NSString* FindNewCrashFile () {
   [urlConnection_ start];
 }
 
-- (void)processServerResponse {
-  NSString *responseString = [[NSString alloc] initWithData:responseData_ encoding:NSUTF8StringEncoding];
-  [responseString release];
-  if (_statusCode < 200 || _statusCode >= 400) {
+- (void)processServerResponse
+{
+  if (_statusCode < 200 || _statusCode >= 400)
+  {
     NSLog(@"bad server status: %ld", _statusCode);
     // server down? ignore, will try later
     return;
@@ -395,18 +416,25 @@ static NSString* FindNewCrashFile () {
     [parser release];
   }
 
-  if ([self isFeedbackActivated] && isCrashAppVersionIdenticalToAppVersion_) {
-    if (self.appIdentifier) {
+  if (self.feedbackActivated && isCrashAppVersionIdenticalToAppVersion_)
+  {
+    if (self.appIdentifier)
+    {
       // only proceed if the server did not report any problem
-      if (_serverResult == CrashReportStatusQueued) {
+      if (_serverResult == CrashReportStatusQueued)
+      {
         // the report is still in the queue
         [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(checkForFeedbackStatus) object:nil];
         [self performSelector:@selector(checkForFeedbackStatus) withObject:nil afterDelay:feedbackDelayInterval];
-      } else {
+      }
+      else
+      {
         // we do have a status, show it if needed
         [self showCrashStatusMessage];
       }
-    } else {
+    }
+    else
+    {
       [self showCrashStatusMessage];
     }
   }
@@ -415,9 +443,8 @@ static NSString* FindNewCrashFile () {
   responseData_ = nil;
   [urlConnection_ autorelease];
   
-	if (self.delegate != nil && [self.delegate respondsToSelector:@selector(connectionClosed)]) {
+	if ([self.delegate respondsToSelector:@selector(connectionClosed)])
 		[self.delegate connectionClosed];
-	}
 }
 
 - (void)checkForFeedbackStatus {
@@ -438,7 +465,7 @@ static NSString* FindNewCrashFile () {
 	// Release when done in the delegate method
 	responseData_ = [[NSMutableData alloc] init];
 	
-	if (self.delegate != nil && [self.delegate respondsToSelector:@selector(connectionOpened)]) {
+	if ([self.delegate respondsToSelector:@selector(connectionOpened)]) {
 		[self.delegate connectionOpened];
 	}
 	
@@ -510,7 +537,7 @@ static NSString* FindNewCrashFile () {
   
   NSLog(@"%s %@", __PRETTY_FUNCTION__, error); // TODO remove NSLogs
   
-  if (self.delegate != nil && [self.delegate respondsToSelector:@selector(connectionClosed)]) {
+  if ([self.delegate respondsToSelector:@selector(connectionClosed)]) {
 		[self.delegate connectionClosed];
 	}
 }
