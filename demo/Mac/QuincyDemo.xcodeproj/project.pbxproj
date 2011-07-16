@@ -22,8 +22,8 @@
 		DA4F159E13C9F4FB00667A7D /* BWQuincyUI.m in Sources */ = {isa = PBXBuildFile; fileRef = DA4F159D13C9F4FB00667A7D /* BWQuincyUI.m */; };
 		DA4F15A013C9F52500667A7D /* BWQuincyUI.h in Headers */ = {isa = PBXBuildFile; fileRef = DA4F159F13C9F52500667A7D /* BWQuincyUI.h */; };
 		DA4F15A613CA09C300667A7D /* BWQuincyServerAPI.h in Headers */ = {isa = PBXBuildFile; fileRef = DA4F15A513CA09C300667A7D /* BWQuincyServerAPI.h */; };
-		DAB9181213D0C47100CF1650 /* Quincy.strings in Resources */ = {isa = PBXBuildFile; fileRef = DAB9181113D0C47100CF1650 /* Quincy.strings */; };
-		DAB9181513D0CB6100CF1650 /* BWQuincyUIProtocol.h in Headers */ = {isa = PBXBuildFile; fileRef = DAB9181413D0CB6100CF1650 /* BWQuincyUIProtocol.h */; };
+		DAB9182013D2399A00CF1650 /* BWQuincyUIDelegate.h in Headers */ = {isa = PBXBuildFile; fileRef = DAB9181F13D2399A00CF1650 /* BWQuincyUIDelegate.h */; };
+		DAB9182213D23BE200CF1650 /* Quincy.strings in Resources */ = {isa = PBXBuildFile; fileRef = DAB9182113D23BE200CF1650 /* Quincy.strings */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXBuildRule section */
@@ -73,8 +73,8 @@
 		DA4F159D13C9F4FB00667A7D /* BWQuincyUI.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = BWQuincyUI.m; path = ../../client/Mac/BWQuincyUI.m; sourceTree = "<group>"; };
 		DA4F159F13C9F52500667A7D /* BWQuincyUI.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = BWQuincyUI.h; path = ../../client/Mac/BWQuincyUI.h; sourceTree = "<group>"; };
 		DA4F15A513CA09C300667A7D /* BWQuincyServerAPI.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = BWQuincyServerAPI.h; path = ../../client/Mac/BWQuincyServerAPI.h; sourceTree = "<group>"; };
-		DAB9181113D0C47100CF1650 /* Quincy.strings */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; path = Quincy.strings; sourceTree = "<group>"; };
-		DAB9181413D0CB6100CF1650 /* BWQuincyUIProtocol.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BWQuincyUIProtocol.h; sourceTree = "<group>"; };
+		DAB9181F13D2399A00CF1650 /* BWQuincyUIDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BWQuincyUIDelegate.h; sourceTree = "<group>"; };
+		DAB9182113D23BE200CF1650 /* Quincy.strings */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; path = Quincy.strings; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -138,7 +138,6 @@
 				1E542D94135A535D001D7981 /* Info.plist */,
 				1EB61269102B779200B206A7 /* QuincyDemo-Info.plist */,
 				1E360773135A618B00A79125 /* Quincy.framework */,
-				DAB9181113D0C47100CF1650 /* Quincy.strings */,
 			);
 			name = Resources;
 			sourceTree = "<group>";
@@ -174,10 +173,11 @@
 			children = (
 				1E542D84135A4F31001D7981 /* BWQuincyManager.h */,
 				1E542D85135A4F31001D7981 /* BWQuincyManager.m */,
-				DA4F15A513CA09C300667A7D /* BWQuincyServerAPI.h */,
 				DA4F159F13C9F52500667A7D /* BWQuincyUI.h */,
 				DA4F159D13C9F4FB00667A7D /* BWQuincyUI.m */,
-				DAB9181413D0CB6100CF1650 /* BWQuincyUIProtocol.h */,
+				DAB9181F13D2399A00CF1650 /* BWQuincyUIDelegate.h */,
+				DA4F15A513CA09C300667A7D /* BWQuincyServerAPI.h */,
+				DAB9182113D23BE200CF1650 /* Quincy.strings */,
 				1E542D87135A4F31001D7981 /* BWQuincyMain.xib */,
 			);
 			name = Mac;
@@ -202,7 +202,7 @@
 				1E542D88135A4F31001D7981 /* BWQuincyManager.h in Headers */,
 				DA4F15A013C9F52500667A7D /* BWQuincyUI.h in Headers */,
 				DA4F15A613CA09C300667A7D /* BWQuincyServerAPI.h in Headers */,
-				DAB9181513D0CB6100CF1650 /* BWQuincyUIProtocol.h in Headers */,
+				DAB9182013D2399A00CF1650 /* BWQuincyUIDelegate.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -280,7 +280,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				1EB61278102B784900B206A7 /* MainMenu.xib in Resources */,
-				DAB9181213D0C47100CF1650 /* Quincy.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -289,6 +288,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				1E542D8B135A4F31001D7981 /* BWQuincyMain.xib in Resources */,
+				DAB9182213D23BE200CF1650 /* Quincy.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

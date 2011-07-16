@@ -30,6 +30,8 @@
 #import "BWQuincyManager.h"
 #import <sys/sysctl.h>
 
+#import "BWQuincyUI.h"
+
 static NSString* FindLatestCrashFileInPath (NSString* path) {
 	NSFileManager* fman = [NSFileManager defaultManager];
 
@@ -93,48 +95,51 @@ static NSString* FindNewCrashFile () {
 @synthesize companyName = _companyName;
 @synthesize appIdentifier = _appIdentifier;
 @synthesize feedbackActivated = feedbackActivated_;
-@synthesize interfaceClassName = interfaceClassName_;
 @synthesize maxFeedbackDelay = maxFeedbackDelay_;
+@synthesize networkTimeoutInterval;
+@synthesize shouldPresentModalInterface;
+@synthesize interfaceDelegate = interfaceDelegate_;
 
-+ (BWQuincyManager *)sharedQuincyManager {
++ (BWQuincyManager *)sharedQuincyManager
+{
 	static BWQuincyManager *quincyManager = nil;
 	
-	if (quincyManager == nil) {
+	if (quincyManager == nil)
 		quincyManager = [[BWQuincyManager alloc] init];
-	}
 	
 	return quincyManager;
 }
 
-- (id) init
+- (id)init
 {
   if ((self = [super init]))
   {
     _serverResult = CrashReportStatusFailureDatabaseNotAvailable;
-    _quincyUI = nil;
 
     _submissionURL = nil;
-     _appIdentifier = nil;
+    _appIdentifier = nil;
 
-    self.delegate = nil;
-    self.companyName = @"";
-    self.interfaceClassName = @"BWQuincyUI";
-    self.maxFeedbackDelay = 10.0;
+    self.delegate                    = nil;
+    self.interfaceDelegate           = nil;
+    self.companyName                 = @"";
+    self.networkTimeoutInterval      = 15.0;
+    self.feedbackActivated           = NO;
+    self.maxFeedbackDelay            = 10.0;
+    self.shouldPresentModalInterface = YES;
 
     urlConnection_ = nil;
   }
   return self;
 }
 
-- (void)dealloc {
-	_companyName = nil;
-	_delegate = nil;
-	_submissionURL = nil;
-    _appIdentifier = nil;
-    
-	[_quincyUI release];
-	
-	[super dealloc];
+- (void)dealloc
+{
+  _companyName = nil;
+  _delegate = nil;
+  _submissionURL = nil;
+  _appIdentifier = nil;
+
+  [super dealloc];
 }
 
 #pragma mark -
@@ -207,39 +212,33 @@ static NSString* FindNewCrashFile () {
 #pragma mark -
 #pragma mark GetCrashData
 
-- (void) returnToMainApplication {
-	if ([self.delegate respondsToSelector:@selector(showMainApplicationWindow)])
-		[self.delegate showMainApplicationWindow];  // FIXME: remove showMainApplicationWindow
+- (void)finishManager:(BWQuincyStatus)status
+{
+	if ([self.delegate respondsToSelector:@selector(didFinishCrashReporting:)])
+		[self.delegate didFinishCrashReporting:status];
 }
 
-- (void) startManager
+- (void)startManager
 {
   // TODO: ability to send multiple crash reports at once
   if (!FindNewCrashFile())
   {
-    [self returnToMainApplication];
+    [self finishManager:BWQuincyStatusNoCrashFound];
     return;
   }
     
-  
-  NSString *bundleName = [[[NSBundle mainBundle] localizedInfoDictionary] valueForKey: @"CFBundleName"];
-  NSString* appDisplayName = bundleName ?: [[NSProcessInfo processInfo] processName];
-  
-  if (!self.interfaceClassName)
+  if (!self.interfaceDelegate)
   {
-    [self returnToMainApplication];
-    return;
+    BWQuincyUI *ui = [[BWQuincyUI alloc] init];
+    ui.delegate           = self;
+    ui.companyName        = self.companyName;
+    ui.shouldPresentModal = self.shouldPresentModalInterface;
+
+    self.interfaceDelegate = ui;
   }
   
-  Class klass = NSClassFromString(self.interfaceClassName);
-  _quincyUI = [[klass alloc] init];
-  
-  _quincyUI.delegate         = self;
-  _quincyUI.companyName      = self.companyName;
-  _quincyUI.applicationName  = appDisplayName;
-  _quincyUI.consoleContent   = [self consoleContent];
-  _quincyUI.crashFileContent = [self crashFileContent];
-  [_quincyUI presentUserFeedbackInterface];
+  [self.interfaceDelegate presentQuincyCrashSubmitInterfaceWithCrash:[self crashFileContent]
+                                                             console:[self consoleContent]];
 }
 
 - (NSString*) modelVersion {
@@ -272,25 +271,31 @@ static NSString* FindNewCrashFile () {
 
 
 
-- (void) cancelReport {
-    [self returnToMainApplication];
+- (void) cancelReport
+{
+  [self finishManager:BWQuincyStatusUserCancelled];
 }
 
 
 - (void)sendReportWithComment:(NSString*)comment
 {
-  [self returnToMainApplication];
-  
   SInt32 versionMajor, versionMinor, versionBugFix;
-  if (Gestalt(gestaltSystemVersionMajor, &versionMajor) != noErr) versionMajor = 0;
-  if (Gestalt(gestaltSystemVersionMinor, &versionMinor) != noErr)  versionMinor= 0;
+  if (Gestalt(gestaltSystemVersionMajor, &versionMajor) != noErr)   versionMajor  = 0;
+  if (Gestalt(gestaltSystemVersionMinor, &versionMinor) != noErr)   versionMinor  = 0;
   if (Gestalt(gestaltSystemVersionBugFix, &versionBugFix) != noErr) versionBugFix = 0;
   
   NSString *crashLogContent = [self crashFileContent];
   NSString *notes = [NSString stringWithFormat:@"Comments:\n%@\n\nConsole:\n%@", comment, [self consoleContent]];
   NSString *applicationVersion = [self applicationVersion];
-  NSString *userId = @""; // TODO: userID/userContact
+  NSString *version = [NSString stringWithFormat:@"%i.%i.%i", versionMajor, versionMinor, versionBugFix];
+  NSString *userId = @"";
   NSString *userContact = @"";
+  
+  if ([_delegate respondsToSelector:@selector(crashReportUserID)])
+      userId = [_delegate performSelector:@selector(crashReportUserID)];
+
+  if ([_delegate respondsToSelector:@selector(crashReportContact)])
+    userContact = [_delegate performSelector:@selector(crashReportContact)];
   
   NSString *xml = [NSString stringWithFormat:@"<crash>"
                     "<applicationname>%@</applicationname>"
@@ -306,7 +311,7 @@ static NSString* FindNewCrashFile () {
                     "</crash>",
                     [self applicationName],
                     [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleIdentifier"],
-                    [NSString stringWithFormat:@"%i.%i.%i", versionMajor, versionMinor, versionBugFix],
+                    version,
                     applicationVersion,
                     applicationVersion,
                     [self modelVersion],
@@ -317,7 +322,11 @@ static NSString* FindNewCrashFile () {
                     
   [self parseCrashLog:crashLogContent];
 
-  [NSTimer scheduledTimerWithTimeInterval:0.0 target:self selector:@selector(postXML:) userInfo:xml repeats:NO];	 
+  // TODO: Why is this call sent by a timer and not with performSelector:withObject:afterDelay:
+  // both should be on the current thread
+  [NSTimer scheduledTimerWithTimeInterval:0.0 target:self selector:@selector(sendReportWithTimer:) userInfo:xml repeats:NO];
+  
+  [self finishManager:BWQuincyStatusSendingReport];
 }
 
 - (void)parseCrashLog:(NSString *)report
@@ -336,13 +345,14 @@ static NSString* FindNewCrashFile () {
   isCrashAppVersionIdenticalToAppVersion_ = [cfBundleVersion isEqualToString:crashVersion];
 }
 
-- (void) postXML:(NSTimer *) timer {
+- (void)sendReportWithTimer:(NSTimer *)timer
+{
 	NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:_submissionURL]];
 	NSString *boundary = @"----FOO";
 	
 	[request setValue:@"Quincy/Mac" forHTTPHeaderField:@"User-Agent"];
   [request setValue:@"gzip" forHTTPHeaderField:@"Accept-Encoding"];
-	[request setTimeoutInterval: 15];
+	[request setTimeoutInterval:self.networkTimeoutInterval];
 	[request setHTTPMethod:@"POST"];
 	NSString *contentType = [NSString stringWithFormat:@"multipart/form-data; boundary=%@", boundary];
 	[request setValue:contentType forHTTPHeaderField:@"Content-type"];
@@ -372,6 +382,9 @@ static NSString* FindNewCrashFile () {
     return;
   }
   
+	if ([self.delegate respondsToSelector:@selector(connectionOpened)])
+		[self.delegate connectionOpened];
+
   responseData_ = [[NSMutableData data] retain];
   [urlConnection_ start];
 }
@@ -457,9 +470,9 @@ static NSString* FindNewCrashFile () {
   request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:url]];
   
 	[request setCachePolicy:NSURLRequestReloadIgnoringLocalCacheData];
-	[request setValue:@"Quincy/iOS" forHTTPHeaderField:@"User-Agent"];
+	[request setValue:@"Quincy/Mac" forHTTPHeaderField:@"User-Agent"];
   [request setValue:@"gzip" forHTTPHeaderField:@"Accept-Encoding"];
-	[request setTimeoutInterval: 15];
+	[request setTimeoutInterval:self.networkTimeoutInterval];
 	[request setHTTPMethod:@"GET"];
   
 	_serverResult = CrashReportStatusUnknown;
@@ -468,9 +481,8 @@ static NSString* FindNewCrashFile () {
 	// Release when done in the delegate method
 	responseData_ = [[NSMutableData alloc] init];
 	
-	if ([self.delegate respondsToSelector:@selector(connectionOpened)]) {
+	if ([self.delegate respondsToSelector:@selector(connectionOpened)])
 		[self.delegate connectionOpened];
-	}
 	
 	urlConnection_ = [[NSURLConnection alloc] initWithRequest:request delegate:self];    
 }
@@ -478,7 +490,8 @@ static NSString* FindNewCrashFile () {
 
 - (void) showCrashStatusMessage
 {
-  [_quincyUI presentServerFeedbackInterface:_serverResult];
+  if ([self.interfaceDelegate respondsToSelector:@selector(presentQuincyServerFeedbackInterface:)])
+    [self.interfaceDelegate presentQuincyServerFeedbackInterface:_serverResult];
 }
 
 - (void)didFinishParsingServerResponse

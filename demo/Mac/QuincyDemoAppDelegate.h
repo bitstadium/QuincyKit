@@ -30,7 +30,7 @@
 #import <Cocoa/Cocoa.h>
 #import <Quincy/BWQuincyManager.h>
 
-@interface QuincyDemoAppDelegate : NSObject <BWQuincyManagerDelegate> {
+@interface QuincyDemoAppDelegate : NSObject <BWQuincyManagerDelegate, BWQuincyUIDelegate> {
     IBOutlet NSWindow *window;
 }
 

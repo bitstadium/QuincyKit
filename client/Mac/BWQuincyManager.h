@@ -31,38 +31,37 @@
 #import <AvailabilityMacros.h>
 
 #import "BWQuincyServerAPI.h"
-#import "BWQuincyUIProtocol.h"
+#import "BWQuincyUIDelegate.h"
 
 #define CRASHREPORTSENDER_MAX_CONSOLE_SIZE 50000
 
-typedef enum CrashAlertType {
-	CrashAlertTypeSend = 0,
-	CrashAlertTypeFeedback = 1,
-} CrashAlertType;
-
-@class BWQuincyUI;
+typedef enum BWQuincyStatus {
+  BWQuincyStatusNoCrashFound = 0,
+  BWQuincyStatusUserCancelled,
+  BWQuincyStatusSendingReport,
+} BWQuincyStatus;
 
 // This protocol is used to send the image updates
 @protocol BWQuincyManagerDelegate <NSObject>
 
 @required
 
-// Invoked once the modal sheets are gone
-- (void) showMainApplicationWindow;
+// Callback when the crash reporter is done
+- (void)didFinishCrashReporting:(BWQuincyStatus)status;
 
 @optional
 
 // Return the userid the crashreport should contain, empty by default
--(NSString *) crashReportUserID;
+- (NSString *)crashReportUserID;
 
 // Return the contact value (e.g. email) the crashreport should contain, empty by default
--(NSString *) crashReportContact;
+- (NSString *)crashReportContact;
 
 // Invoked when the internet connection is started, to let the app enable the activity indicator
--(void) connectionOpened;
+- (void)connectionOpened;
 
 // Invoked when the internet connection is closed, to let the app disable the activity indicator
--(void) connectionClosed;
+- (void)connectionClosed;
 
 @end
 
@@ -82,12 +81,11 @@ typedef enum CrashAlertType {
   NSMutableString *_contentOfProperty;
 
   id _delegate;
+  id<BWQuincyUIDelegate> interfaceDelegate_;
 
   NSString *_submissionURL;
   NSString *_companyName;
   NSString *_appIdentifier;
-
-  id<BWQuincyUIProtocol> _quincyUI;
 
   NSURLConnection *urlConnection_;
   NSMutableData *responseData_;
@@ -95,8 +93,6 @@ typedef enum CrashAlertType {
   BOOL isCrashAppVersionIdenticalToAppVersion_;
   BOOL feedbackActivated_;
   NSString *_feedbackRequestID;
-  NSString *interfaceClassName_;
-  NSString *interfaceNibName_;
   NSTimeInterval maxFeedbackDelay;
 }
 
@@ -110,11 +106,17 @@ typedef enum CrashAlertType {
 // defines the company name to be shown in the crash reporting dialog
 @property (nonatomic, retain) NSString *companyName;
 
-// name of the class you want to handle the user interface, defaults to BWQuincyUI, set to nil to not show a UI
-@property (nonatomic, retain) NSString *interfaceClassName;
+// whether or not the built-in UI should present a modal or non-modal interface
+@property (nonatomic, assign) BOOL shouldPresentModalInterface;
+
+// network timeout
+@property (nonatomic, assign) NSTimeInterval networkTimeoutInterval;
 
 // delegate is required
-@property (nonatomic, assign) id <BWQuincyManagerDelegate> delegate;
+@property (nonatomic, assign) id<BWQuincyManagerDelegate> delegate;
+
+// interface delegate to override the standard UI
+@property (nonatomic, assign) id<BWQuincyUIDelegate> interfaceDelegate;
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -135,7 +137,6 @@ typedef enum CrashAlertType {
 
 - (void)cancelReport;
 - (void)sendReportWithComment:(NSString*)comment;
-- (void)postXML:(NSTimer *) timer;
 
 - (NSString *) applicationName;
 - (NSString *) applicationVersionString;

@@ -10,7 +10,7 @@
 const CGFloat kCommentsHeight = 105;
 const CGFloat kDetailsHeight = 285;
 
-@synthesize delegate=delegate_, companyName, applicationName, crashFileContent, consoleContent;
+@synthesize delegate=delegate_, companyName, applicationName, shouldPresentModal;
 
 - (id)init
 {
@@ -20,6 +20,11 @@ const CGFloat kDetailsHeight = 285;
   {
 		[self setShowComments:YES];
 		[self setShowDetails:NO];
+    
+    self.shouldPresentModal = YES;
+    
+    NSString *bundleName = [[[NSBundle mainBundle] localizedInfoDictionary] valueForKey: @"CFBundleName"];
+    self.applicationName = bundleName ?: [[NSProcessInfo processInfo] processName];
 	}
 	return self;
 }
@@ -101,19 +106,23 @@ const CGFloat kDetailsHeight = 285;
 		[delegate_ performSelector:@selector(sendReportWithComment:) withObject:comment];
 }
 
-
-- (void)presentUserFeedbackInterface
+- (void)presentQuincyCrashSubmitInterfaceWithCrash:(NSString *)crashFileContent
+                                           console:(NSString *)consoleContent
 {
 	[[self window] setTitle:[NSString stringWithFormat:BWQuincyLocalize(@"Problem Report for %@"), self.applicationName]];
   
 	[[descriptionTextField cell] setPlaceholderString:BWQuincyLocalize(@"Please describe any steps needed to trigger the problem")];
 	[noteText setStringValue:BWQuincyLocalize(@"No personal information will be sent with this report.")];
   
-  [crashLogTextView setString:[NSString stringWithFormat:@"%@\n\n%@", self.crashFileContent, self.consoleContent]];
-	[NSApp runModalForWindow:self.window];
+  [crashLogTextView setString:[NSString stringWithFormat:@"%@\n\n%@", crashFileContent, consoleContent]];
+  
+  if (self.shouldPresentModal)
+    [NSApp runModalForWindow:self.window];
+  else
+    [self.window makeKeyAndOrderFront:nil];
 }
 
-- (void)presentServerFeedbackInterface:(CrashReportStatus)status
+- (void)presentQuincyServerFeedbackInterface:(CrashReportStatus)status
 {
   NSString *messageTitle = [NSString stringWithFormat:BWQuincyLocalize(@"CrashResponseTitle"), self.applicationName];
   NSString *defaultButtonTitle = BWQuincyLocalize(@"OK");;
@@ -142,7 +151,6 @@ const CGFloat kDetailsHeight = 285;
                                    alternateButton:alternateButtonTitle
                                        otherButton:otherButtonTitle
                          informativeTextWithFormat:informativeText];
-    //alert.tag = QuincyKitAlertTypeFeedback;
     [alert runModal];
   }
 }

@@ -1,9 +1,9 @@
 
-#import "BWQuincyUIProtocol.h"
+#import "BWQuincyUIDelegate.h"
 
 #define BWQuincyLocalize(StringToken) NSLocalizedStringFromTable(StringToken, @"Quincy", @"")
 
-@interface BWQuincyUI : NSWindowController <BWQuincyUIProtocol>
+@interface BWQuincyUI : NSWindowController <BWQuincyUIDelegate>
 {
   IBOutlet NSTextField *descriptionTextField;
   IBOutlet NSTextView *crashLogTextView;
@@ -32,5 +32,10 @@
 
 - (BOOL)showDetails;
 - (void)setShowDetails:(BOOL)value;
+
+@property (nonatomic, assign) id delegate;
+@property (nonatomic, retain) NSString *companyName;
+@property (nonatomic, retain) NSString *applicationName;
+@property (nonatomic, assign) BOOL shouldPresentModal;
 
 @end
