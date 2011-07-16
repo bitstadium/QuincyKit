@@ -32,52 +32,56 @@
 
 #import "BWQuincyUI.h"
 
-static NSString* FindLatestCrashFileInPath (NSString* path) {
-	NSFileManager* fman = [NSFileManager defaultManager];
+static NSString* FindLatestCrashFileInPath(NSString* path)
+{
+  NSFileManager* fman = [NSFileManager defaultManager];
 
-	NSError* error;
-	NSMutableArray* filesWithModificationDate = [NSMutableArray array];
-	NSArray* crashLogFiles = [fman contentsOfDirectoryAtPath:path error:&error];
-	NSEnumerator* filesEnumerator = [crashLogFiles objectEnumerator];
-	NSString* crashFile;
-	while((crashFile = [filesEnumerator nextObject])) {
-		NSString* crashLogPath = [path stringByAppendingPathComponent:crashFile];
-		NSDate* modDate = [[[NSFileManager defaultManager] attributesOfItemAtPath:crashLogPath error:&error] fileModificationDate];
-		[filesWithModificationDate addObject:[NSDictionary dictionaryWithObjectsAndKeys:crashFile,@"name",crashLogPath,@"path",modDate,@"modDate",nil]];
-	}
+  NSError* error;
+  NSMutableArray* filesWithModificationDate = [NSMutableArray array];
+  NSArray* crashLogFiles = [fman contentsOfDirectoryAtPath:path error:&error];
+  NSEnumerator* filesEnumerator = [crashLogFiles objectEnumerator];
+  NSString* crashFile;
+  while((crashFile = [filesEnumerator nextObject]))
+  {
+    NSString* crashLogPath = [path stringByAppendingPathComponent:crashFile];
+    NSDate* modDate = [[[NSFileManager defaultManager] attributesOfItemAtPath:crashLogPath error:&error] fileModificationDate];
+    [filesWithModificationDate addObject:[NSDictionary dictionaryWithObjectsAndKeys:crashFile,@"name",crashLogPath,@"path",modDate,@"modDate",nil]];
+  }
 
-	NSSortDescriptor* dateSortDescriptor = [[[NSSortDescriptor alloc] initWithKey:@"modDate" ascending:YES] autorelease];
-	NSArray* sortedFiles = [filesWithModificationDate sortedArrayUsingDescriptors:[NSArray arrayWithObject:dateSortDescriptor]];
+  NSSortDescriptor* dateSortDescriptor = [[[NSSortDescriptor alloc] initWithKey:@"modDate" ascending:YES] autorelease];
+  NSArray* sortedFiles = [filesWithModificationDate sortedArrayUsingDescriptors:[NSArray arrayWithObject:dateSortDescriptor]];
 
-	NSPredicate* filterPredicate = [NSPredicate predicateWithFormat:@"name BEGINSWITH %@", [[NSProcessInfo processInfo] processName]];
-	NSArray* filteredFiles = [sortedFiles filteredArrayUsingPredicate:filterPredicate];
+  NSPredicate* filterPredicate = [NSPredicate predicateWithFormat:@"name BEGINSWITH %@", [[NSProcessInfo processInfo] processName]];
+  NSArray* filteredFiles = [sortedFiles filteredArrayUsingPredicate:filterPredicate];
 
-	return [[filteredFiles valueForKeyPath:@"path"] lastObject];
+  return [[filteredFiles valueForKeyPath:@"path"] lastObject];
 }
 
-static NSString* FindLatestCrashFile () {
-	NSArray* libraryDirectories = NSSearchPathForDirectoriesInDomains(NSLibraryDirectory, NSUserDomainMask, TRUE);
-	NSString* postSnowLeopardPath = [[libraryDirectories lastObject] stringByAppendingPathComponent:@"Logs/DiagnosticReports"];
-	NSString* preSnowLeopardPath = [[libraryDirectories lastObject] stringByAppendingPathComponent:@"Logs/CrashReporter"];
-	return FindLatestCrashFileInPath(postSnowLeopardPath) ?: FindLatestCrashFileInPath(preSnowLeopardPath);
+static NSString* FindLatestCrashFile()
+{
+  NSArray* libraryDirectories = NSSearchPathForDirectoriesInDomains(NSLibraryDirectory, NSUserDomainMask, TRUE);
+  NSString* postSnowLeopardPath = [[libraryDirectories lastObject] stringByAppendingPathComponent:@"Logs/DiagnosticReports"];
+  NSString* preSnowLeopardPath = [[libraryDirectories lastObject] stringByAppendingPathComponent:@"Logs/CrashReporter"];
+  return FindLatestCrashFileInPath(postSnowLeopardPath) ?: FindLatestCrashFileInPath(preSnowLeopardPath);
 }
 
-static NSString* FindNewCrashFile () {
-	NSString* crashFile = FindLatestCrashFile();
-	if(crashFile)
-	{
-		NSError* error;
+static NSString* FindNewCrashFile()
+{
+  NSString* crashFile = FindLatestCrashFile();
+  if(crashFile)
+  {
+    NSError* error;
 
-		NSDate* crashLogModificationDate = [[[NSFileManager defaultManager] attributesOfItemAtPath:crashFile error:&error] fileModificationDate];
+    NSDate* crashLogModificationDate = [[[NSFileManager defaultManager] attributesOfItemAtPath:crashFile error:&error] fileModificationDate];
 
     NSDate* lastCrashDate = [[NSUserDefaults standardUserDefaults] valueForKey: @"CrashReportSender.lastCrashDate"];
     if (!lastCrashDate || (lastCrashDate && crashLogModificationDate && ([crashLogModificationDate compare: lastCrashDate] == NSOrderedDescending)))
     {
-			[[NSUserDefaults standardUserDefaults] setValue: crashLogModificationDate forKey: @"CrashReportSender.lastCrashDate"];
-			return crashFile;
+      [[NSUserDefaults standardUserDefaults] setValue: crashLogModificationDate forKey: @"CrashReportSender.lastCrashDate"];
+      return crashFile;
     }
-	}
-	return nil;
+  }
+  return nil;
 }
 
 @interface BWQuincyManager(private)
@@ -103,12 +107,12 @@ static NSString* FindNewCrashFile () {
 
 + (BWQuincyManager *)sharedQuincyManager
 {
-	static BWQuincyManager *quincyManager = nil;
-	
-	if (quincyManager == nil)
-		quincyManager = [[BWQuincyManager alloc] init];
-	
-	return quincyManager;
+  static BWQuincyManager *quincyManager = nil;
+  
+  if (quincyManager == nil)
+    quincyManager = [[BWQuincyManager alloc] init];
+  
+  return quincyManager;
 }
 
 - (id)init
@@ -145,7 +149,8 @@ static NSString* FindNewCrashFile () {
 
 #pragma mark -
 #pragma mark setter
-- (void)setSubmissionURL:(NSString *)anSubmissionURL {
+- (void)setSubmissionURL:(NSString *)anSubmissionURL
+{
     if (_submissionURL != anSubmissionURL) {
         [_submissionURL release];
         _submissionURL = [anSubmissionURL copy];
@@ -154,8 +159,10 @@ static NSString* FindNewCrashFile () {
     [self performSelector:@selector(startManager) withObject:nil afterDelay:0.1f];
 }
 
-- (void)setAppIdentifier:(NSString *)anAppIdentifier {    
-    if (_appIdentifier != anAppIdentifier) {
+- (void)setAppIdentifier:(NSString *)anAppIdentifier
+{
+    if (_appIdentifier != anAppIdentifier)
+    {
         [_appIdentifier release];
         _appIdentifier = [anAppIdentifier copy];
     }
@@ -171,42 +178,17 @@ static NSString* FindNewCrashFile () {
     return nil;
   }
   
-	// get the crash log
+  // get the crash log
   NSError *error;
-	NSString *crashLogs = [NSString stringWithContentsOfFile:crashFile encoding:NSUTF8StringEncoding error:&error];
+  NSString *crashLogs = [NSString stringWithContentsOfFile:crashFile encoding:NSUTF8StringEncoding error:&error];
   NSString *content = [[crashLogs componentsSeparatedByString: @"**********\n\n"] lastObject];
-	return content;
+  return content;
 }
 
 - (NSString *)consoleContent
 {
   // TODO: console log, maybe cache console content, the UI (BWQuincyUI) wants it and we send it to the server
   NSMutableString *console = [NSMutableString string];
-
-  // get the console log
-  // NSEnumerator *theEnum = [[[NSString stringWithContentsOfFile:@"/private/var/log/system.log" encoding:NSUTF8StringEncoding error:&error] componentsSeparatedByString: @"\n"] objectEnumerator];
-  // NSString* currentObject;
-  // NSMutableArray* applicationStrings = [NSMutableArray array];
-  // 
-  // NSString* searchString = [[_delegate applicationName] stringByAppendingString:@"["];
-  // while ( (currentObject = [theEnum nextObject]) )
-  // {
-  //   if ([currentObject rangeOfString:searchString].location != NSNotFound)
-  //     [applicationStrings addObject: currentObject];
-  // }
-
-//  NSInteger i;
-//  for(i = ((NSInteger)[applicationStrings count])-1; (i>=0 && i>((NSInteger)[applicationStrings count])-100); i--) {
-//    [_consoleContent appendString:[applicationStrings objectAtIndex:i]];
-//    [_consoleContent appendString:@"\n"];
-//  }
-//  
-//  // Now limit the content to CRASHREPORTSENDER_MAX_CONSOLE_SIZE (default: 50kByte)
-//  if ([_consoleContent length] > CRASHREPORTSENDER_MAX_CONSOLE_SIZE)
-//  {
-//    _consoleContent = (NSMutableString *)[_consoleContent substringWithRange:NSMakeRange([_consoleContent length]-CRASHREPORTSENDER_MAX_CONSOLE_SIZE-1, CRASHREPORTSENDER_MAX_CONSOLE_SIZE)]; 
-//  }
-  
   return console;
 }
 
@@ -215,8 +197,8 @@ static NSString* FindNewCrashFile () {
 
 - (void)finishManager:(BWQuincyStatus)status
 {
-	if ([self.delegate respondsToSelector:@selector(didFinishCrashReporting:)])
-		[self.delegate didFinishCrashReporting:status];
+  if ([self.delegate respondsToSelector:@selector(didFinishCrashReporting:)])
+    [self.delegate didFinishCrashReporting:status];
 }
 
 - (void)startManager
@@ -246,7 +228,7 @@ static NSString* FindNewCrashFile () {
     NSString * modelString  = nil;
     int        modelInfo[2] = { CTL_HW, HW_MODEL };
     size_t     modelSize;
-	
+  
     if (sysctl(modelInfo,
                2,
                NULL,
@@ -293,7 +275,7 @@ static NSString* FindNewCrashFile () {
   NSString *userContact = @"";
   
   if ([_delegate respondsToSelector:@selector(crashReportUserID)])
-      userId = [_delegate performSelector:@selector(crashReportUserID)];
+    userId = [_delegate performSelector:@selector(crashReportUserID)];
 
   if ([_delegate respondsToSelector:@selector(crashReportContact)])
     userContact = [_delegate performSelector:@selector(crashReportContact)];
@@ -348,31 +330,34 @@ static NSString* FindNewCrashFile () {
 
 - (void)sendReportWithTimer:(NSTimer *)timer
 {
-	NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:_submissionURL]];
-	NSString *boundary = @"----FOO";
-	
-	[request setValue:@"Quincy/Mac" forHTTPHeaderField:@"User-Agent"];
+  NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:_submissionURL]];
+  NSString *boundary = @"----FOO";
+  
+  [request setValue:@"Quincy/Mac" forHTTPHeaderField:@"User-Agent"];
   [request setValue:@"gzip" forHTTPHeaderField:@"Accept-Encoding"];
-	[request setTimeoutInterval:self.networkTimeoutInterval];
-	[request setHTTPMethod:@"POST"];
-	NSString *contentType = [NSString stringWithFormat:@"multipart/form-data; boundary=%@", boundary];
-	[request setValue:contentType forHTTPHeaderField:@"Content-type"];
-	
-	NSMutableString *postBody =  [[NSMutableString alloc] init];	
-    [postBody appendFormat:@"--%@\r\n", boundary];
-    if (self.appIdentifier) {
-        [postBody appendString:@"Content-Disposition: form-data; name=\"xml\"; filename=\"crash.xml\"\r\n"];
-        [postBody appendString:@"Content-Type: text/xml\r\n\r\n"];
-    } else {
-        [postBody appendString:@"Content-Disposition: form-data; name=\"xmlstring\"\r\n\r\n"];
-	}
-	[postBody appendString:[timer userInfo]];
+  [request setTimeoutInterval:self.networkTimeoutInterval];
+  [request setHTTPMethod:@"POST"];
+  NSString *contentType = [NSString stringWithFormat:@"multipart/form-data; boundary=%@", boundary];
+  [request setValue:contentType forHTTPHeaderField:@"Content-type"];
+  
+  NSMutableString *postBody =  [[NSMutableString alloc] init];  
+  [postBody appendFormat:@"--%@\r\n", boundary];
+  if (self.appIdentifier)
+  {
+    [postBody appendString:@"Content-Disposition: form-data; name=\"xml\"; filename=\"crash.xml\"\r\n"];
+    [postBody appendString:@"Content-Type: text/xml\r\n\r\n"];
+  }
+  else
+  {
+    [postBody appendString:@"Content-Disposition: form-data; name=\"xmlstring\"\r\n\r\n"];
+  }
+  [postBody appendString:[timer userInfo]];
   [postBody appendFormat:@"\r\n--%@--\r\n", boundary];
 
-	[request setHTTPBody:[postBody dataUsingEncoding:NSUTF8StringEncoding]];
+  [request setHTTPBody:[postBody dataUsingEncoding:NSUTF8StringEncoding]];
   
-	_serverResult = CrashReportStatusUnknown;
-	_statusCode = 200;
+  _serverResult = CrashReportStatusUnknown;
+  _statusCode = 200;
   
   [urlConnection_ cancel];
   [urlConnection_ release];
@@ -383,8 +368,8 @@ static NSString* FindNewCrashFile () {
     return;
   }
   
-	if ([self.delegate respondsToSelector:@selector(connectionOpened)])
-		[self.delegate connectionOpened];
+  if ([self.delegate respondsToSelector:@selector(connectionOpened)])
+    [self.delegate connectionOpened];
 
   responseData_ = [[NSMutableData data] retain];
   [urlConnection_ start];
@@ -460,32 +445,33 @@ static NSString* FindNewCrashFile () {
   responseData_ = nil;
   [urlConnection_ autorelease];
   
-	if ([self.delegate respondsToSelector:@selector(connectionClosed)])
-		[self.delegate connectionClosed];
+  if ([self.delegate respondsToSelector:@selector(connectionClosed)])
+    [self.delegate connectionClosed];
 }
 
-- (void)checkForFeedbackStatus {
+- (void)checkForFeedbackStatus
+{
   NSMutableURLRequest *request = nil;
   
   NSString *url = [self.submissionURL stringByAppendingFormat:@"/%@", _feedbackRequestID];
   request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:url]];
   
-	[request setCachePolicy:NSURLRequestReloadIgnoringLocalCacheData];
-	[request setValue:@"Quincy/Mac" forHTTPHeaderField:@"User-Agent"];
+  [request setCachePolicy:NSURLRequestReloadIgnoringLocalCacheData];
+  [request setValue:@"Quincy/Mac" forHTTPHeaderField:@"User-Agent"];
   [request setValue:@"gzip" forHTTPHeaderField:@"Accept-Encoding"];
-	[request setTimeoutInterval:self.networkTimeoutInterval];
-	[request setHTTPMethod:@"GET"];
+  [request setTimeoutInterval:self.networkTimeoutInterval];
+  [request setHTTPMethod:@"GET"];
   
-	_serverResult = CrashReportStatusUnknown;
-	_statusCode = 200;
-	
-	// Release when done in the delegate method
-	responseData_ = [[NSMutableData alloc] init];
-	
-	if ([self.delegate respondsToSelector:@selector(connectionOpened)])
-		[self.delegate connectionOpened];
-	
-	urlConnection_ = [[NSURLConnection alloc] initWithRequest:request delegate:self];    
+  _serverResult = CrashReportStatusUnknown;
+  _statusCode = 200;
+  
+  // Release when done in the delegate method
+  responseData_ = [[NSMutableData alloc] init];
+  
+  if ([self.delegate respondsToSelector:@selector(connectionOpened)])
+    [self.delegate connectionOpened];
+  
+  urlConnection_ = [[NSURLConnection alloc] initWithRequest:request delegate:self];    
 }
 
 
@@ -502,20 +488,24 @@ static NSString* FindNewCrashFile () {
 
 #pragma mark NSURLConnection
 
-- (void)connection:(NSURLConnection *)connection didReceiveResponse:(NSURLResponse *)response {
-	_statusCode = [(NSHTTPURLResponse *)response statusCode];
+- (void)connection:(NSURLConnection *)connection didReceiveResponse:(NSURLResponse *)response
+{
+  _statusCode = [(NSHTTPURLResponse *)response statusCode];
   [responseData_ setLength:0];
 }
 
-- (void)connection:(NSURLConnection *)connection didReceiveData:(NSData *)data {
+- (void)connection:(NSURLConnection *)connection didReceiveData:(NSData *)data
+{
   [responseData_ appendData:data];
 }
 
-- (void)connectionDidFinishLoading:(NSURLConnection *)connection {
+- (void)connectionDidFinishLoading:(NSURLConnection *)connection
+{
   [self processServerResponse];
 }
 
-- (void)connection:(NSURLConnection *)connection didFailWithError:(NSError *)error {
+- (void)connection:(NSURLConnection *)connection didFailWithError:(NSError *)error
+{
   [connection autorelease];
   urlConnection_ = nil;
   [responseData_ release];
@@ -523,43 +513,37 @@ static NSString* FindNewCrashFile () {
   
   NSLog(@"%s %@", __PRETTY_FUNCTION__, error); // TODO remove NSLogs
   
-  if ([self.delegate respondsToSelector:@selector(connectionClosed)]) {
-		[self.delegate connectionClosed];
-	}
+  if ([self.delegate respondsToSelector:@selector(connectionClosed)])
+  {
+    [self.delegate connectionClosed];
+  }
 }
 
 #pragma mark NSXMLParser
 
-- (void)parser:(NSXMLParser *)parser didStartElement:(NSString *)elementName namespaceURI:(NSString *)namespaceURI qualifiedName:(NSString *)qName attributes:(NSDictionary *)attributeDict {
-	if (qName) {
-		elementName = qName;
-	}
-	if ([elementName isEqualToString:@"result"]) {
-		_contentOfProperty = [NSMutableString string];
-	}
+- (void)parser:(NSXMLParser *)parser didStartElement:(NSString *)elementName namespaceURI:(NSString *)namespaceURI qualifiedName:(NSString *)qName attributes:(NSDictionary *)attributeDict
+{
+  if (qName)
+    elementName = qName;
+
+  if ([elementName isEqualToString:@"result"])
+    _contentOfProperty = [NSMutableString string];
 }
 
-- (void)parser:(NSXMLParser *)parser didEndElement:(NSString *)elementName namespaceURI:(NSString *)namespaceURI qualifiedName:(NSString *)qName {
-	if (qName) {
-		elementName = qName;
-	}
-	
-	if ([elementName isEqualToString:@"result"]) {
-		if ([_contentOfProperty intValue] > _serverResult) {
-			_serverResult = [_contentOfProperty intValue];
-		}
-	}
+- (void)parser:(NSXMLParser *)parser didEndElement:(NSString *)elementName namespaceURI:(NSString *)namespaceURI qualifiedName:(NSString *)qName
+{
+  if (qName)
+    elementName = qName;
+  
+  if ([elementName isEqualToString:@"result"] && [_contentOfProperty intValue] > _serverResult)
+    _serverResult = [_contentOfProperty intValue];
 }
 
 
-- (void)parser:(NSXMLParser *)parser foundCharacters:(NSString *)string {
-	if (_contentOfProperty) {
-		// If the current element is one whose content we care about, append 'string'
-		// to the property that holds the content of the current element.
-		if (string != nil) {
-			[_contentOfProperty appendString:string];
-		}
-	}
+- (void)parser:(NSXMLParser *)parser foundCharacters:(NSString *)string
+{
+  if (_contentOfProperty && string != nil)
+    [_contentOfProperty appendString:string];
 }
 
 - (void)parserDidEndDocument:(NSXMLParser *)parser
@@ -569,27 +553,30 @@ static NSString* FindNewCrashFile () {
 
 #pragma mark GetterSetter
 
-- (NSString *) applicationName {
-	NSString *applicationName = [[[NSBundle mainBundle] localizedInfoDictionary] valueForKey: @"CFBundleExecutable"];
-	
-	if (!applicationName)
-		applicationName = [[[NSBundle mainBundle] infoDictionary] valueForKey: @"CFBundleExecutable"];
-	
-	return applicationName;
+- (NSString *) applicationName
+{
+  NSString *applicationName = [[[NSBundle mainBundle] localizedInfoDictionary] valueForKey: @"CFBundleExecutable"];
+  
+  if (!applicationName)
+    applicationName = [[[NSBundle mainBundle] infoDictionary] valueForKey: @"CFBundleExecutable"];
+  
+  return applicationName;
 }
 
 
-- (NSString*) applicationVersionString {
-	NSString* string = [[[NSBundle mainBundle] localizedInfoDictionary] valueForKey: @"CFBundleShortVersionString"];
-	
-	if (!string)
-		string = [[[NSBundle mainBundle] infoDictionary] valueForKey: @"CFBundleShortVersionString"];
-	
-	return string;
+- (NSString*) applicationVersionString
+{
+  NSString* string = [[[NSBundle mainBundle] localizedInfoDictionary] valueForKey: @"CFBundleShortVersionString"];
+  
+  if (!string)
+    string = [[[NSBundle mainBundle] infoDictionary] valueForKey: @"CFBundleShortVersionString"];
+  
+  return string;
 }
 
-- (NSString *) applicationVersion {
-	return [[[NSBundle mainBundle] infoDictionary] valueForKey: @"CFBundleVersion"];
+- (NSString *) applicationVersion
+{
+  return [[[NSBundle mainBundle] infoDictionary] valueForKey: @"CFBundleVersion"];
 }
 
 @end

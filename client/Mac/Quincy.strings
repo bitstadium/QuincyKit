@@ -1,11 +1,3 @@
-/* 
-  Quincy.strings
-  QuincyDemo
-
-  Created by Stanley Rost on 15.07.11.
-  Copyright 2011 __MyCompanyName__. All rights reserved.
-*/
-
 /* Title for the alertview giving feedback about the crash */
 "CrashResponseTitle" = "Previously on %@";
 
