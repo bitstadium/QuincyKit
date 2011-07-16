@@ -35,9 +35,6 @@
 
 #define CRASHREPORTSENDER_MAX_CONSOLE_SIZE 50000
 
-// TODO test BWQuincyLocalize
-#define BWQuincyLocalize(StringToken) NSLocalizedStringFromTable(StringToken, @"Quincy", @"")
-
 typedef enum CrashAlertType {
 	CrashAlertTypeSend = 0,
 	CrashAlertTypeFeedback = 1,
@@ -100,6 +97,7 @@ typedef enum CrashAlertType {
   NSString *_feedbackRequestID;
   NSString *interfaceClassName_;
   NSString *interfaceNibName_;
+  NSTimeInterval maxFeedbackDelay;
 }
 
 - (NSString*) modelVersion;
@@ -115,9 +113,6 @@ typedef enum CrashAlertType {
 // name of the class you want to handle the user interface, defaults to BWQuincyUI, set to nil to not show a UI
 @property (nonatomic, retain) NSString *interfaceClassName;
 
-// name of the xib file for use with interfaceClassName, defaults to BWQuincyMain
-@property (nonatomic, retain) NSString *interfaceNibName;
-
 // delegate is required
 @property (nonatomic, assign) id <BWQuincyManagerDelegate> delegate;
 
@@ -132,12 +127,15 @@ typedef enum CrashAlertType {
 // if NO, the user will not see any feedback information (default)
 @property (nonatomic, assign, getter=isFeedbackActivated) BOOL feedbackActivated;
 
+// time in seconds to wait for the server for feedback on a crash report, defaults to 10 seconds
+@property (nonatomic, assign) NSTimeInterval maxFeedbackDelay;
+
 - (NSString *)consoleContent;
 - (NSString *)crashFileContent;
 
-- (void) cancelReport;
-- (void) sendReport:(NSDictionary*)info;
-- (void) postXML:(NSTimer *) timer;
+- (void)cancelReport;
+- (void)sendReportWithComment:(NSString*)comment;
+- (void)postXML:(NSTimer *) timer;
 
 - (NSString *) applicationName;
 - (NSString *) applicationVersionString;

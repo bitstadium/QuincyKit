@@ -19,3 +19,7 @@
 "CrashResponseAvailable" = "%@ quit unexpectedly. The good news? We've already fixed the bug! Please update to the latest version.";
 
 "OK" = "OK";
+
+"Problem Report for %@" = "Problem Report for %@";
+"Please describe any steps needed to trigger the problem" = "Please describe any steps needed to trigger the problem";
+"No personal information will be sent with this report." = "No personal information will be sent with this report.";

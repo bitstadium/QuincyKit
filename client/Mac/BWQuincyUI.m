@@ -2,8 +2,7 @@
 #import "BWQuincyUI.h"
 
 @interface BWQuincyUI(private)
-- (void) askCrashReportDetails;
-- (void) endCrashReporter;
+- (void)dismissUI;
 @end
 
 @implementation BWQuincyUI
@@ -13,21 +12,23 @@ const CGFloat kDetailsHeight = 285;
 
 @synthesize delegate=delegate_, companyName, applicationName, crashFileContent, consoleContent;
 
-- (id)init:(id)delegate
+- (id)init
 {
 	self = [super initWithWindowNibName:@"BWQuincyMain"];
 	
-	if (self != nil) {
-		delegate_ = delegate;
-		[self setShowComments: YES];
-		[self setShowDetails: NO];
+	if (self != nil)
+  {
+		[self setShowComments:YES];
+		[self setShowDetails:NO];
 	}
 	return self;
 }
 
 
-- (void) endCrashReporter {
+- (void)dismissUI
+{
 	[[self window] close];
+	[NSApp abortModal];
 }
 
 
@@ -84,44 +85,67 @@ const CGFloat kDetailsHeight = 285;
 
 
 - (IBAction) cancelReport:(id)sender {
-	[self endCrashReporter];
+	[self dismissUI];
   
 	if ([delegate_ respondsToSelector:@selector(cancelReport)])
 		[delegate_ performSelector:@selector(cancelReport)];
-	
-	[NSApp abortModal];
 }
 
 
-- (IBAction) submitReport:(id)sender {
-	[submitButton setEnabled:NO];
-	[[self window] makeFirstResponder:nil];
-	
-  NSDictionary *info = [NSDictionary dictionaryWithObjectsAndKeys:
-                        @"", @"userid",
-                        @"", @"contact",
-                        [descriptionTextField stringValue], @"comment",
-                        nil];
-	
-	if ([delegate_ respondsToSelector:@selector(sendReport:)])
-		[delegate_ performSelector:@selector(sendReport:) withObject:info];
-  
-	[self endCrashReporter];
-	[NSApp abortModal];
-}
-
-
-- (void)presentInterface
+- (IBAction) submitReport:(id)sender
 {
-	[[self window] setTitle:[NSString stringWithFormat:NSLocalizedString(@"Problem Report for %@", @"Window title"), self.applicationName]];
+	[self dismissUI];
+	NSString *comment = [descriptionTextField stringValue];
   
-	[[descriptionTextField cell] setPlaceholderString:NSLocalizedString(@"Please describe any steps needed to trigger the problem", @"User description placeholder")];
-	[noteText setStringValue:NSLocalizedString(@"No personal information will be sent with this report.", @"Note text")];
+	if ([delegate_ respondsToSelector:@selector(sendReportWithComment:)])
+		[delegate_ performSelector:@selector(sendReportWithComment:) withObject:comment];
+}
+
+
+- (void)presentUserFeedbackInterface
+{
+	[[self window] setTitle:[NSString stringWithFormat:BWQuincyLocalize(@"Problem Report for %@"), self.applicationName]];
+  
+	[[descriptionTextField cell] setPlaceholderString:BWQuincyLocalize(@"Please describe any steps needed to trigger the problem")];
+	[noteText setStringValue:BWQuincyLocalize(@"No personal information will be sent with this report.")];
   
   [crashLogTextView setString:[NSString stringWithFormat:@"%@\n\n%@", self.crashFileContent, self.consoleContent]];
 	[NSApp runModalForWindow:self.window];
 }
 
+- (void)presentServerFeedbackInterface:(CrashReportStatus)status
+{
+  NSString *messageTitle = [NSString stringWithFormat:BWQuincyLocalize(@"CrashResponseTitle"), self.applicationName];
+  NSString *defaultButtonTitle = BWQuincyLocalize(@"OK");;
+  NSString *alternateButtonTitle = nil;
+  NSString *otherButtonTitle = nil;
+  NSString *informativeText = nil;
+  
+  switch (status) {
+    case CrashReportStatusAssigned:
+      informativeText = [NSString stringWithFormat:BWQuincyLocalize(@"CrashResponseNextRelease"), self.applicationName];
+      break;
+    case CrashReportStatusSubmitted:
+      informativeText = [NSString stringWithFormat:BWQuincyLocalize(@"CrashResponseWaitingApple"), self.applicationName];
+      break;
+    case CrashReportStatusAvailable:
+      informativeText = [NSString stringWithFormat:BWQuincyLocalize(@"CrashResponseAvailable"), self.applicationName];
+      break;
+    default:
+      break;
+  }
+  
+  if (informativeText)
+  {
+    NSAlert *alert = [NSAlert alertWithMessageText:messageTitle
+                                     defaultButton:defaultButtonTitle
+                                   alternateButton:alternateButtonTitle
+                                       otherButton:otherButtonTitle
+                         informativeTextWithFormat:informativeText];
+    //alert.tag = QuincyKitAlertTypeFeedback;
+    [alert runModal];
+  }
+}
 
 - (void)dealloc
 {

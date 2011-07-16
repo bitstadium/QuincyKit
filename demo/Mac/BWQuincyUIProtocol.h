@@ -7,7 +7,7 @@
 //
 
 #import <Foundation/Foundation.h>
-
+#import "BWQuincyServerAPI.h"
 
 @protocol BWQuincyUIProtocol <NSObject>
 
@@ -17,6 +17,7 @@
 @property (nonatomic, retain) NSString *crashFileContent;
 @property (nonatomic, retain) NSString *consoleContent;
 
-- (void)presentInterface;
+- (void)presentUserFeedbackInterface;
+- (void)presentServerFeedbackInterface:(CrashReportStatus)status;
 
 @end

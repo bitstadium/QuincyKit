@@ -94,7 +94,7 @@ static NSString* FindNewCrashFile () {
 @synthesize appIdentifier = _appIdentifier;
 @synthesize feedbackActivated = feedbackActivated_;
 @synthesize interfaceClassName = interfaceClassName_;
-@synthesize interfaceNibName = interfaceNibName_;
+@synthesize maxFeedbackDelay = maxFeedbackDelay_;
 
 + (BWQuincyManager *)sharedQuincyManager {
 	static BWQuincyManager *quincyManager = nil;
@@ -119,7 +119,7 @@ static NSString* FindNewCrashFile () {
     self.delegate = nil;
     self.companyName = @"";
     self.interfaceClassName = @"BWQuincyUI";
-    self.interfaceNibName = @"BWQuincyMain";
+    self.maxFeedbackDelay = 10.0;
 
     urlConnection_ = nil;
   }
@@ -214,6 +214,7 @@ static NSString* FindNewCrashFile () {
 
 - (void) startManager
 {
+  // TODO: ability to send multiple crash reports at once
   if (!FindNewCrashFile())
   {
     [self returnToMainApplication];
@@ -224,21 +225,21 @@ static NSString* FindNewCrashFile () {
   NSString *bundleName = [[[NSBundle mainBundle] localizedInfoDictionary] valueForKey: @"CFBundleName"];
   NSString* appDisplayName = bundleName ?: [[NSProcessInfo processInfo] processName];
   
-  if (!self.interfaceClassName || !self.interfaceNibName)
+  if (!self.interfaceClassName)
   {
     [self returnToMainApplication];
     return;
   }
   
   Class klass = NSClassFromString(self.interfaceClassName);
-  _quincyUI = [[klass alloc] initWithWindowNibName:self.interfaceNibName];
+  _quincyUI = [[klass alloc] init];
   
   _quincyUI.delegate         = self;
   _quincyUI.companyName      = self.companyName;
   _quincyUI.applicationName  = appDisplayName;
   _quincyUI.consoleContent   = [self consoleContent];
   _quincyUI.crashFileContent = [self crashFileContent];
-  [_quincyUI presentInterface];
+  [_quincyUI presentUserFeedbackInterface];
 }
 
 - (NSString*) modelVersion {
@@ -276,7 +277,7 @@ static NSString* FindNewCrashFile () {
 }
 
 
-- (void) sendReport:(NSDictionary*)info
+- (void)sendReportWithComment:(NSString*)comment
 {
   [self returnToMainApplication];
   
@@ -286,8 +287,10 @@ static NSString* FindNewCrashFile () {
   if (Gestalt(gestaltSystemVersionBugFix, &versionBugFix) != noErr) versionBugFix = 0;
   
   NSString *crashLogContent = [self crashFileContent];
-  NSString *notes = [NSString stringWithFormat:@"Comments:\n%@\n\nConsole:\n%@", [info objectForKey:@"comments"], [self consoleContent]];
+  NSString *notes = [NSString stringWithFormat:@"Comments:\n%@\n\nConsole:\n%@", comment, [self consoleContent]];
   NSString *applicationVersion = [self applicationVersion];
+  NSString *userId = @""; // TODO: userID/userContact
+  NSString *userContact = @"";
   
   NSString *xml = [NSString stringWithFormat:@"<crash>"
                     "<applicationname>%@</applicationname>"
@@ -307,12 +310,12 @@ static NSString* FindNewCrashFile () {
                     applicationVersion,
                     applicationVersion,
                     [self modelVersion],
-                    [info objectForKey:@"userid"],
-                    [info objectForKey:@"contact"],
+                    userId,
+                    userContact,
                     notes,
                     crashLogContent];
                     
-  [self parseCrashLog:crashLogContent]; // TODO find out app version
+  [self parseCrashLog:crashLogContent];
 
   [NSTimer scheduledTimerWithTimeInterval:0.0 target:self selector:@selector(postXML:) userInfo:xml repeats:NO];	 
 }
@@ -382,7 +385,7 @@ static NSString* FindNewCrashFile () {
     return;
   }
   
-  float feedbackDelayInterval = 1.0;
+  NSTimeInterval feedbackDelayInterval = 1.0;
   if (self.appIdentifier)
   {
     // HockeyApp uses PList XML format
@@ -416,7 +419,7 @@ static NSString* FindNewCrashFile () {
     [parser release];
   }
 
-  if (self.feedbackActivated && isCrashAppVersionIdenticalToAppVersion_)
+  if (self.feedbackActivated && isCrashAppVersionIdenticalToAppVersion_ && self.maxFeedbackDelay > feedbackDelayInterval)
   {
     if (self.appIdentifier)
     {
@@ -473,40 +476,9 @@ static NSString* FindNewCrashFile () {
 }
 
 
-- (void) showCrashStatusMessage{
-
-  NSString *appName = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleDisplayName"];
-  NSString *messageTitle = [NSString stringWithFormat:BWQuincyLocalize(@"CrashResponseTitle"), appName];
-  NSString *defaultButtonTitle = BWQuincyLocalize(@"OK");;
-  NSString *alternateButtonTitle = nil;
-  NSString *otherButtonTitle = nil;
-  NSString *informativeText = nil;
-
-  switch (_serverResult) {
-    case CrashReportStatusAssigned:
-      informativeText = [NSString stringWithFormat:BWQuincyLocalize(@"CrashResponseNextRelease"), appName];
-      break;
-    case CrashReportStatusSubmitted:
-      informativeText = [NSString stringWithFormat:BWQuincyLocalize(@"CrashResponseWaitingApple"), appName];
-      break;
-    case CrashReportStatusAvailable:
-      informativeText = [NSString stringWithFormat:BWQuincyLocalize(@"CrashResponseAvailable"), appName];
-      break;
-    default:
-      NSLog(@"Unknown server status: %d", _serverResult); // TODO remove NSLog
-      break;
-  }
-  
-  if (informativeText)
-  {
-    NSAlert *alert = [NSAlert alertWithMessageText:messageTitle
-                                         defaultButton:defaultButtonTitle
-                                       alternateButton:alternateButtonTitle
-                                           otherButton:otherButtonTitle
-                             informativeTextWithFormat:informativeText];
-    //alert.tag = QuincyKitAlertTypeFeedback;
-    [alert runModal];
-  }
+- (void) showCrashStatusMessage
+{
+  [_quincyUI presentServerFeedbackInterface:_serverResult];
 }
 
 - (void)didFinishParsingServerResponse

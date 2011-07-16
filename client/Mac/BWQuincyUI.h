@@ -1,6 +1,8 @@
 
 #import "BWQuincyUIProtocol.h"
 
+#define BWQuincyLocalize(StringToken) NSLocalizedStringFromTable(StringToken, @"Quincy", @"")
+
 @interface BWQuincyUI : NSWindowController <BWQuincyUIProtocol>
 {
   IBOutlet NSTextField *descriptionTextField;
