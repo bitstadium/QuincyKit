@@ -68,24 +68,25 @@ static NSString* FindNewCrashFile () {
 	{
 		NSError* error;
 
-		// FIXME: NSDate* lastCrashDate = [[NSUserDefaults standardUserDefaults] valueForKey: @"CrashReportSender.lastCrashDate"];
 		NSDate* crashLogModificationDate = [[[NSFileManager defaultManager] attributesOfItemAtPath:crashFile error:&error] fileModificationDate];
 
-// FIXME: test code to always find a crash file on launch
-//		if (!lastCrashDate || (lastCrashDate && crashLogModificationDate && ([crashLogModificationDate compare: lastCrashDate] == NSOrderedDescending))) {
+    NSDate* lastCrashDate = [[NSUserDefaults standardUserDefaults] valueForKey: @"CrashReportSender.lastCrashDate"];
+    if (!lastCrashDate || (lastCrashDate && crashLogModificationDate && ([crashLogModificationDate compare: lastCrashDate] == NSOrderedDescending)))
+    {
 			[[NSUserDefaults standardUserDefaults] setValue: crashLogModificationDate forKey: @"CrashReportSender.lastCrashDate"];
 			return crashFile;
-//		}
+    }
 	}
 	return nil;
 }
 
 @interface BWQuincyManager(private)
-- (void) startManager;
-- (void) returnToMainApplication;
+- (void)startManager;
+- (void)finishManager:(BWQuincyStatus)status;
 - (void)showCrashStatusMessage;
 - (void)checkForFeedbackStatus;
 - (void)parseCrashLog:report;
+- (void)sendReportWithTimer:(NSTimer *)timer;
 @end
 
 @implementation BWQuincyManager
