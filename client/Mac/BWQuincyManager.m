@@ -89,7 +89,7 @@ static NSString* FindNewCrashFile()
 - (void)finishManager:(BWQuincyStatus)status;
 - (void)showCrashStatusMessage;
 - (void)checkForFeedbackStatus;
-- (void)parseCrashLog:report;
+- (NSString *)parseVersionOfCrashedApplicationFromCrashLog:report;
 - (void)sendReportWithTimer:(NSTimer *)timer;
 @end
 
@@ -275,11 +275,17 @@ static NSString* FindNewCrashFile()
   if (Gestalt(gestaltSystemVersionMajor, &versionMajor) != noErr)   versionMajor  = 0;
   if (Gestalt(gestaltSystemVersionMinor, &versionMinor) != noErr)   versionMinor  = 0;
   if (Gestalt(gestaltSystemVersionBugFix, &versionBugFix) != noErr) versionBugFix = 0;
+  NSString *osVersion = [NSString stringWithFormat:@"%i.%i.%i", versionMajor, versionMinor, versionBugFix];
   
   NSString *crashLogContent = [self crashFileContent];
-  NSString *notes = [NSString stringWithFormat:@"Comments:\n%@\n\nConsole:\n%@", comment, [self consoleContent]];
+  NSString *bundleIdentifier = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleIdentifier"];
   NSString *applicationVersion = [self applicationVersion];
-  NSString *version = [NSString stringWithFormat:@"%i.%i.%i", versionMajor, versionMinor, versionBugFix];
+
+  NSString *crashVersion = [self parseVersionOfCrashedApplicationFromCrashLog:crashLogContent];
+  NSString *thisVersion = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleVersion"];
+  isCrashAppVersionIdenticalToAppVersion_ = [thisVersion isEqualToString:crashVersion];
+
+  NSString *notes = [NSString stringWithFormat:@"Comments:\n%@\n\nConsole:\n%@", comment, [self consoleContent]];
   NSString *userId = @"";
   NSString *userContact = @"";
   
@@ -303,8 +309,8 @@ static NSString* FindNewCrashFile()
                     "<log><![CDATA[%@]]></log>"
                     "</crash>",
                     [self applicationName],
-                    [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleIdentifier"],
-                    version,
+                    bundleIdentifier,
+                    osVersion,
                     applicationVersion,
                     applicationVersion,
                     [self modelVersion],
@@ -312,8 +318,6 @@ static NSString* FindNewCrashFile()
                     userContact,
                     notes,
                     crashLogContent];
-                    
-  [self parseCrashLog:crashLogContent];
 
   // TODO: Why is this call sent by a timer and not with performSelector:withObject:afterDelay:
   // both should be on the current thread
@@ -322,7 +326,7 @@ static NSString* FindNewCrashFile()
   [self finishManager:BWQuincyStatusSendingReport];
 }
 
-- (void)parseCrashLog:(NSString *)report
+- (NSString *)parseVersionOfCrashedApplicationFromCrashLog:(NSString *)report
 {
   NSScanner *scanner = [NSScanner scannerWithString:report];
 
@@ -333,9 +337,7 @@ static NSString* FindNewCrashFile()
   [scanner setScanLocation:[scanner scanLocation] + 1];
   [scanner scanUpToString:@")" intoString:&crashVersion];
   
-  NSString *cfBundleVersion = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleVersion"];
-
-  isCrashAppVersionIdenticalToAppVersion_ = [cfBundleVersion isEqualToString:crashVersion];
+  return crashVersion;
 }
 
 - (void)sendReportWithTimer:(NSTimer *)timer
