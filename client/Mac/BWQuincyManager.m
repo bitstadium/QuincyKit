@@ -101,8 +101,8 @@ static NSString* FindNewCrashFile()
 @synthesize appIdentifier = _appIdentifier;
 @synthesize feedbackActivated = feedbackActivated_;
 @synthesize maxFeedbackDelay = maxFeedbackDelay_;
-@synthesize networkTimeoutInterval;
-@synthesize shouldPresentModalInterface;
+@synthesize networkTimeoutInterval = networkTimeoutInterval_;
+@synthesize shouldPresentModalInterface = shouldPresentModalInterface_;
 @synthesize interfaceDelegate = interfaceDelegate_;
 
 + (BWQuincyManager *)sharedQuincyManager

@@ -48,6 +48,10 @@
   
   BOOL showComments;
   BOOL showDetails;
+  
+  NSString *companyName_;
+  NSString *applicationName_;
+  BOOL shouldPresentModal_;
 }
 
 - (IBAction)cancelReport:(id)sender;

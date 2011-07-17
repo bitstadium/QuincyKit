@@ -92,8 +92,10 @@ typedef enum BWQuincyStatus {
 
   BOOL isCrashAppVersionIdenticalToAppVersion_;
   BOOL feedbackActivated_;
+  BOOL shouldPresentModalInterface_;
   NSString *_feedbackRequestID;
-  NSTimeInterval maxFeedbackDelay;
+  NSTimeInterval maxFeedbackDelay_;
+  NSTimeInterval networkTimeoutInterval_;
 }
 
 - (NSString*) modelVersion;

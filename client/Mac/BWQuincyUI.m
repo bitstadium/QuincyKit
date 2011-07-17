@@ -39,7 +39,7 @@
 const CGFloat kCommentsHeight = 105;
 const CGFloat kDetailsHeight = 285;
 
-@synthesize delegate=delegate_, companyName, applicationName, shouldPresentModal;
+@synthesize delegate=delegate_, companyName = companyName_, applicationName = applicationName_, shouldPresentModal = shouldPresentModal_;
 
 - (id)init
 {
