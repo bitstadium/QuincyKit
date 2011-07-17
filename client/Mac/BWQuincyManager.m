@@ -289,7 +289,8 @@ static NSString* FindNewCrashFile()
   if ([_delegate respondsToSelector:@selector(crashReportContact)])
     userContact = [_delegate performSelector:@selector(crashReportContact)];
   
-  NSString *xml = [NSString stringWithFormat:@"<crash>"
+  NSString *xml = [NSString stringWithFormat:@"<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+                    "<crash>"
                     "<applicationname>%@</applicationname>"
                     "<bundleidentifier>%@</bundleidentifier>"
                     "<systemversion>%@</systemversion>"
