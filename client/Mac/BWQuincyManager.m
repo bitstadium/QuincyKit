@@ -109,13 +109,11 @@ static NSString* FindNewCrashFile()
 {
   static BWQuincyManager *quincyManager = nil;
   
-#if defined(MAC_OS_X_VERSION_10_6)
-#if MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_6
+#if defined(MAC_OS_X_VERSION_10_6) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_6
   static dispatch_once_t onceToken;
   dispatch_once(&onceToken, ^{
     quincyManager = [[BWQuincyManager alloc] init];
   });
-#endif
 #else
   if (quincyManager == nil)
     quincyManager = [[BWQuincyManager alloc] init];

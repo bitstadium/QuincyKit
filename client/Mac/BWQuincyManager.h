@@ -66,10 +66,8 @@ typedef enum BWQuincyStatus {
 @end
 
 // TODO: check ifdef for NSXMLParserDelegate
-#if defined(MAC_OS_X_VERSION_10_6)
-  #if MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_6
-    @interface BWQuincyManager : NSObject <NSXMLParserDelegate>
-  #endif
+#if defined(MAC_OS_X_VERSION_10_6) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_6
+  @interface BWQuincyManager : NSObject <NSXMLParserDelegate>
 #else
   @interface BWQuincyManager : NSObject
 #endif
