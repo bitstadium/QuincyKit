@@ -133,7 +133,6 @@ typedef enum BWQuincyStatus {
 @property (nonatomic, assign) NSTimeInterval maxFeedbackDelay;
 
 - (NSString *)consoleContent;
-- (NSString *)crashFileContent;
 
 - (void)cancelReport;
 - (void)sendReportWithComment:(NSString*)comment;
