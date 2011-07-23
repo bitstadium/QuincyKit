@@ -32,56 +32,65 @@
 
 #import "BWQuincyUI.h"
 
-static NSString* FindLatestCrashFileInPath(NSString* path)
+static NSArray* FindLatestCrashFilesInPath(NSString* path, NSDate *minModifyTimestamp, NSArray *listOfAlreadyProcessedCrashFileNames, int limit)
 {
+  NSString *processName = [[NSProcessInfo processInfo] processName];
+  
   NSFileManager* fman = [NSFileManager defaultManager];
 
   NSError* error;
   NSMutableArray* filesWithModificationDate = [NSMutableArray array];
   NSArray* crashLogFiles = [fman contentsOfDirectoryAtPath:path error:&error];
+  
   NSEnumerator* filesEnumerator = [crashLogFiles objectEnumerator];
   NSString* crashFile;
   while((crashFile = [filesEnumerator nextObject]))
   {
     NSString* crashLogPath = [path stringByAppendingPathComponent:crashFile];
     NSDate* modDate = [[[NSFileManager defaultManager] attributesOfItemAtPath:crashLogPath error:&error] fileModificationDate];
-    [filesWithModificationDate addObject:[NSDictionary dictionaryWithObjectsAndKeys:crashFile,@"name",crashLogPath,@"path",modDate,@"modDate",nil]];
+
+    if (
+        (!minModifyTimestamp || [modDate compare:minModifyTimestamp] == NSOrderedAscending) &&
+        ![listOfAlreadyProcessedCrashFileNames containsObject:crashFile] &&
+        [crashFile hasPrefix:processName]
+      )
+    {
+      [filesWithModificationDate addObject:[NSDictionary dictionaryWithObjectsAndKeys:crashFile,@"name",crashLogPath,@"path",modDate,@"modDate",nil]];
+    }
   }
 
-  NSSortDescriptor* dateSortDescriptor = [[[NSSortDescriptor alloc] initWithKey:@"modDate" ascending:YES] autorelease];
+  NSSortDescriptor* dateSortDescriptor = [[[NSSortDescriptor alloc] initWithKey:@"modDate" ascending:NO] autorelease];
   NSArray* sortedFiles = [filesWithModificationDate sortedArrayUsingDescriptors:[NSArray arrayWithObject:dateSortDescriptor]];
 
-  NSPredicate* filterPredicate = [NSPredicate predicateWithFormat:@"name BEGINSWITH %@", [[NSProcessInfo processInfo] processName]];
-  NSArray* filteredFiles = [sortedFiles filteredArrayUsingPredicate:filterPredicate];
-
-  return [[filteredFiles valueForKeyPath:@"path"] lastObject];
+  NSRange range;
+  range.location = 0;
+  range.length = [sortedFiles count] < limit ?: limit;
+  
+  return [[sortedFiles valueForKeyPath:@"path"] subarrayWithRange:range];
 }
 
-static NSString* FindLatestCrashFile()
+static NSArray* FindLatestCrashFiles(NSDate *minModifyTimestamp, NSArray *listOfAlreadyProcessedCrashFileNames, int limit)
 {
   NSArray* libraryDirectories = NSSearchPathForDirectoriesInDomains(NSLibraryDirectory, NSUserDomainMask, TRUE);
   NSString* postSnowLeopardPath = [[libraryDirectories lastObject] stringByAppendingPathComponent:@"Logs/DiagnosticReports"];
   NSString* preSnowLeopardPath = [[libraryDirectories lastObject] stringByAppendingPathComponent:@"Logs/CrashReporter"];
-  return FindLatestCrashFileInPath(postSnowLeopardPath) ?: FindLatestCrashFileInPath(preSnowLeopardPath);
+  return
+    FindLatestCrashFilesInPath(postSnowLeopardPath, minModifyTimestamp, listOfAlreadyProcessedCrashFileNames, limit) ?:
+    FindLatestCrashFilesInPath(preSnowLeopardPath,  minModifyTimestamp, listOfAlreadyProcessedCrashFileNames, limit);
 }
 
-static NSString* FindNewCrashFile()
+static NSArray* FindNewCrashFiles()
 {
-  NSString* crashFile = FindLatestCrashFile();
-  if(crashFile)
-  {
-    NSError* error;
+  NSDate* lastCrashDate = [[NSUserDefaults standardUserDefaults] valueForKey: @"CrashReportSender.lastCrashDate"];
 
-    NSDate* crashLogModificationDate = [[[NSFileManager defaultManager] attributesOfItemAtPath:crashFile error:&error] fileModificationDate];
+NSLog(@"lastCrashDate %@", lastCrashDate);
+  
+  lastCrashDate = [lastCrashDate dateByAddingTimeInterval:-24*60*60]; // look 24 hours back to catch possible time zone offsets
 
-    NSDate* lastCrashDate = [[NSUserDefaults standardUserDefaults] valueForKey: @"CrashReportSender.lastCrashDate"];
-    if (!lastCrashDate || (lastCrashDate && crashLogModificationDate && ([crashLogModificationDate compare: lastCrashDate] == NSOrderedDescending)))
-    {
-      [[NSUserDefaults standardUserDefaults] setValue: crashLogModificationDate forKey: @"CrashReportSender.lastCrashDate"];
-      return crashFile;
-    }
-  }
-  return nil;
+  NSArray* listOfAlreadyProcessedCrashFileNames = [[NSUserDefaults standardUserDefaults] valueForKey: @"CrashReportSender.listOfAlreadyProcessedCrashFileNames"];
+  
+  NSArray* crashFiles = FindLatestCrashFiles(lastCrashDate, listOfAlreadyProcessedCrashFileNames, 10);
+  return crashFiles;
 }
 
 @interface BWQuincyManager(private)
@@ -105,6 +114,8 @@ static NSString* FindNewCrashFile()
 @synthesize shouldPresentModalInterface = shouldPresentModalInterface_;
 @synthesize interfaceDelegate = interfaceDelegate_;
 
+NSArray *foundCrashFiles_;
+
 + (BWQuincyManager *)sharedQuincyManager
 {
   static BWQuincyManager *quincyManager = nil;
@@ -118,6 +129,8 @@ static NSString* FindNewCrashFile()
   if (quincyManager == nil)
     quincyManager = [[BWQuincyManager alloc] init];
 #endif
+  
+  foundCrashFiles_ = nil;
   
   return quincyManager;
 }
@@ -179,16 +192,50 @@ static NSString* FindNewCrashFile()
 
 - (NSString *)crashFileContent
 {
-  NSString* crashFile = FindNewCrashFile();
+  
+NSLog(@"foundCrashFiles_ %@", foundCrashFiles_);
+  
+  NSString* crashFile = nil;
+  NSArray* listOfCrashesAlreadyShownToTheUser = [[NSUserDefaults standardUserDefaults] valueForKey: @"CrashReportSender.listOfCrashesAlreadyShownToTheUser"];
+
+NSLog(@"listOfCrashesAlreadyShownToTheUser %@", listOfCrashesAlreadyShownToTheUser);
+
+  for (NSString *crashFilePath in foundCrashFiles_)
+  {
+    if (![listOfCrashesAlreadyShownToTheUser containsObject:crashFilePath])
+    {
+      crashFile = crashFilePath;
+      break;
+    }
+  }
+
   if (!crashFile)
   {
     return nil;
   }
   
-  // get the crash log
+  // get the last crash log
   NSError *error;
   NSString *crashLogs = [NSString stringWithContentsOfFile:crashFile encoding:NSUTF8StringEncoding error:&error];
   NSString *content = [[crashLogs componentsSeparatedByString: @"**********\n\n"] lastObject];
+  
+  // remember we showed it to the user
+  NSMutableArray *mutableList;
+  mutableList = listOfCrashesAlreadyShownToTheUser ? [listOfCrashesAlreadyShownToTheUser mutableCopy] : [NSMutableArray array];
+  [mutableList addObject:crashFile];
+  if ([mutableList count] > 20)
+  {
+    NSRange range;
+    range.location = 0;
+    range.length = [mutableList count] - 20;
+    [mutableList removeObjectsInRange:range];
+  }
+  
+NSLog(@"mutableList %@", mutableList);
+  
+  [[NSUserDefaults standardUserDefaults] setValue:mutableList forKey:@"CrashReportSender.listOfCrashesAlreadyShownToTheUser"];
+  [mutableList release];
+  
   return content;
 }
 
@@ -211,9 +258,25 @@ static NSString* FindNewCrashFile()
 - (void)startManager
 {
   // TODO: ability to send multiple crash reports at once
-  if (!FindNewCrashFile())
+  foundCrashFiles_ = FindNewCrashFiles();
+  
+NSLog(@"foundCrashFiles_ %@", foundCrashFiles_);
+  
+  if ([foundCrashFiles_ count] < 1)
   {
+    // no new crashes found
     [self finishManager:BWQuincyStatusNoCrashFound];
+    return;
+  }
+  
+  NSString *crashFileContent = [self crashFileContent];
+  if (!crashFileContent)
+  {
+    
+NSLog(@"we found new crashes but the user already saw and commented on them");
+    
+    // we found new crashes but the user already saw and commented on them
+    [self sendReportWithComment:nil]; // FIXME: get the comment the user already entered
     return;
   }
     
@@ -227,7 +290,7 @@ static NSString* FindNewCrashFile()
     self.interfaceDelegate = ui;
   }
   
-  [self.interfaceDelegate presentQuincyCrashSubmitInterfaceWithCrash:[self crashFileContent]
+  [self.interfaceDelegate presentQuincyCrashSubmitInterfaceWithCrash:crashFileContent
                                                              console:[self consoleContent]];
 }
 
@@ -263,6 +326,21 @@ static NSString* FindNewCrashFile()
 
 - (void) cancelReport
 {
+  [[NSUserDefaults standardUserDefaults] setValue:[NSDate date]
+                                           forKey:@"CrashReportSender.lastCrashDate"];
+  
+  NSArray* listOfAlreadyProcessedCrashFileNames = [[NSUserDefaults standardUserDefaults] valueForKey: @"CrashReportSender.listOfAlreadyProcessedCrashFileNames"];
+  
+  NSMutableArray* mutableList = listOfAlreadyProcessedCrashFileNames ?
+    [listOfAlreadyProcessedCrashFileNames mutableCopy] :
+    [NSMutableArray array];
+  
+  [mutableList addObjectsFromArray:foundCrashFiles_];
+  [[NSUserDefaults standardUserDefaults] setValue:mutableList
+                                           forKey:@"CrashReportSender.listOfAlreadyProcessedCrashFileNames"];
+  [mutableList release];
+  [[NSUserDefaults standardUserDefaults] synchronize];
+
   [self finishManager:BWQuincyStatusUserCancelled];
 }
 
@@ -275,47 +353,56 @@ static NSString* FindNewCrashFile()
   if (Gestalt(gestaltSystemVersionBugFix, &versionBugFix) != noErr) versionBugFix = 0;
   NSString *osVersion = [NSString stringWithFormat:@"%i.%i.%i", versionMajor, versionMinor, versionBugFix];
   
-  NSString *crashLogContent = [self crashFileContent];
-  NSString *bundleIdentifier = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleIdentifier"];
-  NSString *applicationVersion = [self applicationVersion];
-
-  NSString *crashVersion = [self parseVersionOfCrashedApplicationFromCrashLog:crashLogContent];
-  NSString *thisVersion = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleVersion"];
-  isCrashAppVersionIdenticalToAppVersion_ = [thisVersion isEqualToString:crashVersion];
-
-  NSString *notes = [NSString stringWithFormat:@"Comments:\n%@\n\nConsole:\n%@", comment, [self consoleContent]];
   NSString *userId = @"";
   NSString *userContact = @"";
   
   if ([_delegate respondsToSelector:@selector(crashReportUserID)])
     userId = [_delegate performSelector:@selector(crashReportUserID)];
-
+  
   if ([_delegate respondsToSelector:@selector(crashReportContact)])
     userContact = [_delegate performSelector:@selector(crashReportContact)];
+
+  NSString *bundleIdentifier = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleIdentifier"];
+  NSString *applicationVersion = [self applicationVersion];
+
+  NSString *thisVersion = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleVersion"];
+  NSMutableString *xml = [[NSMutableString alloc] init];
+
+  for (NSString *crashFile in foundCrashFiles_)
+  {
+    NSString *crashLogContent = [self crashFileContent];
+    NSString *crashVersion = [self parseVersionOfCrashedApplicationFromCrashLog:crashLogContent];
+    isCrashAppVersionIdenticalToAppVersion_ = [thisVersion isEqualToString:crashVersion];
+    
+    NSString *notes = [NSString stringWithFormat:@"Comments:\n%@\n\nConsole:\n%@", comment, [self consoleContent]];
+    
+    NSString *xml1 = [NSString stringWithFormat:@""
+                     "<crash>"
+                     "<applicationname>%@</applicationname>"
+                     "<bundleidentifier>%@</bundleidentifier>"
+                     "<systemversion>%@</systemversion>"
+                     "<senderversion>%@</senderversion>"
+                     "<version>%@</version>"
+                     "<platform>%@</platform>"
+                     "<userid>%@</userid>"
+                     "<contact>%@</contact>"
+                     "<description><![CDATA[%@]]></description>"
+                     "<log><![CDATA[%@]]></log>"
+                     "</crash>",
+                     [self applicationName],
+                     bundleIdentifier,
+                     osVersion,
+                     applicationVersion,
+                     applicationVersion,
+                     [self modelVersion],
+                     userId,
+                     userContact,
+                     notes,
+                     crashLogContent];
+    [xml appendString:xml1];
+  }
   
-  NSString *xml = [NSString stringWithFormat:@"<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
-                    "<crash>"
-                    "<applicationname>%@</applicationname>"
-                    "<bundleidentifier>%@</bundleidentifier>"
-                    "<systemversion>%@</systemversion>"
-                    "<senderversion>%@</senderversion>"
-                    "<version>%@</version>"
-                    "<platform>%@</platform>"
-                    "<userid>%@</userid>"
-                    "<contact>%@</contact>"
-                    "<description><![CDATA[%@]]></description>"
-                    "<log><![CDATA[%@]]></log>"
-                    "</crash>",
-                    [self applicationName],
-                    bundleIdentifier,
-                    osVersion,
-                    applicationVersion,
-                    applicationVersion,
-                    [self modelVersion],
-                    userId,
-                    userContact,
-                    notes,
-                    crashLogContent];
+  [xml stringByAppendingFormat:@"<?xml version=\"1.0\" encoding=\"UTF-8\"?><crashes>%@</crashes>", xml]
 
   // TODO: Why is this call sent by a timer and not with performSelector:withObject:afterDelay:
   // both should be on the current thread
@@ -393,6 +480,21 @@ static NSString* FindNewCrashFile()
     // server down? ignore, will try later
     return;
   }
+  
+  [[NSUserDefaults standardUserDefaults] setValue:[NSDate date]
+                                           forKey:@"CrashReportSender.lastCrashDate"];
+  
+  NSArray* listOfAlreadyProcessedCrashFileNames = [[NSUserDefaults standardUserDefaults] valueForKey: @"CrashReportSender.listOfAlreadyProcessedCrashFileNames"];
+  
+  NSMutableArray* mutableList = listOfAlreadyProcessedCrashFileNames ?
+    [listOfAlreadyProcessedCrashFileNames mutableCopy] :
+    [NSMutableArray array];
+  
+  [mutableList addObjectsFromArray:foundCrashFiles_];
+  [[NSUserDefaults standardUserDefaults] setValue:mutableList
+                                           forKey:@"CrashReportSender.listOfAlreadyProcessedCrashFileNames"];
+  [mutableList release];
+  [[NSUserDefaults standardUserDefaults] synchronize];
   
   NSTimeInterval feedbackDelayInterval = 1.0;
   if (self.appIdentifier)
