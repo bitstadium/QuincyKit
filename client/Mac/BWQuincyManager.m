@@ -389,8 +389,7 @@ NSArray *foundCrashFiles_;
     isCrashAppVersionIdenticalToAppVersion_ = [thisVersion isEqualToString:crashVersion];
     
     NSString *comment = [dictOfUserCommentsByCrashFile objectForKey:crashFile];
-    NSString *notes = comment;
-//    NSString *notes = [NSString stringWithFormat:@"Comments:\n%@\n\nConsole:\n%@", comment, [self consoleContent]];
+    NSString *notes = [NSString stringWithFormat:@"Comments:\n%@\n\nConsole:\n%@", comment, [self consoleContent]];
     
     NSString *xml1 = [NSString stringWithFormat:@"\n"
                      "<crash>"
