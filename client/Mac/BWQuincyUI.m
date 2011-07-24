@@ -61,8 +61,8 @@ const CGFloat kDetailsHeight = 285;
 
 - (void)dismissUI
 {
-  [[self window] close];
-  [NSApp abortModal];
+  [self close];
+  [NSApp stopModal];
 }
 
 
