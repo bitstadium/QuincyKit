@@ -101,6 +101,13 @@
 //  return @"username@example.com";
 //}
 
+// Return some app specific data
+//- (NSData *)crashReportApplicationData
+//{
+//  return nil;
+//}
+
+
 // Invoked when the internet connection is started, e.g. to show an activity indicator
 //- (void)connectionOpened
 //{

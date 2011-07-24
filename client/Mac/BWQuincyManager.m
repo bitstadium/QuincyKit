@@ -31,6 +31,7 @@
 #import <sys/sysctl.h>
 
 #import "BWQuincyUI.h"
+#import "NSData+Base64.h"
 
 static NSArray* FindLatestCrashFilesInPath(NSString* path, NSDate *minModifyTimestamp, NSArray *listOfAlreadyProcessedCrashFileNames, NSUInteger limit)
 {
@@ -102,8 +103,8 @@ static NSArray* FindNewCrashFiles()
     listOfAlreadyProcessedCrashFileNames = [NSArray array];
   }
 
-  lastCrashDate = [NSDate distantPast]; // FIXME: test code
-  listOfAlreadyProcessedCrashFileNames = [NSArray array]; // FIXME: test code
+//  lastCrashDate = [NSDate distantPast]; // FIXME: test code
+//  listOfAlreadyProcessedCrashFileNames = [NSArray array]; // FIXME: test code
   
   NSArray* crashFiles = FindLatestCrashFiles(lastCrashDate, listOfAlreadyProcessedCrashFileNames, 10);
   return crashFiles;
@@ -223,7 +224,7 @@ NSArray *foundCrashFiles_;
   
   // remember we showed it to the user
   NSMutableDictionary *mutableDict;
-  mutableDict = dictOfUserCommentsByCrashFile ? [dictOfUserCommentsByCrashFile mutableCopy] : [NSMutableArray array];
+  mutableDict = dictOfUserCommentsByCrashFile ? [dictOfUserCommentsByCrashFile mutableCopy] : [NSMutableDictionary dictionary];
   [mutableDict setObject:@"" forKey:crashFile];
   
   // TODO prune dictOfUserCommentsByCrashFile to only contain the last X entries, can do this by sorting keys and removing oldest keys (filenames containing date)
@@ -367,12 +368,16 @@ NSArray *foundCrashFiles_;
   
   NSString *userId = @"";
   NSString *userContact = @"";
+  NSData *applicationdata = nil;
   
   if ([_delegate respondsToSelector:@selector(crashReportUserID)])
     userId = [_delegate performSelector:@selector(crashReportUserID)];
   
   if ([_delegate respondsToSelector:@selector(crashReportContact)])
     userContact = [_delegate performSelector:@selector(crashReportContact)];
+
+  if ([_delegate respondsToSelector:@selector(crashReportApplicationData)])
+   applicationdata = [_delegate performSelector:@selector(crashReportApplicationData)];
 
   NSString *bundleIdentifier = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleIdentifier"];
   NSString *applicationVersion = [self applicationVersion];
@@ -389,37 +394,44 @@ NSArray *foundCrashFiles_;
     isCrashAppVersionIdenticalToAppVersion_ = [thisVersion isEqualToString:crashVersion];
     
     NSString *comment = [dictOfUserCommentsByCrashFile objectForKey:crashFile];
-    NSString *notes = [NSString stringWithFormat:@"Comments:\n%@\n\nConsole:\n%@", comment, [self consoleContent]];
+    NSString *consoleContent = [self consoleContent];
+    NSString *description = [NSString stringWithFormat:@"Comments:\n%@\n\nConsole:\n%@", comment, consoleContent];
     
     NSString *xml1 = [NSString stringWithFormat:@"\n"
-                     "<crash>"
-                     "<applicationname>%@</applicationname>"
-                     "<bundleidentifier>%@</bundleidentifier>"
-                     "<systemversion>%@</systemversion>"
-                     "<senderversion>%@</senderversion>"
-                     "<version>%@</version>"
-                     "<platform>%@</platform>"
-                     "<userid>%@</userid>"
-                     "<contact>%@</contact>"
-                     "<description><![CDATA[%@]]></description>"
-                     "<log><![CDATA[%@]]></log>"
-                     "</crash>",
-                     [self applicationName],
-                     bundleIdentifier,
-                     osVersion,
-                     applicationVersion,
-                     applicationVersion,
-                     [self modelVersion],
-                     userId,
-                     userContact,
-                     notes,
-                     crashLogContent];
+                      "<crash>"
+                      "<applicationname>%@</applicationname>"
+                      "<bundleidentifier>%@</bundleidentifier>"
+                      "<systemversion>%@</systemversion>"
+                      "<senderversion>%@</senderversion>"
+                      "<version>%@</version>"
+                      "<platform>%@</platform>"
+                      "<userid>%@</userid>"
+                      "<contact>%@</contact>"
+                      "<description><![CDATA[%@]]></description>" // legacy
+                      "<usercomment><![CDATA[%@]]></usercomment>"
+                      "<console><![CDATA[%@]]></console>"
+                      "<applicationdata><![CDATA[%@]]></applicationdata>"
+                      "<log><![CDATA[%@]]></log>"
+                      "</crash>",
+                      [self applicationName],
+                      bundleIdentifier,
+                      osVersion,
+                      applicationVersion,
+                      applicationVersion,
+                      [self modelVersion],
+                      userId,
+                      userContact,
+                      description,
+                      comment,
+                      consoleContent,
+                      applicationdata && [crashFile isEqualToString:[foundCrashFiles_ objectAtIndex:0]] ? [applicationdata base64EncodedString] : @"",
+                      crashLogContent];
     [xml appendString:xml1];
   }
   
   [xml appendString:@"</crashes>"];
 
-NSLog(@"%@", xml); // FIXME test code
+//NSLog(@"%@", xml); // FIXME test code
 
   // TODO: Why is this call sent by a timer and not with performSelector:withObject:afterDelay:
   // both should be on the current thread
@@ -498,8 +510,8 @@ NSLog(@"%@", xml); // FIXME test code
     return;
   }
 
-NSString *x = [[NSString alloc] initWithData:responseData_ encoding:NSUTF8StringEncoding];
-NSLog(@"%@", x); // FIXME test code
+//NSString *x = [[NSString alloc] initWithData:responseData_ encoding:NSUTF8StringEncoding];
+//NSLog(@"%@", x); // FIXME test code
 
   [[NSUserDefaults standardUserDefaults] setValue:[NSDate date]
                                            forKey:@"CrashReportSender.lastCrashDate"];
