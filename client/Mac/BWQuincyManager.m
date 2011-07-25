@@ -628,11 +628,6 @@ static NSArray* FindNewCrashFiles()
     [self.interfaceDelegate presentQuincyServerFeedbackInterface:_serverResult];
 }
 
-- (void)didFinishParsingServerResponse
-{
-  // TODO didFinishParsingServerResponse (open source server)
-}
-
 #pragma mark NSURLConnection
 
 - (void)connection:(NSURLConnection *)connection didReceiveResponse:(NSURLResponse *)response
@@ -693,7 +688,7 @@ static NSArray* FindNewCrashFiles()
 
 - (void)parserDidEndDocument:(NSXMLParser *)parser
 {
-  [self didFinishParsingServerResponse];
+  [self showCrashStatusMessage];
 }
 
 #pragma mark GetterSetter
