@@ -378,9 +378,8 @@ static NSArray* FindNewCrashFiles()
    applicationdata = [_delegate performSelector:@selector(crashReportApplicationData)];
 
   NSString *bundleIdentifier = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleIdentifier"];
-  NSString *applicationVersion = [self applicationVersion];
-
-  NSString *thisVersion = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleVersion"];
+  NSString *currentApplicationVersion = [self applicationVersion];
+  NSString *shortVersion = [self applicationVersionString];
 
   NSMutableString *xml = [[NSMutableString alloc] initWithString:@"<?xml version=\"1.0\" encoding=\"UTF-8\"?><crashes>"];
   NSDictionary *crashLogsByFile = [self crashLogsByFile];
@@ -388,8 +387,8 @@ static NSArray* FindNewCrashFiles()
   for (NSString *crashFile in crashLogsByFile)
   {
     NSString *crashLogContent = [crashLogsByFile objectForKey:crashFile];
-    NSString *crashVersion = [self parseVersionOfCrashedApplicationFromCrashLog:crashLogContent];
-    isCrashAppVersionIdenticalToAppVersion_ = [thisVersion isEqualToString:crashVersion];
+    NSString *crashedApplicationVersion = [self parseVersionOfCrashedApplicationFromCrashLog:crashLogContent];
+    isCrashAppVersionIdenticalToAppVersion_ = [currentApplicationVersion isEqualToString:crashedApplicationVersion];
     
     NSString *comment = [dictOfUserCommentsByCrashFile objectForKey:crashFile];
     NSString *consoleContent = [self consoleContent];
@@ -402,6 +401,7 @@ static NSArray* FindNewCrashFiles()
                       "<systemversion>%@</systemversion>"
                       "<senderversion>%@</senderversion>"
                       "<version>%@</version>"
+                      "<bundleshortversion>%@</bundleshortversion>"
                       "<platform>%@</platform>"
                       "<userid>%@</userid>"
                       "<contact>%@</contact>"
@@ -414,8 +414,9 @@ static NSArray* FindNewCrashFiles()
                       [self applicationName],
                       bundleIdentifier,
                       osVersion,
-                      applicationVersion,
-                      applicationVersion,
+                      currentApplicationVersion,
+                      crashedApplicationVersion,
+                      shortVersion,
                       [self modelVersion],
                       userId,
                       userContact,
