@@ -94,8 +94,11 @@ static NSArray* FindNewCrashFiles()
   }
   else
   {
-    // FIXME: dateByAddingTimeInterval not available on 10.5
-    lastCrashDate = [lastCrashDate dateByAddingTimeInterval:-24*60*60]; // look 24 hours back to catch possible time zone offsets
+    NSTimeInterval interval = -24*60*60; // look 24 hours back to catch possible time zone offsets
+    if ([lastCrashDate respondsToSelector:@selector(dateByAddingTimeInterval:)])
+      lastCrashDate = [lastCrashDate dateByAddingTimeInterval:interval];
+    else
+      [lastCrashDate addTimeInterval:interval]; // TODO: you can just add a category interface at the top of the source file to give the signature for the method
   }
 
   NSArray* listOfAlreadyProcessedCrashFileNames = [[NSUserDefaults standardUserDefaults] valueForKey: @"CrashReportSender.listOfAlreadyProcessedCrashFileNames"];
