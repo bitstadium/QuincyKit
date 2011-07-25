@@ -391,7 +391,7 @@ static NSArray* FindNewCrashFiles()
   {
     NSString *crashLogContent = [crashLogsByFile objectForKey:crashFile];
     NSString *crashedApplicationVersion = [self parseVersionOfCrashedApplicationFromCrashLog:crashLogContent];
-    isCrashAppVersionIdenticalToAppVersion_ = [currentApplicationVersion isEqualToString:crashedApplicationVersion];
+    isCrashAppVersionIdenticalToAppVersion_ |= [currentApplicationVersion isEqualToString:crashedApplicationVersion];
     
     NSString *comment = [dictOfUserCommentsByCrashFile objectForKey:crashFile];
     NSString *consoleContent = [self consoleContent];
