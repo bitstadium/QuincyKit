@@ -686,11 +686,6 @@ static NSArray* FindNewCrashFiles()
     [_contentOfProperty appendString:string];
 }
 
-- (void)parserDidEndDocument:(NSXMLParser *)parser
-{
-  [self showCrashStatusMessage];
-}
-
 #pragma mark GetterSetter
 
 - (NSString *) applicationName
