@@ -94,6 +94,7 @@ static NSArray* FindNewCrashFiles()
   }
   else
   {
+    // FIXME: dateByAddingTimeInterval not available on 10.5
     lastCrashDate = [lastCrashDate dateByAddingTimeInterval:-24*60*60]; // look 24 hours back to catch possible time zone offsets
   }
 
