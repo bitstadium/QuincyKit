@@ -132,8 +132,6 @@ static NSArray* FindNewCrashFiles()
 @synthesize shouldPresentModalInterface = shouldPresentModalInterface_;
 @synthesize interfaceDelegate = interfaceDelegate_;
 
-NSArray *foundCrashFiles_;
-
 + (BWQuincyManager *)sharedQuincyManager
 {
   static BWQuincyManager *quincyManager = nil;
@@ -147,8 +145,6 @@ NSArray *foundCrashFiles_;
   if (quincyManager == nil)
     quincyManager = [[BWQuincyManager alloc] init];
 #endif
-  
-  foundCrashFiles_ = nil;
   
   return quincyManager;
 }
@@ -171,6 +167,7 @@ NSArray *foundCrashFiles_;
     self.shouldPresentModalInterface = YES;
 
     urlConnection_ = nil;
+    foundCrashFiles_ = nil;
   }
   return self;
 }

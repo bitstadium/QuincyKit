@@ -94,6 +94,7 @@ typedef enum BWQuincyStatus {
   NSString *_feedbackRequestID;
   NSTimeInterval maxFeedbackDelay_;
   NSTimeInterval networkTimeoutInterval_;
+  NSArray *foundCrashFiles_;
 }
 
 - (NSString*) modelVersion;
