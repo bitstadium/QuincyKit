@@ -53,7 +53,8 @@
   // [quincy setSubmissionURL:@"http://yourserver.com/crash_v200.php"];
 
   // quincy.networkTimeoutInterval = 15.0; // = default 15.0
-
+  
+  [quincy run];
 
   // ==============
   // = UI options =

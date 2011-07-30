@@ -74,7 +74,7 @@ typedef enum BWQuincyStatus {
 {
   CrashReportStatus _serverResult;
 
-  NSInteger _statusCode;
+  NSInteger statusCode_;
 
   NSMutableString *_contentOfProperty;
 
@@ -94,37 +94,35 @@ typedef enum BWQuincyStatus {
   NSString *_feedbackRequestID;
   NSTimeInterval maxFeedbackDelay_;
   NSTimeInterval networkTimeoutInterval_;
-  NSArray *foundCrashFiles_;
+  NSArray *crashReports_;
 }
-
-- (NSString*) modelVersion;
 
 + (BWQuincyManager *)sharedQuincyManager;
 
-// submission URL defines where to send the crash reports to (required)
-@property (nonatomic, retain) NSString *submissionURL;
-
-// defines the company name to be shown in the crash reporting dialog
-@property (nonatomic, retain) NSString *companyName;
-
-// whether or not the built-in UI should present a modal or non-modal interface
-@property (nonatomic, assign) BOOL shouldPresentModalInterface;
-
-// network timeout
-@property (nonatomic, assign) NSTimeInterval networkTimeoutInterval;
-
-// delegate is required
-@property (nonatomic, assign) id<BWQuincyManagerDelegate> delegate;
-
-// interface delegate to override the standard UI
-@property (nonatomic, assign) id<BWQuincyUIDelegate> interfaceDelegate;
-
+- (void)run;
+- (void)cancelReport;
+- (void)sendReportWithComment:(NSString*)comment;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // settings
 
+// delegate is required
+@property (nonatomic, assign) id<BWQuincyManagerDelegate> delegate;
+
+// defines the company name to be shown in the crash reporting dialog
+@property (nonatomic, retain) NSString *companyName;
+
+// submission URL defines where to send the crash reports to (required)
+@property (nonatomic, retain) NSString *submissionURL;
+
 // If you want to use HockeyApp instead of your own server, this is required
 @property (nonatomic, retain) NSString *appIdentifier;
+
+// interface delegate to override the standard UI
+@property (nonatomic, assign) id<BWQuincyUIDelegate> interfaceDelegate;
+
+// whether or not the built-in UI should present a modal or non-modal interface
+@property (nonatomic, assign) BOOL shouldPresentModalInterface;
 
 // if YES, the user will be presented with a status of the crash, if known
 // if NO, the user will not see any feedback information (default)
@@ -133,13 +131,7 @@ typedef enum BWQuincyStatus {
 // time in seconds to wait for the server for feedback on a crash report, defaults to 10 seconds
 @property (nonatomic, assign) NSTimeInterval maxFeedbackDelay;
 
-- (NSString *)consoleContent;
-
-- (void)cancelReport;
-- (void)sendReportWithComment:(NSString*)comment;
-
-- (NSString *) applicationName;
-- (NSString *) applicationVersionString;
-- (NSString *) applicationVersion;
+// network timeout
+@property (nonatomic, assign) NSTimeInterval networkTimeoutInterval;
 
 @end
