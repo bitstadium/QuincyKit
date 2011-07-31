@@ -9,6 +9,30 @@
 #import "BWQuincyUtilities.h"
 #import "NSData+Base64.h"
 
+NSArray* FindLatestCrashFilesInPath(NSString* path, NSDate *minModifyTimestamp, NSArray *listOfAlreadyProcessedCrashFileNames, NSUInteger limit);
+NSArray* FindLatestCrashFiles(NSDate *minModifyTimestamp, NSArray *listOfAlreadyProcessedCrashFileNames, NSUInteger limit);
+
+NSString* OSVersion();
+NSString* applicationName();
+NSString* applicationVersionString();
+NSString* computerModel();
+BOOL parseVersionOfCrashedApplicationFromCrashLog(NSString *crashReportContent, NSString **version, NSString **shortVersion);
+NSDictionary* crashLogsContentsByFilename(NSArray *crashLogs);
+
+
+NSString* generateXMLPayload(NSArray *listOfCrashReportFileNames, NSDictionary *additionalData);
+NSURLRequest* buildURLRequestForPostingCrashes(NSString *url, NSString* xml, NSTimeInterval networkTimeoutInterval, BOOL isHockeyApp);
+int processServerResponse(NSData *data, BOOL isHockeyApp);
+
+void storeDictOfUserCommentsByCrashFile(NSDictionary *dict);
+NSDictionary* loadDictOfUserCommentsByCrashFile();
+
+void storeLastCrashDate(NSDate* date);
+NSDate* loadLastCrashDate();
+
+void storeListOfAlreadyProcessedCrashFileNames(NSArray *listOfCrashReportFileNames);
+NSArray* loadListOfAlreadyProcessedCrashFileNames();
+
 
 NSArray* FindLatestCrashFilesInPath(NSString* path, NSDate *minModifyTimestamp, NSArray *listOfAlreadyProcessedCrashFileNames, NSUInteger limit)
 {
@@ -64,7 +88,7 @@ NSArray* FindLatestCrashFiles(NSDate *minModifyTimestamp, NSArray *listOfAlready
 
 NSArray* FindNewCrashFiles()
 {
-  NSDate* lastCrashDate = [[NSUserDefaults standardUserDefaults] valueForKey: @"CrashReportSender.lastCrashDate"];
+  NSDate* lastCrashDate = loadLastCrashDate();
   if (!lastCrashDate)
   {
     lastCrashDate = [NSDate distantPast];
@@ -78,7 +102,7 @@ NSArray* FindNewCrashFiles()
       [lastCrashDate addTimeInterval:interval]; // TODO: add a category interface at the top of the source file to give the signature for the method
   }
 
-  NSArray* listOfAlreadyProcessedCrashFileNames = [[NSUserDefaults standardUserDefaults] valueForKey: @"CrashReportSender.listOfAlreadyProcessedCrashFileNames"];
+  NSArray* listOfAlreadyProcessedCrashFileNames = loadListOfAlreadyProcessedCrashFileNames();
   if (!listOfAlreadyProcessedCrashFileNames)
   {
     listOfAlreadyProcessedCrashFileNames = [NSArray array];
@@ -94,7 +118,7 @@ NSArray* FindNewCrashFiles()
 BOOL hasCrashesTheUserDidNotSeeYet(NSArray *crashFiles, NSString **crashFileContent)
 {
   NSString* crashFile = [crashFiles objectAtIndex:0];
-  NSDictionary* dictOfUserCommentsByCrashFile = [[NSUserDefaults standardUserDefaults] valueForKey: @"CrashReportSender.dictOfUserCommentsByCrashFile"];
+  NSDictionary* dictOfUserCommentsByCrashFile = loadDictOfUserCommentsByCrashFile();
   
   if ([[dictOfUserCommentsByCrashFile allKeys] containsObject:crashFile])
   {
@@ -111,10 +135,7 @@ BOOL hasCrashesTheUserDidNotSeeYet(NSArray *crashFiles, NSString **crashFileCont
   mutableDict = dictOfUserCommentsByCrashFile ? [dictOfUserCommentsByCrashFile mutableCopy] : [NSMutableDictionary dictionary];
   [mutableDict setObject:@"" forKey:crashFile];
   
-  // TODO prune dictOfUserCommentsByCrashFile to only contain the last X entries, can do this by sorting keys and removing oldest keys (filenames containing date)
-  
-  [[NSUserDefaults standardUserDefaults] setValue:mutableDict forKey:@"CrashReportSender.dictOfUserCommentsByCrashFile"];
-  [[NSUserDefaults standardUserDefaults] synchronize];
+  storeDictOfUserCommentsByCrashFile(mutableDict);
   [mutableDict release];
   
   return YES;
@@ -225,7 +246,7 @@ int sendCrashReportsToServerAndParseResponse(
   NSString *payload = generateXMLPayload(listOfCrashReportFileNames, additionalData);
   NSLog(@"%@", payload); // FIXME remove test code
   
-  NSURLRequest *request = buildURLRequest(submissionURL, payload, networkTimeoutInterval, isHockeyApp);  
+  NSURLRequest *request = buildURLRequestForPostingCrashes(submissionURL, payload, networkTimeoutInterval, isHockeyApp);  
   NSURLResponse *response;
   NSError *error;
   NSData *data = [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:&error];
@@ -256,7 +277,7 @@ NSString* generateXMLPayload(NSArray *listOfCrashReportFileNames, NSDictionary *
   NSString *shortVersion = applicationVersionString();
   
   NSDictionary *crashLogsByFile = contentsOfCrashReportsByFileName(listOfCrashReportFileNames);
-  NSDictionary* dictOfUserCommentsByCrashFile = [[NSUserDefaults standardUserDefaults] valueForKey:@"CrashReportSender.dictOfUserCommentsByCrashFile"];
+  NSDictionary* dictOfUserCommentsByCrashFile = loadDictOfUserCommentsByCrashFile();
 
   NSMutableString *payload = [[NSMutableString alloc] initWithString:@"<?xml version=\"1.0\" encoding=\"UTF-8\"?><crashes>"];
   for (NSString *crashFile in crashLogsByFile)
@@ -302,7 +323,7 @@ NSString* generateXMLPayload(NSArray *listOfCrashReportFileNames, NSDictionary *
   return payload;
 }
 
-NSURLRequest* buildURLRequest(NSString *url, NSString* xml, NSTimeInterval networkTimeoutInterval, BOOL isHockeyApp)
+NSURLRequest* buildURLRequestForPostingCrashes(NSString *url, NSString* xml, NSTimeInterval networkTimeoutInterval, BOOL isHockeyApp)
 {
   NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:url]];
   NSString *boundary = @"----FOO";
@@ -348,6 +369,7 @@ int processServerResponse(NSData *data, BOOL isHockeyApp)
                                                                      errorDescription:NULL];
     serverResponseCode = [[response objectForKey:@"status"] intValue];
     
+    // TODO: bring back feedback feature
     // if (serverResponseCode == CrashReportStatusQueued)
     // {
     //   crashId = [[NSString alloc] initWithString:[response objectForKey:@"id"]];
@@ -364,54 +386,66 @@ int processServerResponse(NSData *data, BOOL isHockeyApp)
   return serverResponseCode;
 }
 
-void storeCommentForReport(NSString *comment, NSString *report)
-{
-  NSMutableDictionary* dictOfUserCommentsByCrashFile = [[[NSUserDefaults standardUserDefaults] valueForKey: @"CrashReportSender.dictOfUserCommentsByCrashFile"] mutableCopy];
-  [dictOfUserCommentsByCrashFile setObject:comment forKey:report];
-  [[NSUserDefaults standardUserDefaults] setValue:dictOfUserCommentsByCrashFile forKey:@"CrashReportSender.dictOfUserCommentsByCrashFile"];
-  [[NSUserDefaults standardUserDefaults] synchronize]; 
-}
-
 void markReportsProcessed(NSArray *listOfReports)
 {
-  [[NSUserDefaults standardUserDefaults] setValue:[NSDate date]
-                                           forKey:@"CrashReportSender.lastCrashDate"];
-  
-  NSArray* listOfAlreadyProcessedCrashFileNames = [[NSUserDefaults standardUserDefaults]
-                                                   valueForKey: @"CrashReportSender.listOfAlreadyProcessedCrashFileNames"];
-  
-  NSMutableArray* mutableList = listOfAlreadyProcessedCrashFileNames ?
-  [listOfAlreadyProcessedCrashFileNames mutableCopy] :
-  [NSMutableArray array];
-  
-  [mutableList addObjectsFromArray:listOfReports];
-  [[NSUserDefaults standardUserDefaults] setValue:mutableList
-                                           forKey:@"CrashReportSender.listOfAlreadyProcessedCrashFileNames"];
-  [mutableList release];
+  storeLastCrashDate([NSDate date]);
+  storeListOfAlreadyProcessedCrashFileNames(listOfReports);
+}
+
+void storeCommentForReport(NSString *comment, NSString *report)
+{
+  NSMutableDictionary* mutableDict = [loadDictOfUserCommentsByCrashFile() mutableCopy];
+  [mutableDict setObject:comment forKey:report];
+  storeDictOfUserCommentsByCrashFile(mutableDict);
+  [mutableDict release];
+}
+
+
+void storeDictOfUserCommentsByCrashFile(NSDictionary *dict)
+{
+  // TODO prune dictOfUserCommentsByCrashFile to only contain the last X entries, can do this by sorting keys and removing oldest keys (filenames containing date)
+  [[NSUserDefaults standardUserDefaults] setValue:dict forKey:@"CrashReportSender.dictOfUserCommentsByCrashFile"];
   [[NSUserDefaults standardUserDefaults] synchronize];
 }
+
+NSDictionary* loadDictOfUserCommentsByCrashFile()
+{
+  // TODO use #define or make static for these keys
+  return [[NSUserDefaults standardUserDefaults] valueForKey: @"CrashReportSender.dictOfUserCommentsByCrashFile"];
+}
+
 
 void storeLastCrashDate(NSDate* date)
 {
-  [[NSUserDefaults standardUserDefaults] setValue:date
-                                           forKey:@"CrashReportSender.lastCrashDate"];
+  [[NSUserDefaults standardUserDefaults] setValue:date forKey:@"CrashReportSender.lastCrashDate"];
+  [[NSUserDefaults standardUserDefaults] synchronize];
 }
+
+NSDate* loadLastCrashDate()
+{
+  return [[NSUserDefaults standardUserDefaults] valueForKey:@"CrashReportSender.lastCrashDate"];
+}
+
 
 void storeListOfAlreadyProcessedCrashFileNames(NSArray *listOfCrashReportFileNames)
 {
-  NSArray* listOfAlreadyProcessedCrashFileNames = [[NSUserDefaults standardUserDefaults] valueForKey: @"CrashReportSender.listOfAlreadyProcessedCrashFileNames"];
+  NSArray* listOfAlreadyProcessedCrashFileNames = loadListOfAlreadyProcessedCrashFileNames();
   
   NSMutableArray* mutableList = listOfAlreadyProcessedCrashFileNames ?
-  [listOfAlreadyProcessedCrashFileNames mutableCopy] :
-  [[NSMutableArray alloc] init];
+    [listOfAlreadyProcessedCrashFileNames mutableCopy] :
+    [[NSMutableArray alloc] init];
   
-  [mutableList addObjectsFromArray:listOfCrashReportFileNames];
-  [[NSUserDefaults standardUserDefaults] setValue:mutableList
-                                           forKey:@"CrashReportSender.listOfAlreadyProcessedCrashFileNames"];
-  [mutableList release];
+  [mutableList addObjectsFromArray:listOfCrashReportFileNames]; // TODO: test for duplicates in listOfCrashReportFileNames
+  [[NSUserDefaults standardUserDefaults] setValue:mutableList forKey:@"CrashReportSender.listOfAlreadyProcessedCrashFileNames"];
   [[NSUserDefaults standardUserDefaults] synchronize];
-  
+  [mutableList release];
 }
+
+NSArray* loadListOfAlreadyProcessedCrashFileNames()
+{
+  return [[NSUserDefaults standardUserDefaults] valueForKey:@"CrashReportSender.listOfAlreadyProcessedCrashFileNames"];
+}
+
 
 // - (void)checkForFeedbackStatus
 // {

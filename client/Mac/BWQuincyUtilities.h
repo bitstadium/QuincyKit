@@ -8,16 +8,8 @@
 
 #import <Foundation/Foundation.h>
 
-NSArray* FindLatestCrashFilesInPath(NSString* path, NSDate *minModifyTimestamp, NSArray *listOfAlreadyProcessedCrashFileNames, NSUInteger limit);
-NSArray* FindLatestCrashFiles(NSDate *minModifyTimestamp, NSArray *listOfAlreadyProcessedCrashFileNames, NSUInteger limit);
 NSArray* FindNewCrashFiles();
 BOOL hasCrashesTheUserDidNotSeeYet(NSArray *crashFiles, NSString **crashFileContent);
-NSString* OSVersion();
-NSString* applicationName();
-NSString* applicationVersionString();
-NSString* computerModel();
-BOOL parseVersionOfCrashedApplicationFromCrashLog(NSString *crashReportContent, NSString **version, NSString **shortVersion);
-NSDictionary* crashLogsContentsByFilename(NSArray *crashLogs);
 NSString* consoleContent();
 int sendCrashReportsToServerAndParseResponse(NSArray *crashReports, NSString *submissionURL, NSDictionary *additionalData, BOOL isHockeyApp, NSTimeInterval networkTimeoutInterval);
 // void processServerResponse(NSUInteger statusCode, NSData* payload, NSArray *crashReports);
@@ -25,8 +17,4 @@ int sendCrashReportsToServerAndParseResponse(NSArray *crashReports, NSString *su
 void storeCommentForReport(NSString *comment, NSString *report);
 void markReportsProcessed(NSArray *listOfReports);
 
-NSString* generateXMLPayload(NSArray *listOfCrashReportFileNames, NSDictionary *additionalData);
-NSURLRequest* buildURLRequest(NSString *url, NSString* xml, NSTimeInterval networkTimeoutInterval, BOOL isHockeyApp);
-int processServerResponse(NSData *data, BOOL isHockeyApp);
-void storeLastCrashDate(NSDate* date);
-void storeListOfAlreadyProcessedCrashFileNames(NSArray *listOfCrashReportFileNames);
+
