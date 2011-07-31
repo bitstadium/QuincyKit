@@ -65,12 +65,7 @@ typedef enum BWQuincyStatus {
 
 @end
 
-// TODO: check ifdef for NSXMLParserDelegate
-#if defined(MAC_OS_X_VERSION_10_6) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_6
-  @interface BWQuincyManager : NSObject <NSXMLParserDelegate>
-#else
-  @interface BWQuincyManager : NSObject
-#endif
+@interface BWQuincyManager : NSObject
 {
   CrashReportStatus _serverResult;
 
@@ -84,9 +79,6 @@ typedef enum BWQuincyStatus {
   NSString *_submissionURL;
   NSString *_companyName;
   NSString *_appIdentifier;
-
-  NSURLConnection *urlConnection_;
-  NSMutableData *responseData_;
 
   BOOL isCrashAppVersionIdenticalToAppVersion_;
   BOOL feedbackActivated_;

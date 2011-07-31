@@ -26,6 +26,8 @@
 		DA74D9F613DC5FDF00DDFF79 /* NSData+Base64.m in Sources */ = {isa = PBXBuildFile; fileRef = DA74D9F413DC5FDF00DDFF79 /* NSData+Base64.m */; };
 		DAB9182413D247FC00CF1650 /* Quincy.strings in Resources */ = {isa = PBXBuildFile; fileRef = DAB9182313D247FC00CF1650 /* Quincy.strings */; };
 		DAB9182613D2480800CF1650 /* BWQuincyUIDelegate.h in Headers */ = {isa = PBXBuildFile; fileRef = DAB9182513D2480800CF1650 /* BWQuincyUIDelegate.h */; };
+		DAE8F56B13E54C5D00F682BD /* BWQuincyUtilities.m in Sources */ = {isa = PBXBuildFile; fileRef = DAE8F56A13E54C5C00F682BD /* BWQuincyUtilities.m */; };
+		DAE8F56E13E5508600F682BD /* BWQuincyUtilities.h in Headers */ = {isa = PBXBuildFile; fileRef = DAE8F56D13E5508600F682BD /* BWQuincyUtilities.h */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXBuildRule section */
@@ -79,6 +81,8 @@
 		DA74D9F413DC5FDF00DDFF79 /* NSData+Base64.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = "NSData+Base64.m"; path = "../../client/Mac/NSData+Base64.m"; sourceTree = "<group>"; };
 		DAB9182313D247FC00CF1650 /* Quincy.strings */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = Quincy.strings; path = ../../client/Mac/Quincy.strings; sourceTree = "<group>"; };
 		DAB9182513D2480800CF1650 /* BWQuincyUIDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = BWQuincyUIDelegate.h; path = ../../client/Mac/BWQuincyUIDelegate.h; sourceTree = "<group>"; };
+		DAE8F56A13E54C5C00F682BD /* BWQuincyUtilities.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = BWQuincyUtilities.m; path = ../../client/Mac/BWQuincyUtilities.m; sourceTree = "<group>"; };
+		DAE8F56D13E5508600F682BD /* BWQuincyUtilities.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = BWQuincyUtilities.h; path = ../../client/Mac/BWQuincyUtilities.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -184,6 +188,8 @@
 				DA4F15A513CA09C300667A7D /* BWQuincyServerAPI.h */,
 				DAB9182313D247FC00CF1650 /* Quincy.strings */,
 				1E542D87135A4F31001D7981 /* BWQuincyMain.xib */,
+				DAE8F56A13E54C5C00F682BD /* BWQuincyUtilities.m */,
+				DAE8F56D13E5508600F682BD /* BWQuincyUtilities.h */,
 			);
 			name = Mac;
 			sourceTree = "<group>";
@@ -218,6 +224,7 @@
 				DA4F15A613CA09C300667A7D /* BWQuincyServerAPI.h in Headers */,
 				DAB9182613D2480800CF1650 /* BWQuincyUIDelegate.h in Headers */,
 				DA74D9F513DC5FDF00DDFF79 /* NSData+Base64.h in Headers */,
+				DAE8F56E13E5508600F682BD /* BWQuincyUtilities.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -326,6 +333,7 @@
 				1E542D89135A4F31001D7981 /* BWQuincyManager.m in Sources */,
 				DA4F159E13C9F4FB00667A7D /* BWQuincyUI.m in Sources */,
 				DA74D9F613DC5FDF00DDFF79 /* NSData+Base64.m in Sources */,
+				DAE8F56B13E54C5D00F682BD /* BWQuincyUtilities.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
