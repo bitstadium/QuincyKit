@@ -142,7 +142,7 @@
 {
   storeCommentForReport(userComment, [crashReports_ objectAtIndex:0]);
   
-  // FIXME: bring callbacks back, store data from these as well
+  // FIXME: bring callbacks back, persist this info per crash with user comments
 
   //  NSString *userId = @"";
   //  NSString *userContact = @"";
@@ -178,7 +178,7 @@
 - (void)sendSynchronously:(NSArray *)reports
 {
   NSDictionary *additionalData = [NSDictionary dictionary];
-  int status = sendCrashReports(reports, self.submissionURL, additionalData, !!self.appIdentifier, self.networkTimeoutInterval);
+  int status = sendCrashReportsToServerAndParseResponse(reports, self.submissionURL, additionalData, !!self.appIdentifier, self.networkTimeoutInterval);
   
   NSNumber *statusObj = [NSNumber numberWithInt:status];
   [self performSelectorOnMainThread:@selector(didFinishSendingReport:) withObject:statusObj waitUntilDone:NO];

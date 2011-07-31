@@ -19,8 +19,14 @@ NSString* computerModel();
 BOOL parseVersionOfCrashedApplicationFromCrashLog(NSString *crashReportContent, NSString **version, NSString **shortVersion);
 NSDictionary* crashLogsContentsByFilename(NSArray *crashLogs);
 NSString* consoleContent();
-int sendCrashReports(NSArray *crashReports, NSString *submissionURL, NSDictionary *additionalData, BOOL isHockeyApp, NSTimeInterval networkTimeoutInterval);
+int sendCrashReportsToServerAndParseResponse(NSArray *crashReports, NSString *submissionURL, NSDictionary *additionalData, BOOL isHockeyApp, NSTimeInterval networkTimeoutInterval);
 // void processServerResponse(NSUInteger statusCode, NSData* payload, NSArray *crashReports);
 
 void storeCommentForReport(NSString *comment, NSString *report);
 void markReportsProcessed(NSArray *listOfReports);
+
+NSString* generateXMLPayload(NSArray *listOfCrashReportFileNames, NSDictionary *additionalData);
+NSURLRequest* buildURLRequest(NSString *url, NSString* xml, NSTimeInterval networkTimeoutInterval, BOOL isHockeyApp);
+int processServerResponse(NSData *data, BOOL isHockeyApp);
+void storeLastCrashDate(NSDate* date);
+void storeListOfAlreadyProcessedCrashFileNames(NSArray *listOfCrashReportFileNames);

@@ -75,7 +75,7 @@ NSArray* FindNewCrashFiles()
     if ([lastCrashDate respondsToSelector:@selector(dateByAddingTimeInterval:)])
       lastCrashDate = [lastCrashDate dateByAddingTimeInterval:interval];
     else
-      [lastCrashDate addTimeInterval:interval]; // TODO: you can just add a category interface at the top of the source file to give the signature for the method
+      [lastCrashDate addTimeInterval:interval]; // TODO: add a category interface at the top of the source file to give the signature for the method
   }
 
   NSArray* listOfAlreadyProcessedCrashFileNames = [[NSUserDefaults standardUserDefaults] valueForKey: @"CrashReportSender.listOfAlreadyProcessedCrashFileNames"];
@@ -214,90 +214,97 @@ NSString* consoleContent()
   return @"";
 }
 
-// FIXME: refactor and split this function
-int sendCrashReports(NSArray *listOfCrashReportFileNames, NSString *submissionURL, NSDictionary *additionalData, BOOL isHockeyApp, NSTimeInterval networkTimeoutInterval)
+int sendCrashReportsToServerAndParseResponse(
+  NSArray *listOfCrashReportFileNames,
+  NSString *submissionURL,
+  NSDictionary *additionalData,
+  BOOL isHockeyApp,
+  NSTimeInterval networkTimeoutInterval
+)
 {
-  // BWQuincyManager *quincy = [BWQuincyManager sharedQuincyManager];
+  NSString *payload = generateXMLPayload(listOfCrashReportFileNames, additionalData);
+  NSLog(@"%@", payload); // FIXME remove test code
+  
+  NSURLRequest *request = buildURLRequest(submissionURL, payload, networkTimeoutInterval, isHockeyApp);  
+  NSURLResponse *response;
+  NSError *error;
+  NSData *data = [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:&error];
+  
+  NSUInteger statusCode = [(NSHTTPURLResponse *)response statusCode];
+  if (statusCode < 200 || statusCode >= 400)
+  {
+    NSLog(@"WARNING: Server returned HTTP code: %ld", statusCode);
+    // server down? ignore, will try later
+    return 0; // CrashReportStatusUnknown;
+  }
+  
+  NSString *x = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+  NSLog(@"Server returned HTTP code %@", x); // FIXME remove test code
 
+  // TODO figure out where exactly lastCrashDate should be set
+  storeLastCrashDate([NSDate date]);
+  storeListOfAlreadyProcessedCrashFileNames(listOfCrashReportFileNames);
+  
+  int serverResponseCode = processServerResponse(data, isHockeyApp);
+  return serverResponseCode;
+}
+
+NSString* generateXMLPayload(NSArray *listOfCrashReportFileNames, NSDictionary *additionalData)
+{
   NSString *bundleIdentifier = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleIdentifier"];
   NSString *currentApplicationVersion = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleVersion"];
   NSString *shortVersion = applicationVersionString();
   
-  NSMutableString *xml = [[NSMutableString alloc] initWithString:@"<?xml version=\"1.0\" encoding=\"UTF-8\"?><crashes>"];
   NSDictionary *crashLogsByFile = contentsOfCrashReportsByFileName(listOfCrashReportFileNames);
-  
   NSDictionary* dictOfUserCommentsByCrashFile = [[NSUserDefaults standardUserDefaults] valueForKey:@"CrashReportSender.dictOfUserCommentsByCrashFile"];
+
+  NSMutableString *payload = [[NSMutableString alloc] initWithString:@"<?xml version=\"1.0\" encoding=\"UTF-8\"?><crashes>"];
   for (NSString *crashFile in crashLogsByFile)
   {
     NSString *crashLogContent = [crashLogsByFile objectForKey:crashFile];
-    NSString *comment = [dictOfUserCommentsByCrashFile objectForKey:crashFile];
 
     NSString *crashedApplicationVersion;
     NSString *crashedApplicationShortVersion;
     parseVersionOfCrashedApplicationFromCrashLog(crashLogContent, &crashedApplicationVersion, &crashedApplicationShortVersion);
     
+    NSString *comment = [dictOfUserCommentsByCrashFile objectForKey:crashFile];
     NSString *console = consoleContent();
+    // legacy format
     NSString *description = [NSString stringWithFormat:@"Comments:\n%@\n\nConsole:\n%@", comment, console];
-//    NSString *base64EncodedApplicationData = applicationData && [crashFile isEqualToString:[listOfCrashReportFileNames objectAtIndex:0]] ? [applicationData base64EncodedString] : @"";
-    
     
     // TODO callback data, maybe like this, with a dictionary of additionalData
     NSString *userId = @"";
     NSString *userContact = @"";
     NSData *applicationData = [NSData data];
-    
-    NSString *key = [crashFile stringByAppendingString:@"_userId"];
-    [additionalData objectForKey:key];
-    
+    [additionalData objectForKey:[crashFile stringByAppendingString:@"_userId"]];
     NSString *base64EncodedApplicationData = [applicationData base64EncodedString];
     
-    NSString *xml1 = [NSString stringWithFormat:@"\n"
-                      "<crash>"
-                      "<applicationname>%@</applicationname>"
-                      "<bundleidentifier>%@</bundleidentifier>"
-                      "<systemversion>%@</systemversion>"
-                      "<senderversion>%@</senderversion>"
-                      "<version>%@</version>"
-                      "<bundleshortversion>%@</bundleshortversion>"
-                      "<platform>%@</platform>"
-                      "<userid>%@</userid>"
-                      "<contact>%@</contact>"
-                      "<description><![CDATA[%@]]></description>" // legacy
-                      "<usercomment><![CDATA[%@]]></usercomment>"
-                      "<console><![CDATA[%@]]></console>"
-                      "<applicationdata><![CDATA[%@]]></applicationdata>"
-                      "<log><![CDATA[%@]]></log>"
-                      "</crash>",
-                      applicationName(),
-                      bundleIdentifier,
-                      OSVersion(),
-                      currentApplicationVersion,
-                      crashedApplicationVersion,
-                      shortVersion,
-                      computerModel(),
-                      userId,
-                      userContact,
-                      description,
-                      comment,
-                      console,
-                      base64EncodedApplicationData,
-                      crashLogContent];
-    [xml appendString:xml1];
+    [payload appendString:@"\n<crash>"];
+    [payload appendFormat:@"<applicationname>%@</applicationname>", applicationName()];
+    [payload appendFormat:@"<bundleidentifier>%@</bundleidentifier>", bundleIdentifier];
+    [payload appendFormat:@"<systemversion>%@</systemversion>", OSVersion()];
+    [payload appendFormat:@"<senderversion>%@</senderversion>", currentApplicationVersion];
+    [payload appendFormat:@"<version>%@</version>", crashedApplicationVersion];
+    [payload appendFormat:@"<bundleshortversion>%@</bundleshortversion>", shortVersion];
+    [payload appendFormat:@"<platform>%@</platform>", computerModel()];
+    [payload appendFormat:@"<userid>%@</userid>", userId];
+    [payload appendFormat:@"<contact>%@</contact>", userContact];
+    [payload appendFormat:@"<description><![CDATA[%@]]></description>", description];
+    [payload appendFormat:@"<usercomment><![CDATA[%@]]></usercomment>", comment];
+    [payload appendFormat:@"<console><![CDATA[%@]]></console>", console];
+    [payload appendFormat:@"<applicationdata><![CDATA[%@]]></applicationdata>", base64EncodedApplicationData];
+    [payload appendFormat:@"<log><![CDATA[%@]]></log>", crashLogContent];
+    [payload appendString:@"</crash>"];
   }
   
-  [xml appendString:@"</crashes>"];
+  [payload appendString:@"</crashes>"];
   
-  NSLog(@"%@", xml); // FIXME test code
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:submissionURL]];
+  return payload;
+}
+
+NSURLRequest* buildURLRequest(NSString *url, NSString* xml, NSTimeInterval networkTimeoutInterval, BOOL isHockeyApp)
+{
+  NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:url]];
   NSString *boundary = @"----FOO";
   
   [request setValue:@"Quincy/Mac" forHTTPHeaderField:@"User-Agent"];
@@ -323,43 +330,11 @@ int sendCrashReports(NSArray *listOfCrashReportFileNames, NSString *submissionUR
   
   [request setHTTPBody:[postBody dataUsingEncoding:NSUTF8StringEncoding]];
   
-  // _serverResult = CrashReportStatusUnknown;
-  // statusCode_ = 200;
-  
-  NSURLResponse *response;
-  NSError *error;
-  NSData *data = [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:&error];
-  
-  NSUInteger statusCode = [(NSHTTPURLResponse *)response statusCode];
-  
-// void processServerResponse(NSUInteger statusCode, NSData* payload, NSArray *crashReports)
+  return request;
+}
 
-  if (statusCode < 200 || statusCode >= 400)
-  {
-    NSLog(@"WARNING: Server returned HTTP code: %ld", statusCode);
-    // server down? ignore, will try later
-    return 0; // CrashReportStatusUnknown;
-  }
-  
-  NSString *x = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-  NSLog(@"Server returned HTTP code %@", x); // FIXME test code
-  
-  [[NSUserDefaults standardUserDefaults] setValue:[NSDate date]
-                                           forKey:@"CrashReportSender.lastCrashDate"];
-  
-  // TODO: all defaults access should be in separate functions, so storage can be changed
-  NSArray* listOfAlreadyProcessedCrashFileNames = [[NSUserDefaults standardUserDefaults] valueForKey: @"CrashReportSender.listOfAlreadyProcessedCrashFileNames"];
-  
-  NSMutableArray* mutableList = listOfAlreadyProcessedCrashFileNames ?
-  [listOfAlreadyProcessedCrashFileNames mutableCopy] :
-  [[NSMutableArray alloc] init];
-  
-  [mutableList addObjectsFromArray:listOfCrashReportFileNames];
-  [[NSUserDefaults standardUserDefaults] setValue:mutableList
-                                           forKey:@"CrashReportSender.listOfAlreadyProcessedCrashFileNames"];
-  [mutableList release];
-  [[NSUserDefaults standardUserDefaults] synchronize];
-  
+int processServerResponse(NSData *data, BOOL isHockeyApp)
+{
   int serverResponseCode = 0; // CrashReportStatusUnknown;
   // NSTimeInterval feedbackDelayInterval = 1.0;
   // NSString *crashId = nil;
@@ -386,7 +361,6 @@ int sendCrashReports(NSArray *listOfCrashReportFileNames, NSString *submissionUR
     // using the HockeyKit open source server
     serverResponseCode = 0; // FIXME parse open source server response w/o xml parser
   }
-  
   return serverResponseCode;
 }
 
@@ -417,8 +391,27 @@ void markReportsProcessed(NSArray *listOfReports)
   [[NSUserDefaults standardUserDefaults] synchronize];
 }
 
+void storeLastCrashDate(NSDate* date)
+{
+  [[NSUserDefaults standardUserDefaults] setValue:date
+                                           forKey:@"CrashReportSender.lastCrashDate"];
+}
 
-
+void storeListOfAlreadyProcessedCrashFileNames(NSArray *listOfCrashReportFileNames)
+{
+  NSArray* listOfAlreadyProcessedCrashFileNames = [[NSUserDefaults standardUserDefaults] valueForKey: @"CrashReportSender.listOfAlreadyProcessedCrashFileNames"];
+  
+  NSMutableArray* mutableList = listOfAlreadyProcessedCrashFileNames ?
+  [listOfAlreadyProcessedCrashFileNames mutableCopy] :
+  [[NSMutableArray alloc] init];
+  
+  [mutableList addObjectsFromArray:listOfCrashReportFileNames];
+  [[NSUserDefaults standardUserDefaults] setValue:mutableList
+                                           forKey:@"CrashReportSender.listOfAlreadyProcessedCrashFileNames"];
+  [mutableList release];
+  [[NSUserDefaults standardUserDefaults] synchronize];
+  
+}
 
 // - (void)checkForFeedbackStatus
 // {
