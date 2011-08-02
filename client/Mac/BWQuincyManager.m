@@ -37,6 +37,17 @@
 - (void)sendReport:(NSString *)xml;
 - (int)parseServerResponseXML:(NSData *)xml;
 - (void)finishManager:(BWQuincyStatus)status;
+
+- (BOOL)hasCrashesTheUserDidNotSeeYet:(NSArray *)crashFiles content:(NSString **)crashFileContent;
+- (void)markReportsProcessed:(NSArray *)listOfReports;
+
+- (void)storeComment:(NSString *)comment forReport:(NSString *)report;
+- (void)storeDictOfUserCommentsByCrashFile:(NSDictionary *)dict;
+- (NSDictionary *)loadDictOfUserCommentsByCrashFile;
+- (void)storeLastCrashDate:(NSDate *) date;
+- (NSDate *)loadLastCrashDate;
+- (void)storeListOfAlreadyProcessedCrashFileNames:(NSArray *)listOfCrashReportFileNames;
+- (NSArray *)loadListOfAlreadyProcessedCrashFileNames;
 @end
 
 @implementation BWQuincyManager
@@ -96,7 +107,24 @@
 - (void)run
 {
   // FIXME: case where the user never said to send crash reports, but still some are sent!
-  crashReports_ = FindNewCrashFiles();
+  NSDate* lastCrashDate = [self loadLastCrashDate];
+  if (![lastCrashDate isEqualToDate:[NSDate distantPast]])
+  {
+    NSTimeInterval interval = -24*60*60; // look 24 hours back to catch possible time zone offsets
+    if ([lastCrashDate respondsToSelector:@selector(dateByAddingTimeInterval:)])
+      lastCrashDate = [lastCrashDate dateByAddingTimeInterval:interval];
+    else
+      [lastCrashDate addTimeInterval:interval]; // TODO: add a category interface at the top of the source file to give the signature for the method
+  }
+
+  NSArray* listOfAlreadyProcessedCrashFileNames = [self loadListOfAlreadyProcessedCrashFileNames];
+  
+  // FIXME: test code to always find crash files
+  //  lastCrashDate = [NSDate distantPast];
+  //  listOfAlreadyProcessedCrashFileNames = [NSArray array];
+
+  int limit = 10;
+  crashReports_ = FindNewCrashFiles(lastCrashDate, listOfAlreadyProcessedCrashFileNames, limit);
   
   if ([crashReports_ count] < 1)
   {
@@ -106,7 +134,7 @@
   }
   
   NSString *crashFileContent;
-  BOOL hasNewCrashes = hasCrashesTheUserDidNotSeeYet(crashReports_, &crashFileContent);
+  BOOL hasNewCrashes = [self hasCrashesTheUserDidNotSeeYet:crashReports_ content:&crashFileContent];
   
   if (!hasNewCrashes)
   {
@@ -134,13 +162,44 @@
     [quincy.delegate didFinishCrashReporting:status];
 }
 
+- (BOOL)hasCrashesTheUserDidNotSeeYet:(NSArray *)crashFiles content:(NSString **)crashFileContent
+{
+  NSString* crashFile = [crashFiles objectAtIndex:0];
+  NSDictionary* dictOfUserCommentsByCrashFile = [self loadDictOfUserCommentsByCrashFile];
+  
+  if ([[dictOfUserCommentsByCrashFile allKeys] containsObject:crashFile])
+  {
+    return NO;
+  }
+  
+  // get the last crash log
+  NSError *error;
+  NSString *crashLogs = [NSString stringWithContentsOfFile:crashFile encoding:NSUTF8StringEncoding error:&error];
+  *crashFileContent = [[crashLogs componentsSeparatedByString: @"**********\n\n"] lastObject];
+  
+  // remember we showed it to the user
+  NSMutableDictionary *mutableDict;
+  mutableDict = dictOfUserCommentsByCrashFile ? [dictOfUserCommentsByCrashFile mutableCopy] : [NSMutableDictionary dictionary];
+  [mutableDict setObject:@"" forKey:crashFile];
+  
+  [self storeDictOfUserCommentsByCrashFile:mutableDict];
+  [mutableDict release];
+  
+  return YES;
+}
+
+- (void)markReportsProcessed:(NSArray *)listOfReports
+{
+  [self storeLastCrashDate:[NSDate date]];
+  [self storeListOfAlreadyProcessedCrashFileNames:listOfReports];
+}
 
 #pragma mark -
 #pragma mark callbacks for UI
 
 - (void)sendReportWithComment:(NSString *)userComment
 {
-  storeCommentForReport(userComment, [crashReports_ objectAtIndex:0]);
+  [self storeComment:userComment forReport:[crashReports_ objectAtIndex:0]];
   
   // FIXME: bring callbacks back, persist this info per crash with user comments
 
@@ -167,7 +226,7 @@
 
 - (void)cancelReport
 {
-  markReportsProcessed(crashReports_);
+  [self markReportsProcessed:crashReports_];
   [self finishManager:BWQuincyStatusUserCancelled];
 }
 
@@ -178,7 +237,11 @@
 - (void)sendSynchronously:(NSArray *)reports
 {
   NSDictionary *additionalData = [NSDictionary dictionary];
-  int status = sendCrashReportsToServerAndParseResponse(reports, self.submissionURL, additionalData, !!self.appIdentifier, self.networkTimeoutInterval);
+  int status = sendCrashReportsToServerAndParseResponse(reports, [self loadDictOfUserCommentsByCrashFile], self.submissionURL, additionalData, !!self.appIdentifier, self.networkTimeoutInterval);
+
+  // TODO figure out where exactly lastCrashDate should be set
+  [self storeLastCrashDate:[NSDate date]];
+  [self storeListOfAlreadyProcessedCrashFileNames:reports];
   
   NSNumber *statusObj = [NSNumber numberWithInt:status];
   [self performSelectorOnMainThread:@selector(didFinishSendingReport:) withObject:statusObj waitUntilDone:NO];
@@ -249,6 +312,68 @@
     
     [self setSubmissionURL:[NSString stringWithFormat:@"https://beta.hockeyapp.net/api/2/apps/%@/crashes", anAppIdentifier]];
 }
+
+#pragma mark -
+#pragma mark persistence
+
+- (void)storeComment:(NSString *)comment forReport:(NSString *)report
+{
+  NSMutableDictionary* mutableDict = [[self loadDictOfUserCommentsByCrashFile] mutableCopy];
+  [mutableDict setObject:comment forKey:report];
+  [self storeDictOfUserCommentsByCrashFile:mutableDict];
+  [mutableDict release];
+}
+
+
+- (void)storeDictOfUserCommentsByCrashFile:(NSDictionary *)dict
+{
+  // TODO prune dictOfUserCommentsByCrashFile to only contain the last X entries, can do this by sorting keys and removing oldest keys (filenames containing date)
+  [[NSUserDefaults standardUserDefaults] setValue:dict forKey:@"CrashReportSender.dictOfUserCommentsByCrashFile"];
+  [[NSUserDefaults standardUserDefaults] synchronize];
+}
+
+- (NSDictionary*)loadDictOfUserCommentsByCrashFile
+{
+  // TODO use #define or make static for these keys
+  return [[NSUserDefaults standardUserDefaults] valueForKey: @"CrashReportSender.dictOfUserCommentsByCrashFile"];
+}
+
+
+- (void)storeLastCrashDate:(NSDate *) date
+{
+  [[NSUserDefaults standardUserDefaults] setValue:date forKey:@"CrashReportSender.lastCrashDate"];
+  [[NSUserDefaults standardUserDefaults] synchronize];
+}
+
+- (NSDate *)loadLastCrashDate
+{
+  NSDate *date = [[NSUserDefaults standardUserDefaults] valueForKey:@"CrashReportSender.lastCrashDate"];
+  return date ?: [NSDate distantPast];
+}
+
+
+- (void)storeListOfAlreadyProcessedCrashFileNames:(NSArray *)listOfCrashReportFileNames
+{
+  NSArray* list = [self loadListOfAlreadyProcessedCrashFileNames];
+  
+  NSMutableArray* mutableList = list ?
+    [list mutableCopy] :
+    [[NSMutableArray alloc] init];
+  
+  [mutableList addObjectsFromArray:listOfCrashReportFileNames]; // TODO: test for duplicates in listOfCrashReportFileNames
+  [[NSUserDefaults standardUserDefaults] setValue:mutableList forKey:@"CrashReportSender.listOfAlreadyProcessedCrashFileNames"];
+  [[NSUserDefaults standardUserDefaults] synchronize];
+  [mutableList release];
+}
+
+- (NSArray *)loadListOfAlreadyProcessedCrashFileNames
+{
+  NSArray *list = [[NSUserDefaults standardUserDefaults] valueForKey:@"CrashReportSender.listOfAlreadyProcessedCrashFileNames"];
+  return list ?: [NSArray array];
+}
+
+
+
 
 @end
 
