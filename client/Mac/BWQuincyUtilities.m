@@ -20,7 +20,7 @@ BOOL parseVersionOfCrashedApplicationFromCrashLog(NSString *crashReportContent, 
 NSDictionary* crashLogsContentsByFilename(NSArray *crashLogs);
 
 
-NSString* generateXMLPayload(NSArray *listOfCrashReportFileNames, NSDictionary *additionalData, NSDictionary* dictOfUserCommentsByCrashFile);
+NSString* generateXMLPayload(NSArray *listOfCrashReportFileNames, NSDictionary *additionalDataByCrashFile);
 NSURLRequest* buildURLRequestForPostingCrashes(NSString *url, NSString* xml, NSTimeInterval networkTimeoutInterval, BOOL isHockeyApp);
 int processServerResponse(NSData *data, BOOL isHockeyApp);
 
@@ -172,21 +172,15 @@ NSDictionary* contentsOfCrashReportsByFileName(NSArray *crashLogs)
   return contentsOfCrashReportsByFileName;
 }
 
-NSString* consoleContent()
-{
-  return @"";
-}
-
 int sendCrashReportsToServerAndParseResponse(
   NSArray *listOfCrashReportFileNames,
-  NSDictionary* dictOfUserCommentsByCrashFile,
+  NSDictionary* additionalDataByCrashFile,
   NSString *submissionURL,
-  NSDictionary *additionalData,
   BOOL isHockeyApp,
   NSTimeInterval networkTimeoutInterval
 )
 {
-  NSString *payload = generateXMLPayload(listOfCrashReportFileNames, additionalData, dictOfUserCommentsByCrashFile);
+  NSString *payload = generateXMLPayload(listOfCrashReportFileNames, additionalDataByCrashFile);
   NSLog(@"%@", payload); // FIXME remove test code
   
   NSURLRequest *request = buildURLRequestForPostingCrashes(submissionURL, payload, networkTimeoutInterval, isHockeyApp);  
@@ -209,7 +203,7 @@ int sendCrashReportsToServerAndParseResponse(
   return serverResponseCode;
 }
 
-NSString* generateXMLPayload(NSArray *listOfCrashReportFileNames, NSDictionary *additionalData, NSDictionary* dictOfUserCommentsByCrashFile)
+NSString* generateXMLPayload(NSArray *listOfCrashReportFileNames, NSDictionary *additionalDataByCrashFile)
 {
   NSString *bundleIdentifier = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleIdentifier"];
   NSString *currentApplicationVersion = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleVersion"];
@@ -226,17 +220,16 @@ NSString* generateXMLPayload(NSArray *listOfCrashReportFileNames, NSDictionary *
     NSString *crashedApplicationShortVersion;
     parseVersionOfCrashedApplicationFromCrashLog(crashLogContent, &crashedApplicationVersion, &crashedApplicationShortVersion);
     
-    NSString *comment = [dictOfUserCommentsByCrashFile objectForKey:crashFile];
-    NSString *console = consoleContent();
+    NSDictionary *dataForCrash = [additionalDataByCrashFile objectForKey:crashFile];
+    
+    NSString *comment       = [dataForCrash objectForKey:@"comment"];
+    NSString *console       = [dataForCrash objectForKey:@"console"];
+    NSString *userId        = [dataForCrash objectForKey:@"userId"];
+    NSString *userContact   = [dataForCrash objectForKey:@"userContact"];
+    NSData *applicationData = [dataForCrash objectForKey:@"applicationData"];
+
     // legacy format
     NSString *description = [NSString stringWithFormat:@"Comments:\n%@\n\nConsole:\n%@", comment, console];
-    
-    // TODO callback data, maybe like this, with a dictionary of additionalData
-    NSString *userId = @"";
-    NSString *userContact = @"";
-    NSData *applicationData = [NSData data];
-    [additionalData objectForKey:[crashFile stringByAppendingString:@"_userId"]];
-    NSString *base64EncodedApplicationData = [applicationData base64EncodedString];
     
     [payload appendString:@"\n<crash>"];
     [payload appendFormat:@"<applicationname>%@</applicationname>", applicationName()];
@@ -251,7 +244,7 @@ NSString* generateXMLPayload(NSArray *listOfCrashReportFileNames, NSDictionary *
     [payload appendFormat:@"<description><![CDATA[%@]]></description>", description];
     [payload appendFormat:@"<usercomment><![CDATA[%@]]></usercomment>", comment];
     [payload appendFormat:@"<console><![CDATA[%@]]></console>", console];
-    [payload appendFormat:@"<applicationdata><![CDATA[%@]]></applicationdata>", base64EncodedApplicationData];
+    [payload appendFormat:@"<applicationdata><![CDATA[%@]]></applicationdata>", [applicationData base64EncodedString]];
     [payload appendFormat:@"<log><![CDATA[%@]]></log>", crashLogContent];
     [payload appendString:@"</crash>"];
   }

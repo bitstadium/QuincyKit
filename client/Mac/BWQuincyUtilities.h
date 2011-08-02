@@ -11,7 +11,7 @@
 NSArray* FindNewCrashFiles();
 BOOL hasCrashesTheUserDidNotSeeYet(NSArray *crashFiles, NSString **crashFileContent);
 NSString* consoleContent();
-int sendCrashReportsToServerAndParseResponse(NSArray *crashReports, NSDictionary* dictOfUserCommentsByCrashFile, NSString *submissionURL, NSDictionary *additionalData, BOOL isHockeyApp, NSTimeInterval networkTimeoutInterval);
+int sendCrashReportsToServerAndParseResponse(NSArray *crashReports, NSDictionary* additionalDataByCrashFile, NSString *submissionURL, BOOL isHockeyApp, NSTimeInterval networkTimeoutInterval);
 // void processServerResponse(NSUInteger statusCode, NSData* payload, NSArray *crashReports);
 
 void storeCommentForReport(NSString *comment, NSString *report);

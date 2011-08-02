@@ -40,10 +40,11 @@
 
 - (BOOL)hasCrashesTheUserDidNotSeeYet:(NSArray *)crashFiles content:(NSString **)crashFileContent;
 - (void)markReportsProcessed:(NSArray *)listOfReports;
+- (NSString *)consoleContent;
 
 - (void)storeComment:(NSString *)comment forReport:(NSString *)report;
-- (void)storeDictOfUserCommentsByCrashFile:(NSDictionary *)dict;
-- (NSDictionary *)loadDictOfUserCommentsByCrashFile;
+- (NSDictionary *)loadDataForCrashFiles:(NSArray *)crashReportFilenames;
+- (void)storeData:(NSDictionary *)data forCrashFile:(NSString *)crashReportFilename;
 - (void)storeLastCrashDate:(NSDate *) date;
 - (NSDate *)loadLastCrashDate;
 - (void)storeListOfAlreadyProcessedCrashFileNames:(NSArray *)listOfCrashReportFileNames;
@@ -152,7 +153,7 @@
     self.interfaceDelegate = ui;
   }
   
-  [self.interfaceDelegate presentQuincyCrashSubmitInterfaceWithCrash:crashFileContent console:consoleContent()];
+  [self.interfaceDelegate presentQuincyCrashSubmitInterfaceWithCrash:crashFileContent console:[self consoleContent]];
 }
 
 - (void)finishManager:(BWQuincyStatus)status
@@ -164,26 +165,56 @@
 
 - (BOOL)hasCrashesTheUserDidNotSeeYet:(NSArray *)crashFiles content:(NSString **)crashFileContent
 {
-  NSString* crashFile = [crashFiles objectAtIndex:0];
-  NSDictionary* dictOfUserCommentsByCrashFile = [self loadDictOfUserCommentsByCrashFile];
+  NSString* newestCrashFile = [crashFiles objectAtIndex:0];
+  NSDictionary* dataForCrashFiles = [self loadDataForCrashFiles:crashFiles];
   
-  if ([[dictOfUserCommentsByCrashFile allKeys] containsObject:crashFile])
+  if ([[dataForCrashFiles allKeys] containsObject:newestCrashFile])
   {
+    crashFileContent = nil;
     return NO;
   }
   
   // get the last crash log
   NSError *error;
-  NSString *crashLogs = [NSString stringWithContentsOfFile:crashFile encoding:NSUTF8StringEncoding error:&error];
+  NSString *crashLogs = [NSString stringWithContentsOfFile:newestCrashFile encoding:NSUTF8StringEncoding error:&error];
   *crashFileContent = [[crashLogs componentsSeparatedByString: @"**********\n\n"] lastObject];
   
-  // remember we showed it to the user
-  NSMutableDictionary *mutableDict;
-  mutableDict = dictOfUserCommentsByCrashFile ? [dictOfUserCommentsByCrashFile mutableCopy] : [NSMutableDictionary dictionary];
-  [mutableDict setObject:@"" forKey:crashFile];
+  NSString *userId = @"";
+  NSString *userContact = @"";
+  NSData *applicationdata = nil;
   
-  [self storeDictOfUserCommentsByCrashFile:mutableDict];
-  [mutableDict release];
+  if ([self.delegate respondsToSelector:@selector(crashReportUserID)])
+    userId = [self.delegate performSelector:@selector(crashReportUserID)];
+  
+  if ([self.delegate respondsToSelector:@selector(crashReportContact)])
+    userContact = [self.delegate performSelector:@selector(crashReportContact)];
+  
+  if ([self.delegate respondsToSelector:@selector(crashReportApplicationData)])
+    applicationdata = [self.delegate performSelector:@selector(crashReportApplicationData)];
+  
+  NSDictionary *dataForNewestCrash = [NSDictionary dictionaryWithObjectsAndKeys:
+                                      @"", @"comment",
+                                      [self consoleContent], @"console",
+                                      userId, @"userId",
+                                      userContact, @"userContact",
+                                      applicationdata, @"applicationData",
+                                      nil];
+  
+  [self storeData:dataForNewestCrash forCrashFile:newestCrashFile];
+
+  // remember we showed it to the user (and with that all the other new ones we found, too)
+  for (NSString *file in crashFiles)
+  {
+    if (![file isEqualToString:newestCrashFile])
+      [self storeData:[NSDictionary dictionary] forCrashFile:file];
+  }
+  
+//  NSMutableDictionary *mutableDict;
+//  mutableDict = dictOfUserCommentsByCrashFile ? [dictOfUserCommentsByCrashFile mutableCopy] : [NSMutableDictionary dictionary];
+//  [mutableDict setObject:@"" forKey:crashFile];
+//  
+//  [self storeDictOfUserCommentsByCrashFile:mutableDict];
+//  [mutableDict release];
   
   return YES;
 }
@@ -194,6 +225,11 @@
   [self storeListOfAlreadyProcessedCrashFileNames:listOfReports];
 }
 
+- (NSString *)consoleContent
+{
+  return @"";
+}
+
 #pragma mark -
 #pragma mark callbacks for UI
 
@@ -201,22 +237,6 @@
 {
   [self storeComment:userComment forReport:[crashReports_ objectAtIndex:0]];
   
-  // FIXME: bring callbacks back, persist this info per crash with user comments
-
-  //  NSString *userId = @"";
-  //  NSString *userContact = @"";
-  //  NSData *applicationdata = nil;
-  
-  //  if ([self.delegate respondsToSelector:@selector(crashReportUserID)])
-  //    userId = [self.delegate performSelector:@selector(crashReportUserID)];
-  //  
-  //  if ([self.delegate respondsToSelector:@selector(crashReportContact)])
-  //    userContact = [self.delegate performSelector:@selector(crashReportContact)];
-  //  
-  //  if ([self.delegate respondsToSelector:@selector(crashReportApplicationData)])
-  //    applicationdata = [self.delegate performSelector:@selector(crashReportApplicationData)];
-
-
   if ([self.delegate respondsToSelector:@selector(connectionOpened)])
     [self.delegate connectionOpened];
 
@@ -236,8 +256,7 @@
 
 - (void)sendSynchronously:(NSArray *)reports
 {
-  NSDictionary *additionalData = [NSDictionary dictionary];
-  int status = sendCrashReportsToServerAndParseResponse(reports, [self loadDictOfUserCommentsByCrashFile], self.submissionURL, additionalData, !!self.appIdentifier, self.networkTimeoutInterval);
+  int status = sendCrashReportsToServerAndParseResponse(reports, [self loadDataForCrashFiles:reports], self.submissionURL, !!self.appIdentifier, self.networkTimeoutInterval);
 
   // TODO figure out where exactly lastCrashDate should be set
   [self storeLastCrashDate:[NSDate date]];
@@ -318,24 +337,28 @@
 
 - (void)storeComment:(NSString *)comment forReport:(NSString *)report
 {
-  NSMutableDictionary* mutableDict = [[self loadDictOfUserCommentsByCrashFile] mutableCopy];
-  [mutableDict setObject:comment forKey:report];
-  [self storeDictOfUserCommentsByCrashFile:mutableDict];
-  [mutableDict release];
+  NSMutableDictionary* dataForThisCrash = [[[self loadDataForCrashFiles:nil] objectForKey:report] mutableCopy];
+  [dataForThisCrash setObject:comment forKey:@"comment"];
+  [self storeData:dataForThisCrash forCrashFile:report];
+  [dataForThisCrash release];
 }
 
-
-- (void)storeDictOfUserCommentsByCrashFile:(NSDictionary *)dict
+- (NSDictionary *)loadDataForCrashFiles:(NSArray *)crashReportFilenames
 {
-  // TODO prune dictOfUserCommentsByCrashFile to only contain the last X entries, can do this by sorting keys and removing oldest keys (filenames containing date)
-  [[NSUserDefaults standardUserDefaults] setValue:dict forKey:@"CrashReportSender.dictOfUserCommentsByCrashFile"];
-  [[NSUserDefaults standardUserDefaults] synchronize];
+  NSDictionary *dict = [[NSUserDefaults standardUserDefaults] valueForKey:@"CrashReportSender.dataForCrashFiles"];
+  if (crashReportFilenames)
+  {
+    // TODO filter loaded data for crashes?
+  }
+  return dict ?: [NSDictionary dictionary];
 }
 
-- (NSDictionary*)loadDictOfUserCommentsByCrashFile
+- (void)storeData:(NSDictionary *)data forCrashFile:(NSString *)crashReportFilename
 {
-  // TODO use #define or make static for these keys
-  return [[NSUserDefaults standardUserDefaults] valueForKey: @"CrashReportSender.dictOfUserCommentsByCrashFile"];
+  NSMutableDictionary *dataForAllCrashes = [[self loadDataForCrashFiles:nil] mutableCopy];
+  [dataForAllCrashes setObject:data forKey:crashReportFilename];
+  [[NSUserDefaults standardUserDefaults] setValue:dataForAllCrashes forKey:@"CrashReportSender.dataForCrashFiles"];
+  [dataForAllCrashes release];
 }
 
 
