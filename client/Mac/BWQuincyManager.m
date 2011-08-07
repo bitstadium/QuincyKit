@@ -27,6 +27,8 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#define DEBUG 0
+
 #import "BWQuincyManager.h"
 
 #import "BWQuincyUI.h"
@@ -77,8 +79,6 @@
 {
   if ((self = [super init]))
   {
-    _serverResult = CrashReportStatusFailureDatabaseNotAvailable;
-
     _submissionURL = nil;
     _appIdentifier = nil;
 
@@ -101,13 +101,15 @@
   _delegate = nil;
   _submissionURL = nil;
   _appIdentifier = nil;
+  
+  [crashReports_ release];
+  crashReports_ = nil;
 
   [super dealloc];
 }
 
 - (void)run
 {
-  // FIXME: case where the user never said to send crash reports, but still some are sent!
   NSDate* lastCrashDate = [self loadLastCrashDate];
   if (![lastCrashDate isEqualToDate:[NSDate distantPast]])
   {
@@ -115,18 +117,19 @@
     if ([lastCrashDate respondsToSelector:@selector(dateByAddingTimeInterval:)])
       lastCrashDate = [lastCrashDate dateByAddingTimeInterval:interval];
     else
-      [lastCrashDate addTimeInterval:interval]; // TODO: add a category interface at the top of the source file to give the signature for the method
+      [lastCrashDate addTimeInterval:interval]; // NOTE: add a category interface at the top of the source file to give the signature for the method once it is really gone
   }
 
   NSArray* listOfAlreadyProcessedCrashFileNames = [self loadListOfAlreadyProcessedCrashFileNames];
-  
-  // FIXME: test code to always find crash files
-  //  lastCrashDate = [NSDate distantPast];
-  //  listOfAlreadyProcessedCrashFileNames = [NSArray array];
 
-  int limit = 10;
-  crashReports_ = FindNewCrashFiles(lastCrashDate, listOfAlreadyProcessedCrashFileNames, limit);
+  // test code to always find crash files
+#if DEBUG
+  lastCrashDate = [NSDate distantPast];
+  listOfAlreadyProcessedCrashFileNames = [NSArray array];
+#endif
   
+  int limit = 10;
+  crashReports_ = [FindNewCrashFiles(lastCrashDate, listOfAlreadyProcessedCrashFileNames, limit) retain];
   if ([crashReports_ count] < 1)
   {
     // no new crashes found
@@ -167,13 +170,12 @@
 {
   NSString* newestCrashFile = [crashFiles objectAtIndex:0];
   NSDictionary* dataForCrashFiles = [self loadDataForCrashFiles:crashFiles];
-  
   if ([[dataForCrashFiles allKeys] containsObject:newestCrashFile])
   {
     crashFileContent = nil;
     return NO;
   }
-  
+
   // get the last crash log
   NSError *error;
   NSString *crashLogs = [NSString stringWithContentsOfFile:newestCrashFile encoding:NSUTF8StringEncoding error:&error];
@@ -256,56 +258,99 @@
 
 - (void)sendSynchronously:(NSArray *)reports
 {
-  int status = sendCrashReportsToServerAndParseResponse(reports, [self loadDataForCrashFiles:reports], self.submissionURL, !!self.appIdentifier, self.networkTimeoutInterval);
+  NSString *crashId = @"";
+  NSTimeInterval delay = 0.0;
+  int status = sendCrashReportsToServerAndParseResponse(
+                                                        reports,
+                                                        [self loadDataForCrashFiles:reports],
+                                                        self.submissionURL,
+                                                        !!self.appIdentifier,
+                                                        self.networkTimeoutInterval,
+                                                        &crashId,
+                                                        &delay);
 
-  // TODO figure out where exactly lastCrashDate should be set
   [self storeLastCrashDate:[NSDate date]];
   [self storeListOfAlreadyProcessedCrashFileNames:reports];
   
-  NSNumber *statusObj = [NSNumber numberWithInt:status];
-  [self performSelectorOnMainThread:@selector(didFinishSendingReport:) withObject:statusObj waitUntilDone:NO];
+  NSDictionary *dict = [NSDictionary dictionaryWithObjectsAndKeys:
+                        [NSNumber numberWithInt:status], @"status",
+                        crashId, @"crashId",
+                        [NSNumber numberWithFloat:delay], @"delay",
+                        nil];
+  [self performSelectorOnMainThread:@selector(didFinishSendingReport:) withObject:dict waitUntilDone:NO];
 }
 
-- (void) didFinishSendingReport:(NSNumber *)status
+- (void) didFinishSendingReport:(NSDictionary *)response
 {
-  NSLog(@"%@", status);
+  CrashReportStatus serverResponseCode = [[response objectForKey:@"status"] intValue];
+  NSString *crashId                    = [response objectForKey:@"crashId"];
+  NSTimeInterval delay                 = [[response objectForKey:@"delay"] floatValue];
+  
+  delay = delay + 1.0; // Note: add one more second to the delay to give the server time to breathe
 
   if ([self.delegate respondsToSelector:@selector(connectionClosed)])
     [self.delegate connectionClosed];
   
+  NSString *newestCrashReport = [crashReports_ objectAtIndex:0];
+  NSDictionary *crashLogContents = contentsOfCrashReportsByFileName([NSArray arrayWithObject:newestCrashReport]);
+  NSString *crashLogContent = [crashLogContents objectForKey:newestCrashReport];
   
-    // FIXME bring back feedback feature
-//  BOOL shouldShowCrashStatus = NO;
-//  BOOL isCrashAppVersionIdenticalToAppVersion = NO; // FIXME isCrashAppVersionIdenticalToAppVersion
-//  if (isFeedbackActivated && isCrashAppVersionIdenticalToAppVersion && maxFeedbackDelay > feedbackDelayInterval)
-//  {
-//    if (isHockeyApp)
-//    {
-//      // only proceed if the server did not report any problem
-//      if (serverResponseCode == CrashReportStatusQueued)
-//      {
-//        // the report is still in the queue
-//        [NSObject cancelPreviousPerformRequestsWithTarget:quincy selector:@selector(checkForFeedbackStatus) object:nil];
-//        [quincy performSelector:@selector(checkForFeedbackStatus) withObject:nil afterDelay:feedbackDelayInterval];
-//      }
-//      else
-//      {
-//        // we do have a status, show it if needed
-//        shouldShowCrashStatus = YES;
-//      }
-//    }
-//    else
-//    {
-//      shouldShowCrashStatus = YES;
-//    }
-//  }
-//  
-//  if (shouldShowCrashStatus)
-//  {
-//    if ([quincy.interfaceDelegate respondsToSelector:@selector(presentQuincyServerFeedbackInterface:)])
-//      [quincy.interfaceDelegate presentQuincyServerFeedbackInterface:_serverResult];
-//  }
-//  
+  NSString *crashedApplicationVersion = nil;
+  NSString *crashedApplicationShortVersion = nil;
+  parseVersionOfCrashedApplicationFromCrashLog(crashLogContent, &crashedApplicationVersion, &crashedApplicationShortVersion);
+  
+  BOOL shouldShowCrashStatus = NO;
+  NSString *currentApplicationVersion = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleVersion"];
+  BOOL isCrashAppVersionIdenticalToAppVersion = [currentApplicationVersion isEqualTo:crashedApplicationVersion];
+
+  BOOL isHockeyApp = !!self.appIdentifier;
+  if (self.feedbackActivated && isCrashAppVersionIdenticalToAppVersion && self.maxFeedbackDelay > delay)
+  {
+    if (isHockeyApp)
+    {
+      // only proceed if the server did not report any problem
+      if (serverResponseCode == CrashReportStatusQueued)
+      {
+        // the report is still in the queue
+        //[NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(checkForFeedbackStatus) object:nil];
+        [self performSelector:@selector(checkForFeedbackStatusAfterDelay:) withObject:crashId afterDelay:delay];
+      }
+      else
+      {
+        // we do have a status, show it if needed
+        shouldShowCrashStatus = YES;
+      }
+    }
+    else
+    {
+      shouldShowCrashStatus = YES;
+    }
+  }
+  
+  if (shouldShowCrashStatus)
+  {
+    if ([self.interfaceDelegate respondsToSelector:@selector(presentQuincyServerFeedbackInterface:)])
+      [self.interfaceDelegate presentQuincyServerFeedbackInterface:serverResponseCode];
+  }
+  
+}
+
+- (void)checkForFeedbackStatusAfterDelay:(NSString *)crashId
+{
+  [self performSelectorInBackground:@selector(checkForFeedbackStatusSynchronously:) withObject:crashId];
+}
+
+- (void)checkForFeedbackStatusSynchronously:(NSString *)crashId
+{
+  NSString *url = [self.submissionURL stringByAppendingFormat:@"/%@", crashId];
+  int status = checkForFeedbackStatus(url, self.networkTimeoutInterval);
+  [self performSelectorOnMainThread:@selector(didReceiveFeedback:) withObject:[NSNumber numberWithInt:status] waitUntilDone:NO];
+}
+
+- (void)didReceiveFeedback:(NSNumber *)status
+{
+  if ([self.interfaceDelegate respondsToSelector:@selector(presentQuincyServerFeedbackInterface:)])
+    [self.interfaceDelegate presentQuincyServerFeedbackInterface:[status intValue]];
 }
 
 #pragma mark -
@@ -317,8 +362,6 @@
         [_submissionURL release];
         _submissionURL = [anSubmissionURL copy];
     }
-    
-//    [self performSelector:@selector(startManager) withObject:nil afterDelay:0.1f];
 }
 
 - (void)setAppIdentifier:(NSString *)anAppIdentifier
@@ -383,7 +426,7 @@
     [list mutableCopy] :
     [[NSMutableArray alloc] init];
   
-  [mutableList addObjectsFromArray:listOfCrashReportFileNames]; // TODO: test for duplicates in listOfCrashReportFileNames
+  [mutableList addObjectsFromArray:listOfCrashReportFileNames];
   [[NSUserDefaults standardUserDefaults] setValue:mutableList forKey:@"CrashReportSender.listOfAlreadyProcessedCrashFileNames"];
   [[NSUserDefaults standardUserDefaults] synchronize];
   [mutableList release];

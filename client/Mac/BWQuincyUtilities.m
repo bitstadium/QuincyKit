@@ -7,6 +7,7 @@
 //
 #import <sys/sysctl.h>
 #import "BWQuincyUtilities.h"
+#import "BWQuincyServerAPI.h"
 #import "NSData+Base64.h"
 
 NSArray* FindLatestCrashFilesInPath(NSString* path, NSDate *minModifyTimestamp, NSArray *listOfAlreadyProcessedCrashFileNames, NSUInteger limit);
@@ -16,13 +17,12 @@ NSString* OSVersion();
 NSString* applicationName();
 NSString* applicationVersionString();
 NSString* computerModel();
-BOOL parseVersionOfCrashedApplicationFromCrashLog(NSString *crashReportContent, NSString **version, NSString **shortVersion);
 NSDictionary* crashLogsContentsByFilename(NSArray *crashLogs);
 
 
 NSString* generateXMLPayload(NSArray *listOfCrashReportFileNames, NSDictionary *additionalDataByCrashFile);
 NSURLRequest* buildURLRequestForPostingCrashes(NSString *url, NSString* xml, NSTimeInterval networkTimeoutInterval, BOOL isHockeyApp);
-int processServerResponse(NSData *data, BOOL isHockeyApp);
+int processServerResponse(NSData *data, BOOL isHockeyApp, NSString **crashId, NSTimeInterval *feedbackDelayInterval);
 
 
 NSArray* FindLatestCrashFilesInPath(NSString* path, NSDate *minModifyTimestamp, NSArray *listOfAlreadyProcessedCrashFileNames, NSUInteger limit)
@@ -44,7 +44,7 @@ NSArray* FindLatestCrashFilesInPath(NSString* path, NSDate *minModifyTimestamp, 
 
     if (
         [modDate compare:minModifyTimestamp] == NSOrderedDescending &&
-        ![listOfAlreadyProcessedCrashFileNames containsObject:crashFile] &&
+        ![listOfAlreadyProcessedCrashFileNames containsObject:crashLogPath] &&
         [crashFile hasPrefix:processName]
       )
     {
@@ -177,11 +177,12 @@ int sendCrashReportsToServerAndParseResponse(
   NSDictionary* additionalDataByCrashFile,
   NSString *submissionURL,
   BOOL isHockeyApp,
-  NSTimeInterval networkTimeoutInterval
+  NSTimeInterval networkTimeoutInterval,
+  NSString **crashId,
+  NSTimeInterval *feedbackDelay
 )
 {
   NSString *payload = generateXMLPayload(listOfCrashReportFileNames, additionalDataByCrashFile);
-  NSLog(@"%@", payload); // FIXME remove test code
   
   NSURLRequest *request = buildURLRequestForPostingCrashes(submissionURL, payload, networkTimeoutInterval, isHockeyApp);  
   NSURLResponse *response;
@@ -193,13 +194,10 @@ int sendCrashReportsToServerAndParseResponse(
   {
     NSLog(@"WARNING: Server returned HTTP code: %ld", statusCode);
     // server down? ignore, will try later
-    return 0; // CrashReportStatusUnknown;
+    return CrashReportStatusUnknown;
   }
   
-  NSString *x = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-  NSLog(@"Server returned HTTP code %@", x); // FIXME remove test code
-
-  int serverResponseCode = processServerResponse(data, isHockeyApp);
+  int serverResponseCode = processServerResponse(data, isHockeyApp, crashId, feedbackDelay);
   return serverResponseCode;
 }
 
@@ -216,8 +214,8 @@ NSString* generateXMLPayload(NSArray *listOfCrashReportFileNames, NSDictionary *
   {
     NSString *crashLogContent = [crashLogsByFile objectForKey:crashFile];
 
-    NSString *crashedApplicationVersion;
-    NSString *crashedApplicationShortVersion;
+    NSString *crashedApplicationVersion = nil;
+    NSString *crashedApplicationShortVersion = nil;
     parseVersionOfCrashedApplicationFromCrashLog(crashLogContent, &crashedApplicationVersion, &crashedApplicationShortVersion);
     
     NSDictionary *dataForCrash = [additionalDataByCrashFile objectForKey:crashFile];
@@ -285,11 +283,9 @@ NSURLRequest* buildURLRequestForPostingCrashes(NSString *url, NSString* xml, NST
   return request;
 }
 
-int processServerResponse(NSData *data, BOOL isHockeyApp)
+int processServerResponse(NSData *data, BOOL isHockeyApp, NSString **crashId, NSTimeInterval *feedbackDelayInterval)
 {
-  int serverResponseCode = 0; // CrashReportStatusUnknown;
-  // NSTimeInterval feedbackDelayInterval = 1.0;
-  // NSString *crashId = nil;
+  int serverResponseCode = CrashReportStatusUnknown;
   if (isHockeyApp)
   {
     // HockeyApp uses PList XML format
@@ -300,60 +296,54 @@ int processServerResponse(NSData *data, BOOL isHockeyApp)
                                                                      errorDescription:NULL];
     serverResponseCode = [[response objectForKey:@"status"] intValue];
     
-    // TODO: bring back feedback feature
-    // if (serverResponseCode == CrashReportStatusQueued)
-    // {
-    //   crashId = [[NSString alloc] initWithString:[response objectForKey:@"id"]];
-    //   feedbackDelayInterval = [[response objectForKey:@"delay"] floatValue];
-    //   // NOTE: it did not work with 0, the server responded with another delay
-    //   feedbackDelayInterval = feedbackDelayInterval > 0 ? feedbackDelayInterval / 1000 : 1.0;
-    // }
+    if (serverResponseCode == CrashReportStatusQueued)
+    {
+      *crashId = [response objectForKey:@"id"];
+      float delay = [[response objectForKey:@"delay"] floatValue];
+      // NOTE: it did not work with 0, the server responded with another delay
+      *feedbackDelayInterval = delay > 0 ? delay / 1000 : 1.0;
+    }
   }
   else
   {
     // using the HockeyKit open source server
-    serverResponseCode = 0; // FIXME parse open source server response w/o xml parser
+    serverResponseCode = 0;
+
+    // <result>0</result>
+    NSString *xmlString = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+    NSScanner *scanner = [NSScanner scannerWithString:xmlString];
+    [scanner scanUpToString:@"<result>" intoString:nil];
+    [scanner scanInt:&serverResponseCode];
   }
   return serverResponseCode;
 }
 
-// - (void)checkForFeedbackStatus
-// {
-//   NSMutableURLRequest *request = nil;
-//   
-//   NSString *url = [self.submissionURL stringByAppendingFormat:@"/%@", _feedbackRequestID];
-//   request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:url]];
-//   
-//   [request setCachePolicy:NSURLRequestReloadIgnoringLocalCacheData];
-//   [request setValue:@"Quincy/Mac" forHTTPHeaderField:@"User-Agent"];
-//   [request setValue:@"gzip" forHTTPHeaderField:@"Accept-Encoding"];
-//   [request setTimeoutInterval:self.networkTimeoutInterval];
-//   [request setHTTPMethod:@"GET"];
-//   
-//   _serverResult = CrashReportStatusUnknown;
-//   statusCode_ = 200;
-//   
-//   // Release when done in the delegate method
-//   responseData_ = [[NSMutableData alloc] init];
-//   
-//   if ([self.delegate respondsToSelector:@selector(connectionOpened)])
-//     [self.delegate connectionOpened];
-//   
-//   urlConnection_ = [[NSURLConnection alloc] initWithRequest:request delegate:self];    
-// }
+int checkForFeedbackStatus(NSString *url, NSTimeInterval networkTimeoutInterval)
+{
+  NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:url]];
 
+  [request setCachePolicy:NSURLRequestReloadIgnoringLocalCacheData];
+  [request setValue:@"Quincy/Mac" forHTTPHeaderField:@"User-Agent"];
+  [request setValue:@"gzip" forHTTPHeaderField:@"Accept-Encoding"];
+  [request setTimeoutInterval:networkTimeoutInterval];
+  [request setHTTPMethod:@"GET"];
 
-// - (void) showCrashStatusMessage
-// {
-//   if ([self.interfaceDelegate respondsToSelector:@selector(presentQuincyServerFeedbackInterface:)])
-//     [self.interfaceDelegate presentQuincyServerFeedbackInterface:_serverResult];
-// }
+  NSURLResponse *urlResponse;
+  NSError *error;
+  NSData *data = [NSURLConnection sendSynchronousRequest:request returningResponse:&urlResponse error:&error];
 
+  NSUInteger statusCode = [(NSHTTPURLResponse *)urlResponse statusCode];
+  if (statusCode < 200 || statusCode >= 400)
+  {
+    NSLog(@"WARNING: Server returned HTTP code: %ld", statusCode);
+    return CrashReportStatusUnknown;
+  }
 
-
-
-
-
-
-
+  NSMutableDictionary *response = [NSPropertyListSerialization propertyListFromData:data
+                                                                   mutabilityOption:NSPropertyListMutableContainersAndLeaves
+                                                                             format:nil
+                                                                   errorDescription:NULL];
+  int serverResponseCode = [[response objectForKey:@"status"] intValue];
+  return serverResponseCode;
+}
 

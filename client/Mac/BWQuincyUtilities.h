@@ -11,10 +11,19 @@
 NSArray* FindNewCrashFiles();
 BOOL hasCrashesTheUserDidNotSeeYet(NSArray *crashFiles, NSString **crashFileContent);
 NSString* consoleContent();
-int sendCrashReportsToServerAndParseResponse(NSArray *crashReports, NSDictionary* additionalDataByCrashFile, NSString *submissionURL, BOOL isHockeyApp, NSTimeInterval networkTimeoutInterval);
-// void processServerResponse(NSUInteger statusCode, NSData* payload, NSArray *crashReports);
 
+int sendCrashReportsToServerAndParseResponse(
+                                             NSArray *crashReports,
+                                             NSDictionary* additionalDataByCrashFile,
+                                             NSString *submissionURL,
+                                             BOOL isHockeyApp,
+                                             NSTimeInterval networkTimeoutInterval,
+                                             NSString **crashId,
+                                             NSTimeInterval *feedbackDelay);
+
+NSDictionary* contentsOfCrashReportsByFileName(NSArray *crashLogs);
+BOOL parseVersionOfCrashedApplicationFromCrashLog(NSString *crashReportContent, NSString **version, NSString **shortVersion);
 void storeCommentForReport(NSString *comment, NSString *report);
 void markReportsProcessed(NSArray *listOfReports);
-
+int checkForFeedbackStatus(NSString *url, NSTimeInterval networkTimeoutInterval);
 

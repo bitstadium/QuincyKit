@@ -67,8 +67,6 @@ typedef enum BWQuincyStatus {
 
 @interface BWQuincyManager : NSObject
 {
-  CrashReportStatus _serverResult;
-
   NSInteger statusCode_;
 
   NSMutableString *_contentOfProperty;
