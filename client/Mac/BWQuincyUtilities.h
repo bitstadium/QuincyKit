@@ -8,7 +8,7 @@
 
 #import <Foundation/Foundation.h>
 
-NSArray* FindNewCrashFiles();
+NSArray* FindNewCrashFiles(NSDate* lastCrashDate, NSArray* listOfAlreadyProcessedCrashFileNames, int limit);
 BOOL hasCrashesTheUserDidNotSeeYet(NSArray *crashFiles, NSString **crashFileContent);
 NSString* consoleContent();
 
