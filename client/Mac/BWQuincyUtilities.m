@@ -13,11 +13,11 @@
 NSArray* FindLatestCrashFilesInPath(NSString* path, NSDate *minModifyTimestamp, NSArray *listOfAlreadyProcessedCrashFileNames, NSUInteger limit);
 NSArray* FindLatestCrashFiles(NSDate *minModifyTimestamp, NSArray *listOfAlreadyProcessedCrashFileNames, NSUInteger limit);
 
-NSString* OSVersion();
-NSString* applicationName();
-NSString* applicationVersionString();
-NSString* computerModel();
-NSDictionary* crashLogsContentsByFilename(NSArray *crashLogs);
+static NSString* OSVersion();
+static NSString* applicationName();
+static NSString* applicationVersionString();
+static NSString* computerModel();
+static NSDictionary* crashLogsContentsByFilename(NSArray *crashLogs);
 
 
 NSString* generateXMLPayload(NSArray *listOfCrashReportFileNames, NSDictionary *additionalDataByCrashFile);
@@ -28,7 +28,6 @@ int processServerResponse(NSData *data, BOOL isHockeyApp, NSString **crashId, NS
 NSArray* FindLatestCrashFilesInPath(NSString* path, NSDate *minModifyTimestamp, NSArray *listOfAlreadyProcessedCrashFileNames, NSUInteger limit)
 {
   NSString *processName = [[NSProcessInfo processInfo] processName];
-  
   NSFileManager* fman = [NSFileManager defaultManager];
 
   NSError* error = nil;
@@ -83,7 +82,7 @@ NSArray* FindNewCrashFiles(NSDate* lastCrashDate, NSArray* listOfAlreadyProcesse
   return crashFiles;
 }
 
-NSString* OSVersion()
+static NSString* OSVersion()
 {
   SInt32 versionMajor, versionMinor, versionBugFix;
   if (Gestalt(gestaltSystemVersionMajor, &versionMajor) != noErr)   versionMajor  = 0;
@@ -92,7 +91,7 @@ NSString* OSVersion()
   return [NSString stringWithFormat:@"%i.%i.%i", versionMajor, versionMinor, versionBugFix];
 }
 
-NSString* applicationName()
+static NSString* applicationName()
 {
   NSString *applicationName = [[[NSBundle mainBundle] localizedInfoDictionary] valueForKey: @"CFBundleExecutable"];
   
@@ -102,7 +101,7 @@ NSString* applicationName()
     return applicationName;
 }
 
-NSString* applicationVersionString()
+static NSString* applicationVersionString()
 {
   NSString* string = [[[NSBundle mainBundle] localizedInfoDictionary] valueForKey: @"CFBundleShortVersionString"];
   
@@ -112,7 +111,7 @@ NSString* applicationVersionString()
     return string;
 }
 
-NSString* computerModel()
+static NSString* computerModel()
 {
   NSString * modelString  = nil;
   int        modelInfo[2] = { CTL_HW, HW_MODEL };
@@ -311,9 +310,11 @@ int processServerResponse(NSData *data, BOOL isHockeyApp, NSString **crashId, NS
 
     // <result>0</result>
     NSString *xmlString = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-    NSScanner *scanner = [NSScanner scannerWithString:xmlString];
+    NSScanner *scanner = [[NSScanner alloc] initWithString:xmlString];
     [scanner scanUpToString:@"<result>" intoString:nil];
     [scanner scanInt:&serverResponseCode];
+    [scanner release];
+    [xmlString release];
   }
   return serverResponseCode;
 }
