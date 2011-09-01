@@ -139,6 +139,8 @@ typedef enum CrashReportStatus {
 // Invoked when the internet connection is closed, to let the app disable the activity indicator
 -(void) connectionClosed;
 
+-(void) askForCrashInfo:(NSString*)messageBody;
+
 @end
 
 @interface BWQuincyManager : NSObject <NSXMLParserDelegate> {

@@ -346,8 +346,7 @@ NSBundle *quincyBundle() {
 				case 0:
 					break;
 				case 1:
-						// Show the email compose sheet
-					break;
+					[self.delegate askForCrashInfo:@"Please describe what you were doing when the crash occured:\n\n"];
 			}
 			break;
 
