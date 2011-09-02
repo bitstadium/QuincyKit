@@ -32,7 +32,7 @@
 
 @class QuincyDemoViewController;
 
-@interface QuincyDemoAppDelegate : NSObject <UIApplicationDelegate, BWQuincyManagerDelegate> {
+@interface QuincyDemoAppDelegate : NSObject <UIApplicationDelegate, BWQuincyManagerDelegate, MFMailComposeViewControllerDelegate> {
 	UIApplication *_application;
 
 	IBOutlet UIWindow *window;
