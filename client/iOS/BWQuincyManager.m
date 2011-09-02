@@ -45,6 +45,16 @@ NSBundle *quincyBundle(void) {
     return bundle;
 }
 
+NSString *BWQuincyLocalize(NSString *stringToken) {
+    if ([BWQuincyManager sharedQuincyManager].languageStyle == nil)
+        return NSLocalizedStringFromTableInBundle(stringToken, @"Quincy", quincyBundle(), @"");
+    else {
+        NSString *alternate = [NSString stringWithFormat:@"Quincy%@", [BWQuincyManager sharedQuincyManager].languageStyle];
+        return NSLocalizedStringFromTableInBundle(stringToken, alternate, quincyBundle(), @"");
+    }
+}
+
+
 @interface BWQuincyManager ()
 
 - (void)startManager;
@@ -76,6 +86,7 @@ NSBundle *quincyBundle(void) {
 @synthesize feedbackActivated = _feedbackActivated;
 @synthesize autoSubmitCrashReport = _autoSubmitCrashReport;
 @synthesize autoSubmitDeviceUDID = _autoSubmitDeviceUDID;
+@synthesize languageStyle = _languageStyle;
 
 @synthesize appIdentifier = _appIdentifier;
 
@@ -99,6 +110,7 @@ NSBundle *quincyBundle(void) {
         _responseData = nil;
         _appIdentifier = nil;
         _sendingInProgress = NO;
+        _languageStyle = nil;
         
 		self.delegate = nil;
         self.feedbackActivated = NO;
@@ -163,6 +175,8 @@ NSBundle *quincyBundle(void) {
     self.delegate = nil;
     [[NSNotificationCenter defaultCenter] removeObserver:self name:BWQuincyNetworkBecomeReachable object:nil];
     
+    [_languageStyle release];
+    
     [_submissionURL release];
     _submissionURL = nil;
     
@@ -213,14 +227,14 @@ NSBundle *quincyBundle(void) {
         if (!self.autoSubmitCrashReport && [self hasNonApprovedCrashReports]) {
             NSString *appName = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleDisplayName"];
             
-            UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:BWQuincyLocalize(@"CrashDataFoundTitle")
+            UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:[NSString stringWithFormat:BWQuincyLocalize(@"CrashDataFoundTitle"), appName]
                                                                 message:[NSString stringWithFormat:BWQuincyLocalize(@"CrashDataFoundDescription"), appName]
                                                                delegate:self
-                                                      cancelButtonTitle:BWQuincyLocalize(@"No")
-                                                      otherButtonTitles:BWQuincyLocalize(@"Yes"), nil];
+                                                      cancelButtonTitle:BWQuincyLocalize(@"CrashDontSendReport")
+                                                      otherButtonTitles:BWQuincyLocalize(@"CrashSendReport"), nil];
             
             if ([self isShowingAlwaysButton]) {
-                [alertView addButtonWithTitle:BWQuincyLocalize(@"Always")];
+                [alertView addButtonWithTitle:BWQuincyLocalize(@"CrashSendReportAlways")];
             }
             
             [alertView setTag: QuincyKitAlertTypeSend];
@@ -285,21 +299,21 @@ NSBundle *quincyBundle(void) {
 				alertView = [[UIAlertView alloc] initWithTitle: [NSString stringWithFormat:BWQuincyLocalize(@"CrashResponseTitle"), appName ]
 													   message: [NSString stringWithFormat:BWQuincyLocalize(@"CrashResponseNextRelease"), appName]
 													  delegate: self
-											 cancelButtonTitle: BWQuincyLocalize(@"OK")
+											 cancelButtonTitle: BWQuincyLocalize(@"CrashResponseTitleOK")
 											 otherButtonTitles: nil];
 				break;
 			case CrashReportStatusSubmitted:
 				alertView = [[UIAlertView alloc] initWithTitle: [NSString stringWithFormat:BWQuincyLocalize(@"CrashResponseTitle"), appName ]
 													   message: [NSString stringWithFormat:BWQuincyLocalize(@"CrashResponseWaitingApple"), appName]
 													  delegate: self
-											 cancelButtonTitle: BWQuincyLocalize(@"OK")
+											 cancelButtonTitle: BWQuincyLocalize(@"CrashResponseTitleOK")
 											 otherButtonTitles: nil];
 				break;
 			case CrashReportStatusAvailable:
 				alertView = [[UIAlertView alloc] initWithTitle: [NSString stringWithFormat:BWQuincyLocalize(@"CrashResponseTitle"), appName ]
 													   message: [NSString stringWithFormat:BWQuincyLocalize(@"CrashResponseAvailable"), appName]
 													  delegate: self
-											 cancelButtonTitle: BWQuincyLocalize(@"OK")
+											 cancelButtonTitle: BWQuincyLocalize(@"CrashResponseTitleOK")
 											 otherButtonTitles: nil];
 				break;
 			default:
@@ -408,6 +422,14 @@ NSBundle *quincyBundle(void) {
 	return platform;
 }
 
+- (NSString *)deviceIdentifier {
+  if ([[UIDevice currentDevice] respondsToSelector:@selector(uniqueIdentifier)]) {
+    return [[UIDevice currentDevice] performSelector:@selector(uniqueIdentifier)];
+  }
+  else {
+    return @"invalid";
+  }
+}
 
 - (void)_performSendingCrashReports {
     NSMutableDictionary *approvedCrashReports = [NSMutableDictionary dictionaryWithDictionary:[[NSUserDefaults standardUserDefaults] dictionaryForKey: kApprovedCrashReports]];
@@ -420,7 +442,7 @@ NSBundle *quincyBundle(void) {
 	NSString *description = @"";
 	
     if (self.autoSubmitDeviceUDID) {
-        userid = [[UIDevice currentDevice] uniqueIdentifier];
+        userid = [self deviceIdentifier];
     } else if (self.delegate != nil && [self.delegate respondsToSelector:@selector(crashReportUserID)]) {
 		userid = [self.delegate crashReportUserID];
 	}
