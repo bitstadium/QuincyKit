@@ -76,7 +76,7 @@ function xml_for_result($result) {
 	return '<?xml version="1.0" encoding="UTF-8"?><result>'.$result.'</result>'; 
 }
 
-function parseblock($matches, $appString) {
+function parseblock($matches, $appString, $startAddress) {
     $result_offset = "";
     //make sure $matches[1] exists
 	if (is_array($matches) && count($matches) >= 2) {
@@ -89,7 +89,7 @@ function parseblock($matches, $appString) {
                 if (count($matches) >= 2) {
                     if ($result_offset != "")
                         $result_offset .= "%";
-                    $result_offset .= $matches[1];
+                    $result_offset .= dechex(hexdec($matches[1]) - hexdec($startAddress));
                 }
 			}
 		}
@@ -464,20 +464,32 @@ foreach ($crashes as $crash) {
             $appcrashtext = str_replace("\\", "", $appcrashinfo[1]);
             $appcrashtext = str_replace("'", "\'", $appcrashtext);
         }
-    
+
+        // get the application start address, to calculate a proper group even with ASLR
+        // by default it is 0x1000, to indicate not to change anything
+        $startAddress = "0x1000";
+      	preg_match('%Binary Images:.*?\n(.*?)\n%', $crash["logdata"], $binaryImages);
+
+    	if (is_array($binaryImages) && count($binaryImages) >= 2) {
+            if (strpos($binaryImages[1], " - ") !== false) {
+                $startAddress = substr($binaryImages[1], 0, strpos($binaryImages[1], " - "));
+    	    }
+    	}
+
     	// extract the block which contains the data of the crashing thread
       	preg_match('%Thread [0-9]+ Crashed:.*?\n(.*?)\n\n%is', $crash["logdata"], $matches);
-        $crash_offset = parseblock($matches, $crash["applicationname"]);	
+        $crash_offset = parseblock($matches, $crash["applicationname"], $startAddress);
         if ($crash_offset == "") {
-            $crash_offset = parseblock($matches, $crash["bundleidentifier"]);
+            $crash_offset = parseblock($matches, $crash["bundleidentifier"], $startAddress);
         }
         if ($crash_offset == "") {
             preg_match('%Thread [0-9]+ Crashed:\n(.*?)\n\n%is', $crash["logdata"], $matches);
-            $crash_offset = parseblock($matches, $crash["applicationname"]);
+            $crash_offset = parseblock($matches, $crash["applicationname"], $startAddress);
         }
         if ($crash_offset == "") {
-            $crash_offset = parseblock($matches, $crash["bundleidentifier"]);
+            $crash_offset = parseblock($matches, $crash["bundleidentifier"], $startAddress);
         }
+
 
     	// stores the group this crashlog is associated to, by default to none
     	$log_groupid = 0;
