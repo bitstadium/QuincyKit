@@ -472,39 +472,6 @@ foreach ($crashes as $crash) {
       $appcrashtext = str_replace("'", "\'", $appcrashtext);
     }
     
-    // check if the version is already added and the status of the version and notify status
-    $query = "SELECT id, status, notify FROM ".$dbversiontable." WHERE bundleidentifier = '".$crash["bundleidentifier"]."' and version = '".$crash["version"]."'";
-    $result = mysql_query($query) or die(xml_for_result(FAILURE_SQL_CHECK_VERSION_EXISTS));
-
-    $numrows = mysql_num_rows($result);
-    if ($numrows == 0) {
-      // version is not available, so add it with status VERSION_STATUS_AVAILABLE
-    	$query = "INSERT INTO ".$dbversiontable." (bundleidentifier, version, status, notify) values ('".$crash["bundleidentifier"]."', '".$crash["version"]."', ".VERSION_STATUS_UNKNOWN.", ".$notify_default_version.")";
-    	$result = mysql_query($query) or die(xml_for_result(FAILURE_SQL_ADD_VERSION));
-    } else {
-      $row = mysql_fetch_row($result);
-      $crash["version_status"] = $row[1];
-      $notify = $row[2];
-      mysql_free_result($result);
-    }
-
-    if ($crash["version_status"] == VERSION_STATUS_DISCONTINUED) {
-      $lastError = FAILURE_VERSION_DISCONTINUED;
-      continue;
-    }
-
-    // now try to find the offset of the crashing thread to assign this crash to a crash group
-	
-    // this stores the offset which we need for grouping
-    $crash_offset = "";
-    $appcrashtext = "";
-	
-    preg_match('%Application Specific Information:.*?\n(.*?)\n\n%is', $crash["logdata"], $appcrashinfo);
-    if (is_array($appcrashinfo) && count($appcrashinfo) == 2) {
-      $appcrashtext = str_replace("\\", "", $appcrashinfo[1]);
-      $appcrashtext = str_replace("'", "\'", $appcrashtext);
-    }
-
     // get the application start address, to calculate a proper group even with ASLR
     // by default it is 0x1000, to indicate not to change anything
     $startAddress = "0x1000";
@@ -555,7 +522,7 @@ foreach ($crashes as $crash) {
         $query = "UPDATE " . $dbgrouptable . " SET amount=amount+1, latesttimestamp = " . time() . " WHERE id=" . $log_groupid;
         $result = mysql_query($query) or die(xml_for_result(FAILURE_SQL_UPDATE_PATTERN_OCCURANCES));
         
-        if ($desc != "" && $appcrashtext != "") {
+        if ($appcrashtext != "") {
           $desc = str_replace("'", "\'", $desc);
           if (strpos($desc, $appcrashtext) === false) {
             $appcrashtext = $desc . "\n" . $appcrashtext;

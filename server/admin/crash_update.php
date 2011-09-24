@@ -100,83 +100,68 @@ if ($result) {
 	else
 		echo "error";
 
-    $applicationname = "";
-    $groupid = 0;
-    $bundleidentifier = "";
-    $version = "";
+  $applicationname = "";
+  $groupid = 0;
+  $bundleidentifier = "";
+  $version = "";
     
-    // get app name
-    $query = "SELECT applicationname, groupid, bundleidentifier, version FROM ".$dbcrashtable." WHERE id = ".$id;
+  // get app name
+  $query = "SELECT applicationname, groupid, bundleidentifier FROM ".$dbcrashtable." WHERE id = ".$id;
 	$result = mysql_query($query) or die('Error in SQL '.$dbsymbolicatetable);
     
-    $numrows = mysql_num_rows($result);
-    if ($numrows > 0) {
-    	$row = mysql_fetch_row($result);
-   		$applicationname = $row[0];
-   		$groupid = $row[1];
-   		$bundleidentifier = $row[2];
-   		$version = $row[3];
-    }
-    mysql_free_result($result);
+  $numrows = mysql_num_rows($result);
+  if ($numrows > 0) {
+  	$row = mysql_fetch_row($result);
+  	$applicationname = $row[0];
+  	$groupid = $row[1];
+  	$bundleidentifier = $row[2];
+  }
+  mysql_free_result($result);
 
 	// get new grouping
-    if ($applicationname != "" && $bundleidentifier != "" && $version != "") {
-    	// this stores the offset which we need for grouping
-        $crash_group = "";
-        $appcrashtext = "";
+  if ($applicationname != "" && $bundleidentifier != "" && $version != "") {
+  	// this stores the offset which we need for grouping
+    $crash_group = "";
+    $appcrashtext = "";
         
-        // extract the block which contains the data of the crashing thread
-        preg_match('%Thread [0-9]+ Crashed:.*?\n(.*?)\n\n%is', $log, $matches);
-        $crash_offset = parseSymbolicated($matches, $applicationname);	
-        if ($crash_group == "") {
-            $crash_group = parseSymbolicated($matches, $bundleidentifier);
-        }
-        if ($crash_group == "") {
-            preg_match('%Thread [0-9]+ Crashed:\n(.*?)\n\n%is', $log, $matches);
-            $crash_group = parseSymbolicated($matches, $applicationname);
-        }
-        if ($crash_group == "") {
-            $crash_group = parseSymbolicated($matches, $bundleidentifier);
-        }
+    // extract the block which contains the data of the crashing thread
+    preg_match('%Thread [0-9]+ Crashed:.*?\n(.*?)\n\n%is', $log, $matches);
+    $crash_offset = parseSymbolicated($matches, $applicationname);	
+    if ($crash_group == "") {
+      $crash_group = parseSymbolicated($matches, $bundleidentifier);
+    }
+    if ($crash_group == "") {
+      preg_match('%Thread [0-9]+ Crashed:\n(.*?)\n\n%is', $log, $matches);
+      $crash_group = parseSymbolicated($matches, $applicationname);
+    }
+    if ($crash_group == "") {
+      $crash_group = parseSymbolicated($matches, $bundleidentifier);
+    }
     	
-        preg_match('%Application Specific Information:.*?\n(.*?)\n\n%is', $logdata, $appcrashinfo);
-        if (is_array($appcrashinfo) && count($appcrashinfo) == 2) {
-        	$appcrashtext = str_replace("\\", "", $appcrashinfo[1]);
-            $appcrashtext = str_replace("'", "\'", $appcrashtext);
-        }
-
-        // if the offset string is not empty, we check if the description already contains that text, otherwise add it to the bottom
-        if (strlen($crash_group) > 0) {
-            // get all the known bug patterns for the current app version
-            $query = "SELECT description FROM ".$dbgrouptable." WHERE id = ".$groupid;
-            $result = mysql_query($query) or die(xml_for_result(FAILURE_SQL_FIND_KNOWN_PATTERNS));
+    // if the offset string is not empty, we check if the description already contains that text, otherwise add it to the bottom
+    if ($crash_group != "" && strlen($crash_group) > 0) {
+      $query = "SELECT description FROM ".$dbgrouptable." WHERE id = ".$groupid;
+      $result = mysql_query($query) or die(xml_for_result(FAILURE_SQL_FIND_KNOWN_PATTERNS));
     
-            $numrows = mysql_num_rows($result);
+      $numrows = mysql_num_rows($result);
             
-            if ($numrows == 1) {
-                // assign this bug to the group
-                $row = mysql_fetch_row($result);
-                $desc = $row[0];
-    
-                mysql_free_result($result);
+      if ($numrows == 1) {
+        // assign this bug to the group
+        $row = mysql_fetch_row($result);
+        $desc = $row[0];
+  
+        mysql_free_result($result);
 
 				$desc = str_replace("'", "\'", $desc);
-                if (strpos($desc, $crash_group) === false) {
-                    if ($desc != "") $desc .= "\n\n";
-                    $desc .= $crash_group;
-                }
-                
-                if (strpos($desc, $appcrashtext) === false) {
-                    if ($desc != "") $desc .= "\n\n";
-                    $desc .= $appcrashtext;
-                }
-
-                
-                // update the occurances of this pattern
-                $query = "UPDATE ".$dbgrouptable." SET description = '".$desc."' WHERE id=".$groupid;
-               	$result = mysql_query($query) or die(end_with_result('Error in SQL '.$query));
-            }
+        if (strpos($desc, $crash_group) === false) {
+          $desc = $crash_group."\n\n".$desc";
         }
+                
+        // update the occurances of this pattern
+        $query = "UPDATE ".$dbgrouptable." SET description = '".$desc."' WHERE id=".$groupid;
+       	$result = mysql_query($query) or die(end_with_result('Error in SQL '.$query));
+      }
+    }
 	}
 } else {
 	echo "error";
