@@ -32,8 +32,8 @@ require_once('../config.php');
 require_once('common.inc');
 
 init_database();
-parse_parameters(',action,id,groupid,bundleidentifier,version,fixversion,description,');
-parse_parameters_post(',action,id,groupid,bundleidentifier,version,fixversion,description,');
+parse_parameters(',action,id,groupid,bundleidentifier,version,fixversion,description,moreinfo,');
+parse_parameters_post(',action,id,groupid,bundleidentifier,version,fixversion,description,moreinfo,');
 
 if (!isset($action)) $action = "";
 if (!isset($id)) $id = "";
@@ -42,6 +42,7 @@ if (!isset($bundleidentifier)) $version = "";
 if (!isset($version)) $version = "";
 if (!isset($fixversion)) $fixversion = "";
 if (!isset($description)) $description = "";
+if (!isset($moreinfo)) $moreinfo = 0;
 
 if ($action == "") die('Wrong parameters');
 
@@ -120,6 +121,10 @@ if ($action == "deletecrashid" && $id != "") {
       
   $query = "UPDATE ".$dbgrouptable." SET description = '".mysql_real_escape_string($description)."' WHERE id = ".$id;
   $result = mysql_query($query) or die('Error in SQL '.$query);
+
+  $query = "UPDATE ".$dbgrouptable." SET moreinfo = '".mysql_real_escape_string($moreinfo)."' WHERE id = ".$id;
+  $result = mysql_query($query) or die('Error in SQL '.$query);
+
 } else if ($action == "symbolicatecrashid" && $id != "") {
     $query = "SELECT id FROM ".$dbsymbolicatetable." WHERE crashid = ".$id;
     $result = mysql_query($query) or die('Error in SQL '.$query);

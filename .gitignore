@@ -43,3 +43,8 @@ Backup[ ]of[ ]*.numbers/
 *~.nib
 profile
 
+
+/server/config.php
+/server/local/serverconfig.php
+/server/admin/.htaccess
+/server/admin/.htpasswd

@@ -39,8 +39,7 @@
 
 include "serverconfig.php";
 
-function doPost($postdata)
-{
+function doPost($postdata) {
     global $updatecrashdataurl, $hostname, $webuser, $webpwd;
     
 	$uri = $updatecrashdataurl;
@@ -73,8 +72,7 @@ function doPost($postdata)
 		$header=$response[0]; 
 		$responsecontent=$response[1]; 
 		
-		if(!(strpos($header,"Transfer-Encoding: chunked")===false))
-		{
+		if(!(strpos($header,"Transfer-Encoding: chunked")===false)) {
 			$aux=split("\r\n",$responsecontent); 
 			for($i=0;$i<count($aux);$i++) 
 				if($i==0 || ($i%2==0)) 
@@ -86,8 +84,7 @@ function doPost($postdata)
 } 
     
 
-if ($webuser != "" && $webpwd != "")
-{
+if ($webuser != "" && $webpwd != "") {
     $downloadtodosurl = "http://".$webuser.":".$webpwd."@".$hostname.$downloadtodosurl;
     $getcrashdataurl = "http://".$webuser.":".$webpwd."@".$hostname.$getcrashdataurl;
 } else {
@@ -101,12 +98,10 @@ $content = file_get_contents($downloadtodosurl);
 
 $error = false;
 
-if ($content !== false && strlen($content) > 0)
-{
+if ($content !== false && strlen($content) > 0) {
 	echo "To do list: ".$content."\n\n";
 	$crashids = split(',', $content);
-	foreach ($crashids as $crashid)
-	{
+	foreach ($crashids as $crashid) {
 		$filename = $crashid.".crash";
 		$resultfilename = "result_".$crashid.".crash";
 	
@@ -117,8 +112,7 @@ if ($content !== false && strlen($content) > 0)
 	
 		$log = file_get_contents($getcrashdataurl.$crashid);
 	
-		if ($log !== false && strlen($log) > 0)
-		{
+		if ($log !== false && strlen($log) > 0) {
 			echo "  Writing log data into temporary file ...\n";
 				
 			$output = fopen($filename, 'w+');
@@ -127,13 +121,12 @@ if ($content !== false && strlen($content) > 0)
 		
 		
 			echo "  Symbolicating ...\n";
-			
-			exec('perl ./symbolicatecrash.pl -o '.$resultfilename.' '.$filename);
+
+			exec('./symbolicatecrash.pl -o '.$resultfilename.' '.$filename);
 	
 			unlink($filename);
 			
-			if (file_exists($resultfilename) && filesize($resultfilename) > 0)
-			{
+			if (file_exists($resultfilename) && filesize($resultfilename) > 0) {
 				echo "  Sending symbolicated data back to the server ...\n";
 				
 				$resultcontent = file_get_contents($resultfilename);

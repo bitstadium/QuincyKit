@@ -104,18 +104,18 @@ NSString *BWQuincyLocalize(NSString *stringToken) {
 		_serverResult = CrashReportStatusUnknown;
 		_crashIdenticalCurrentVersion = YES;
 		_crashData = nil;
-        _urlConnection = nil;
+		_urlConnection = nil;
 		_submissionURL = nil;
-        _responseData = nil;
-        _appIdentifier = nil;
-        _sendingInProgress = NO;
-        _languageStyle = nil;
+		_responseData = nil;
+		_appIdentifier = nil;
+		_sendingInProgress = NO;
+		_languageStyle = nil;
         
 		self.delegate = nil;
-        self.feedbackActivated = NO;
-        self.showAlwaysButton = NO;
-        self.autoSubmitCrashReport = NO;
-        self.autoSubmitDeviceUDID = NO;
+		self.feedbackActivated = NO;
+		self.showAlwaysButton = NO;
+		self.autoSubmitCrashReport = NO;
+		self.autoSubmitDeviceUDID = NO;
         
 		NSString *testValue = [[NSUserDefaults standardUserDefaults] stringForKey:kQuincyKitAnalyzerStarted];
 		if (testValue) {
@@ -215,7 +215,6 @@ NSString *BWQuincyLocalize(NSString *stringToken) {
     [self setSubmissionURL:@"https://rink.hockeyapp.net/"];
 }
 
-
 #pragma mark -
 #pragma mark private methods
 
@@ -224,24 +223,24 @@ NSString *BWQuincyLocalize(NSString *stringToken) {
     if (!_sendingInProgress && [self hasPendingCrashReport]) {
         _sendingInProgress = YES;
         if (!self.autoSubmitCrashReport && [self hasNonApprovedCrashReports]) {
-            NSString *appName = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleDisplayName"];
+				NSString *appName = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleDisplayName"];
             
             UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:[NSString stringWithFormat:BWQuincyLocalize(@"CrashDataFoundTitle"), appName]
                                                                 message:[NSString stringWithFormat:BWQuincyLocalize(@"CrashDataFoundDescription"), appName]
-                                                               delegate:self
+                                                                   delegate:self
                                                       cancelButtonTitle:BWQuincyLocalize(@"CrashDontSendReport")
                                                       otherButtonTitles:BWQuincyLocalize(@"CrashSendReport"), nil];
-            
-            if ([self isShowingAlwaysButton]) {
+                
+                if ([self isShowingAlwaysButton]) {
                 [alertView addButtonWithTitle:BWQuincyLocalize(@"CrashSendReportAlways")];
+                }
+                
+                [alertView setTag: QuincyKitAlertTypeSend];
+                [alertView show];
+                [alertView release];
+            } else {
+                [self _sendCrashReports];
             }
-            
-            [alertView setTag: QuincyKitAlertTypeSend];
-            [alertView show];
-            [alertView release];
-        } else {
-            [self _sendCrashReports];
-        }
     }
 }
 
@@ -315,6 +314,15 @@ NSString *BWQuincyLocalize(NSString *stringToken) {
 											 cancelButtonTitle: BWQuincyLocalize(@"CrashResponseTitleOK")
 											 otherButtonTitles: nil];
 				break;
+			case CrashReportStatusMoreInfo:
+				if ([MFMailComposeViewController canSendMail]) {
+					alertView = [[UIAlertView alloc] initWithTitle: [NSString stringWithFormat:BWQuincyLocalize(@"CrashResponseTitle"), appName ]
+															 message: [NSString stringWithFormat:BWQuincyLocalize(@"CrashResponseMoreInfo"), appName]
+															delegate: self
+										 cancelButtonTitle: BWQuincyLocalize(@"Skip")
+										 otherButtonTitles: BWQuincyLocalize(@"Send Email"), nil];
+				}
+				break;
 			default:
 				alertView = nil;
 				break;
@@ -333,23 +341,38 @@ NSString *BWQuincyLocalize(NSString *stringToken) {
 #pragma mark UIAlertView Delegate
 
 - (void)alertView:(UIAlertView *)alertView didDismissWithButtonIndex:(NSInteger)buttonIndex {
-	if ([alertView tag] == QuincyKitAlertTypeSend) {
-		switch (buttonIndex) {
-			case 0:
-                _sendingInProgress = NO;
-				[self _cleanCrashReports];
-				break;
-			case 1:
-				[self _sendCrashReports];
-				break;
-			case 2:
-				[[NSUserDefaults standardUserDefaults] setBool:YES forKey:kAutomaticallySendCrashReports];
-				
-				[self _sendCrashReports];
-				break;
-		}
+	
+	switch ([alertView tag]) {
+		case QuincyKitAlertTypeSend:
+			switch (buttonIndex) {
+				case 0:
+					_sendingInProgress = NO;
+					[self _cleanCrashReports];
+					break;
+				case 1:
+					[self _sendCrashReports];
+					break;
+				case 2:
+					[[NSUserDefaults standardUserDefaults] setBool:YES forKey:kAutomaticallySendCrashReports];
+					
+					[self _sendCrashReports];
+					break;
+			}
+			break;
+		case QuincyKitAlertTypeFeedback:
+			switch (buttonIndex) {
+				case 0:
+					break;
+				case 1:
+					[self.delegate askForCrashInfo:@"Please describe what you were doing when the crash occured:\n\n"];
+			}
+			break;
+
+		default:
+			break;
 	}
 }
+
 
 #pragma mark -
 #pragma mark NSXMLParser Delegate
@@ -375,10 +398,9 @@ NSString *BWQuincyLocalize(NSString *stringToken) {
 	if ([elementName isEqualToString: @"result"]) {
 		if ([_contentOfProperty intValue] > _serverResult) {
 			_serverResult = (CrashReportStatus)[_contentOfProperty intValue];
-		} else {
-            CrashReportStatus errorcode = (CrashReportStatus)[_contentOfProperty intValue];
-			NSLog(@"CrashReporter ended in error code: %i", errorcode);
 		}
+		CrashReportStatus errorcode = (CrashReportStatus)[_contentOfProperty intValue];
+		NSLog(@"CrashReporter ended in error code: %i", errorcode);
 	}
 }
 

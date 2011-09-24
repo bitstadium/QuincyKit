@@ -47,7 +47,8 @@
     //    [[BWQuincyManager sharedQuincyManager] setSubmissionURL:@"http://yourserver.com/crash_v200.php"];
     //    [[BWQuincyManager sharedQuincyManager] setAppIdentifier:@"6463991af4a2da3f9cb320533c83b156"];
 
-    [[BWQuincyManager sharedQuincyManager] setDelegate:self];
+	[[BWQuincyManager sharedQuincyManager] setFeedbackActivated:YES];
+  [[BWQuincyManager sharedQuincyManager] setDelegate:self];
 }
 
 
@@ -67,6 +68,32 @@
 
 -(void)connectionClosed {
 	_application.networkActivityIndicatorVisible = NO;
+}
+
+- (void)askForCrashInfo:(NSString*)messageBody
+{
+		// Show the email compose sheet
+	MFMailComposeViewController* mailer = [[MFMailComposeViewController alloc] init];
+	mailer.mailComposeDelegate = self;
+	mailer.modalPresentationStyle = UIModalPresentationFormSheet;
+	
+	[mailer setSubject:@"Demo crash info"];
+	[mailer setToRecipients:[NSArray arrayWithObject:@"demo@example.com"]];
+	[mailer setMessageBody:messageBody isHTML:NO];
+	
+	[viewController presentModalViewController:mailer animated:YES];
+	[mailer release];
+}
+
+
+- (void)mailComposeController:(MFMailComposeViewController*)controller didFinishWithResult:(MFMailComposeResult)result error:(NSError*)error
+{
+	if ( result == MFMailComposeResultFailed )
+	{
+			// XXX - show alert?
+	}
+	
+	[controller dismissModalViewControllerAnimated:YES];
 }
 
 

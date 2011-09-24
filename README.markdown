@@ -64,7 +64,8 @@ The server requires at least PHP 5.2 and a MySQL server installation!
 
 ## SERVER DATABASE CONFIGURATION
 
-- Adjust settings in `/server/CONFIG.PHP`:
+- Copy the `/server/config_template.php` file into `/server/config.php`
+- Adjust settings in `/server/config.php`:
 
     $server = 'your.server.com';            // database server hostname
     $loginsql = 'database_username';        // username to access the database
@@ -115,6 +116,7 @@ The server requires at least PHP 5.2 and a MySQL server installation!
 
 - **NOTICE**: These are the instructions when using Mac OS X 10.6.2
 - Copy the files inside of `/server/local` onto a local directory on your Intel Mac running at least Mac OS X 10.6.2 having the iPhone SDK 3.x installed
+- Copy the `/local/serverconfig_template.php` file into `/local/serverconfig.php`
 - Adjust settings in `local/serverconfig.php`
   - set `$hostname` to the server hostname running the server side part, e.g. `www.crashreporterdemo.com`
   - if the `/admin/` directory on the server is access restricted, set the required username into `$webuser` and password into `$webpwd`

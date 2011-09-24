@@ -88,7 +88,8 @@ function updateGroupMeta (groupid, bundleidentifier) {
             id: groupid, 
             bundleidentifier: bundleidentifier, 
             fixversion: $("#fixversion" + groupid).val(), 
-            description: $("#description" + groupid).val()
+            description: $("#description" + groupid).val(),
+            moreinfo: $("#moreinfo" + groupid).is(":checked") ? 1 : 0
         }),
         success: function(data) {
             if (data != "") {

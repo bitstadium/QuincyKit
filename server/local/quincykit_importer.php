@@ -1,6 +1,6 @@
 <?php
 
-require_once('config.php');
+require_once('serverconfig.php');
 
 if ( ini_get('pcre.backtrack_limit') <= 950000 )
 ini_set('pcre.backtrack_limit', 950000);
