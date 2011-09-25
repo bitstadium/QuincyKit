@@ -39,25 +39,25 @@
 require_once('../config.php');
 
 function parseSymbolicated($matches, $appString) {
-    $result_source = "";
-    //make sure $matches[1] exists
+  $result_source = "";
+  //make sure $matches[1] exists
 	if (is_array($matches) && count($matches) >= 2) {
 		$result = explode("\n", $matches[1]);
 		foreach ($result as $line) {
 			// search for the first occurance of the application name
 			if (strpos($line, $appString) !== false && strpos($line, "uncaught_exception_handler (PLCrashReporter.m:") === false) {
-                // 1              WorldViewLive         0x00036e51        -[LiveUpdateReader databaseActions:] (LiveUpdateReader.m:62)
-                // ([0-9]+) \s+   ([^\s]+)        \s+   ([^\s]+)    \s+   -\[ ([^\s]+)    \s+ ([^\s]+)     \] \s+ \( ([^\s]+) : ([^\s]+) \)
+        // 1              WorldViewLive         0x00036e51        -[LiveUpdateReader databaseActions:] (LiveUpdateReader.m:62)
+        // ([0-9]+) \s+   ([^\s]+)        \s+   ([^\s]+)    \s+   -\[ ([^\s]+)    \s+ ([^\s]+)     \] \s+ \( ([^\s]+) : ([^\s]+) \)
 				preg_match('/([0-9]+)\s+([^\s]+)\s+([^\s]+)\s+-\[([^\s]+)\s+([^\s]+)\]\s+\(([^\s]+):([^\s]+)\)/', $line, $matches);
-                if (count($matches) >= 8) {
-                    $result_source .= "[".$matches[4]." ".$matches[5]."] (".$matches[6].":".$matches[7].")";
-                } else {
-                    preg_match('/([0-9]+)\s+([^\s]+)\s+([^\s]+)\s+([^\s]+)\s+\(([^\s]+):([^\s]+)\)/', $line, $matches);
-                    print_r($matches);
-                    if (count($matches) >= 6) {
-                        $result_source .= $matches[4]." (".$matches[5].":".$matches[6].")";
-                    }
-                }
+        if (count($matches) >= 8) {
+          $result_source .= "[".$matches[4]." ".$matches[5]."] (".$matches[6].":".$matches[7].")\n";
+        } else {
+          preg_match('/([0-9]+)\s+([^\s]+)\s+([^\s]+)\s+([^\s]+)\s+\(([^\s]+):([^\s]+)\)/', $line, $matches);
+          print_r($matches);
+          if (count($matches) >= 6) {
+            $result_source .= $matches[4]." (".$matches[5].":".$matches[6].")\n";
+          }
+        }
 			}
 		}
 	}
