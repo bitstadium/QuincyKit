@@ -89,6 +89,22 @@ NSString *BWQuincyLocalize(NSString *stringToken) {
 
 @synthesize appIdentifier = _appIdentifier;
 
+#if __IPHONE_OS_VERSION_MIN_ALLOWED >= 40000
++(BWQuincyManager *)sharedQuincyManager
+{   
+    static BWQuincyManager *sharedInstance = nil;
+    static dispatch_once_t pred;
+    
+    if (sharedInstance) return sharedInstance;
+    
+    dispatch_once(&pred, ^{
+        sharedInstance = [BWQuincyManager alloc];
+        sharedInstance = [sharedInstance init];
+    });
+    
+    return sharedInstance;
+}
+#else
 + (BWQuincyManager *)sharedQuincyManager {
 	static BWQuincyManager *quincyManager = nil;
 	
@@ -98,6 +114,7 @@ NSString *BWQuincyLocalize(NSString *stringToken) {
 	
 	return quincyManager;
 }
+#endif
 
 - (id) init {
     if ((self = [super init])) {
