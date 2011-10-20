@@ -90,8 +90,7 @@ NSString *BWQuincyLocalize(NSString *stringToken) {
 @synthesize appIdentifier = _appIdentifier;
 
 #if __IPHONE_OS_VERSION_MIN_REQUIRED >= 40000
-+(BWQuincyManager *)sharedQuincyManager
-{   
++(BWQuincyManager *)sharedQuincyManager {
     static BWQuincyManager *sharedInstance = nil;
     static dispatch_once_t pred;
     
@@ -238,7 +237,11 @@ NSString *BWQuincyLocalize(NSString *stringToken) {
     if (!_sendingInProgress && [self hasPendingCrashReport]) {
         _sendingInProgress = YES;
         if (!self.autoSubmitCrashReport && [self hasNonApprovedCrashReports]) {
-				NSString *appName = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleDisplayName"];
+            if (self.delegate != nil && [self.delegate respondsToSelector:@selector(willShowSubmitCrashReportAlert)]) {
+                [self.delegate willShowSubmitCrashReportAlert];
+            }
+
+            NSString *appName = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleDisplayName"];
             
             UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:[NSString stringWithFormat:BWQuincyLocalize(@"CrashDataFoundTitle"), appName]
                                                                 message:[NSString stringWithFormat:BWQuincyLocalize(@"CrashDataFoundDescription"), appName]
@@ -246,16 +249,16 @@ NSString *BWQuincyLocalize(NSString *stringToken) {
                                                       cancelButtonTitle:BWQuincyLocalize(@"CrashDontSendReport")
                                                       otherButtonTitles:BWQuincyLocalize(@"CrashSendReport"), nil];
                 
-                if ([self isShowingAlwaysButton]) {
+            if ([self isShowingAlwaysButton]) {
                 [alertView addButtonWithTitle:BWQuincyLocalize(@"CrashSendReportAlways")];
-                }
-                
-                [alertView setTag: QuincyKitAlertTypeSend];
-                [alertView show];
-                [alertView release];
-            } else {
-                [self _sendCrashReports];
             }
+                
+            [alertView setTag: QuincyKitAlertTypeSend];
+            [alertView show];
+            [alertView release];
+        } else {
+            [self _sendCrashReports];
+        }
     }
 }
 

@@ -142,6 +142,9 @@ typedef enum CrashReportStatus {
 
 -(void) askForCrashInfo:(NSString*)messageBody;
 
+// Invoked before the user is asked to send a crash report, so you can do additional actions. E.g. to make sure not to ask the user for an app rating :) 
+-(void) willShowSubmitCrashReportAlert;
+
 @end
 
 @interface BWQuincyManager : NSObject <NSXMLParserDelegate> {
