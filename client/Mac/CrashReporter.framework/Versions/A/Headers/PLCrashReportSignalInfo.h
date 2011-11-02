@@ -1,8 +1,7 @@
 /*
- * Author: Andreas Linde <mail@andreaslinde.de>
- *         Kent Sutherland
+ * Author: Landon Fuller <landonf@plausiblelabs.com>
  *
- * Copyright (c) 2011 Andreas Linde & Kent Sutherland. All rights reserved.
+ * Copyright (c) 2008-2009 Plausible Labs Cooperative, Inc.
  * All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person
@@ -27,40 +26,35 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#import "QuincyDemoAppDelegate.h"
+#import <Foundation/Foundation.h>
 
-@implementation QuincyDemoAppDelegate
-
-// set the main nibs window to hidden on startup
-// this delegate method is required to be implemented!
-- (void) showMainApplicationWindow {
-	[window makeFirstResponder: nil];
-	[window makeKeyAndOrderFront:nil];
-}
-
-
-- (void)applicationDidFinishLaunching:(NSNotification *)note {
-	// Launch the crash reporter task
+@interface PLCrashReportSignalInfo : NSObject {
+@private
+    /** Signal name */
+    NSString *_name;
     
-    // setSubmissionURL for self hosted Example: http://yourserver.com/crash_v200.php
-    // setAppIdentifier for HockeyApp Example: 658b693ff4c164e65168fe0f43112ac0
-	
-	[[BWQuincyManager sharedQuincyManager] setAppIdentifier:@"658b693ff4c164e65168fe0f43112ac0"];
-    [[BWQuincyManager sharedQuincyManager] setCompanyName:@"My company"];
-    [[BWQuincyManager sharedQuincyManager] setDelegate:self];
+    /** Signal code */
+    NSString *_code;
+
+    /** Fauling instruction or address */
+    uint64_t _address;
 }
 
+- (id) initWithSignalName: (NSString *) name code: (NSString *) code address: (uint64_t) address;
 
-- (void)bam {
-	signal(SIGBUS, SIG_DFL);
-	
-//	*(volatile long*)0 = 0xDEADBEEF;
-	[NSException raise:NSInternalInconsistencyException format:@"blh"];
-}
+/**
+ * The signal name.
+ */
+@property(nonatomic, readonly) NSString *name;
 
+/**
+ * The signal code.
+ */
+@property(nonatomic, readonly) NSString *code;
 
-- (IBAction)doCrash:(id)sender {
-	[self bam];
-}
+/**
+ * The faulting instruction or address.
+ */
+@property(nonatomic, readonly) uint64_t address;
 
 @end

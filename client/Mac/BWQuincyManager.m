@@ -29,9 +29,11 @@
 
 #import "BWQuincyManager.h"
 #import <sys/sysctl.h>
+#import <CrashReporter/CrashReporter.h>
 
 @interface BWQuincyManager(private)
 - (void) startManager;
+- (void) handleCrashReport;
 
 - (void) _postXML:(NSString*)xml toURL:(NSURL*)url;
 - (void) searchCrashLogFile:(NSString *)path;
@@ -72,10 +74,34 @@ const CGFloat kDetailsHeight = 285;
 		_submissionURL = nil;
         _appIdentifier = nil;
         
-        _crashFile = nil;
-        
 		self.delegate = nil;
-		self.companyName = @"";		
+		self.companyName = @"";
+		
+		_crashFiles = [[NSMutableArray alloc] init];
+		NSArray *paths = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES);
+		_crashesDir = [[NSString stringWithFormat:@"%@", [[paths objectAtIndex:0] stringByAppendingPathComponent:@"/crashes/"]] retain];
+		
+		NSFileManager *fm = [NSFileManager defaultManager];
+		
+		if (![fm fileExistsAtPath:_crashesDir]) {
+			NSDictionary *attributes = [NSDictionary dictionaryWithObject: [NSNumber numberWithUnsignedLong: 0755] forKey: NSFilePosixPermissions];
+			NSError *theError = NULL;
+			
+			[fm createDirectoryAtPath:_crashesDir withIntermediateDirectories: YES attributes: attributes error: &theError];
+		}
+		
+		PLCrashReporter *crashReporter = [PLCrashReporter sharedReporter];
+		NSError *error = NULL;
+		
+		// Check if we previously crashed
+		if ([crashReporter hasPendingCrashReport]) {
+			[self handleCrashReport];
+		}
+		
+		// Enable the Crash Reporter
+		if (![crashReporter enableCrashReporterAndReturnError: &error])
+			NSLog(@"Warning: Could not enable crash reporter: %@", error);
+		
 	}
 	return self;
 }
@@ -86,34 +112,13 @@ const CGFloat kDetailsHeight = 285;
 	_submissionURL = nil;
     _appIdentifier = nil;
     
-    [_crashFile release];
+    [_crashFiles release];
+    [_crashesDir release];
 	[_quincyUI release];
 	
 	[super dealloc];
 }
 
-- (void) searchCrashLogFile:(NSString *)path {
-	NSFileManager* fman = [NSFileManager defaultManager];
-	
-    NSError* error;
-	NSMutableArray* filesWithModificationDate = [NSMutableArray array];
-	NSArray* crashLogFiles = [fman contentsOfDirectoryAtPath:path error:&error];
-	NSEnumerator* filesEnumerator = [crashLogFiles objectEnumerator];
-	NSString* crashFile;
-	while((crashFile = [filesEnumerator nextObject])) {
-		NSString* crashLogPath = [path stringByAppendingPathComponent:crashFile];
-		NSDate* modDate = [[[NSFileManager defaultManager] attributesOfItemAtPath:crashLogPath error:&error] fileModificationDate];
-		[filesWithModificationDate addObject:[NSDictionary dictionaryWithObjectsAndKeys:crashFile,@"name",crashLogPath,@"path",modDate,@"modDate",nil]];
-	}
-	
-	NSSortDescriptor* dateSortDescriptor = [[[NSSortDescriptor alloc] initWithKey:@"modDate" ascending:YES] autorelease];
-	NSArray* sortedFiles = [filesWithModificationDate sortedArrayUsingDescriptors:[NSArray arrayWithObject:dateSortDescriptor]];
-	
-	NSPredicate* filterPredicate = [NSPredicate predicateWithFormat:@"name BEGINSWITH %@", [self applicationName]];
-	NSArray* filteredFiles = [sortedFiles filteredArrayUsingPredicate:filterPredicate];
-	
-	_crashFile = [[[filteredFiles valueForKeyPath:@"path"] lastObject] copy];
-}
 
 #pragma mark -
 #pragma mark setter
@@ -139,37 +144,26 @@ const CGFloat kDetailsHeight = 285;
 #pragma mark GetCrashData
 
 - (BOOL) hasPendingCrashReport {
-	BOOL returnValue = NO;
-    
-    if (![[NSUserDefaults standardUserDefaults] valueForKey: @"CrashReportSender.lastCrashDate"]) {
-        [[NSUserDefaults standardUserDefaults] setValue: [NSDate date]
-                                                 forKey: @"CrashReportSender.lastCrashDate"];
-        return returnValue;
-    }
-    
-    NSArray* libraryDirectories = NSSearchPathForDirectoriesInDomains(NSLibraryDirectory, NSUserDomainMask, TRUE);
-    // Snow Leopard is having the log files in another location
-    [self searchCrashLogFile:[[libraryDirectories lastObject] stringByAppendingPathComponent:@"Logs/DiagnosticReports"]];
-    if (_crashFile == nil) {
-        [self searchCrashLogFile:[[libraryDirectories lastObject] stringByAppendingPathComponent:@"Logs/CrashReporter"]];
-    }		
-    
-    if (_crashFile) {
-        NSError* error;
-        
-        NSDate *lastCrashDate = [[NSUserDefaults standardUserDefaults] valueForKey: @"CrashReportSender.lastCrashDate"];
-        
-        NSDate *crashLogModificationDate = [[[NSFileManager defaultManager] attributesOfItemAtPath:_crashFile error:&error] fileModificationDate];
-        
-        if (!lastCrashDate || (lastCrashDate && crashLogModificationDate && ([crashLogModificationDate compare: lastCrashDate] == NSOrderedDescending))) {
-            returnValue = YES;
-        }
-        
-        [[NSUserDefaults standardUserDefaults] setValue: crashLogModificationDate
-                                                 forKey: @"CrashReportSender.lastCrashDate"];
-    }
+	NSFileManager *fm = [NSFileManager defaultManager];
 	
-	return returnValue;
+	if ([_crashFiles count] == 0 && [fm fileExistsAtPath: _crashesDir]) {
+		NSString *file = nil;
+		NSError *error = NULL;
+		
+		NSDirectoryEnumerator *dirEnum = [fm enumeratorAtPath: _crashesDir];
+		
+		while ((file = [dirEnum nextObject])) {
+			NSDictionary *fileAttributes = [fm attributesOfItemAtPath:[_crashesDir stringByAppendingPathComponent:file] error:&error];
+			if ([[fileAttributes objectForKey:NSFileSize] intValue] > 0) {
+				[_crashFiles addObject:file];
+			}
+		}
+	}
+	
+	if ([_crashFiles count] > 0) {
+		return YES;
+	} else
+		return NO;
 }
 
 - (void) returnToMainApplication {
@@ -180,7 +174,7 @@ const CGFloat kDetailsHeight = 285;
 - (void) startManager {
     if ([self hasPendingCrashReport]) {
         
-        _quincyUI = [[BWQuincyUI alloc] init:self crashFile:_crashFile companyName:_companyName applicationName:[self applicationName]];
+        _quincyUI = [[BWQuincyUI alloc] init:self crashFile:[_crashesDir stringByAppendingPathComponent: [_crashFiles objectAtIndex: 0]] companyName:_companyName applicationName:[self applicationName]];
         [_quincyUI askCrashReportDetails];
     } else {
         [self returnToMainApplication];
@@ -356,6 +350,29 @@ const CGFloat kDetailsHeight = 285;
 	return string;
 }
 
+#pragma mark PLCrashReporter
+
+//
+// Called to handle a pending crash report.
+//
+- (void)handleCrashReport {
+	PLCrashReporter *crashReporter = [PLCrashReporter sharedReporter];
+	NSError *error = NULL;
+	
+	// Try loading the crash report
+	NSData *crashData = [[NSData alloc] initWithData:[crashReporter loadPendingCrashReportDataAndReturnError: &error]];
+	NSString *cacheFilename = [NSString stringWithFormat: @"%.0f", [NSDate timeIntervalSinceReferenceDate]];
+	
+	if (crashData == nil) {
+		NSLog(@"Could not load crash report: %@", error);
+	} else {
+		[crashData writeToFile:[_crashesDir stringByAppendingPathComponent: cacheFilename] atomically:YES];
+	}
+	
+	// Purge the report
+	[crashReporter purgePendingCrashReport];
+}
+
 @end
 
 
@@ -491,10 +508,9 @@ const CGFloat kDetailsHeight = 285;
 	[noteText setStringValue:NSLocalizedString(@"No personal information will be sent with this report.", @"Note text")];
 
 	// get the crash log
-	NSString *crashLogs = [NSString stringWithContentsOfFile:_crashFile encoding:NSUTF8StringEncoding error:&error];
-	NSString *lastCrash = [[crashLogs componentsSeparatedByString: @"**********\n\n"] lastObject];
-	
-	_crashLogContent = lastCrash;
+	NSData *crashData = [NSData dataWithContentsOfFile: _crashFile];
+	PLCrashReport *report = [[[PLCrashReport alloc] initWithData:crashData error:&error] autorelease];
+	_crashLogContent = [PLCrashReportTextFormatter stringValueForCrashReport:report withTextFormat:PLCrashReportTextFormatiOS];
 	
 	// get the console log
 	NSEnumerator *theEnum = [[[NSString stringWithContentsOfFile:@"/private/var/log/system.log" encoding:NSUTF8StringEncoding error:&error] componentsSeparatedByString: @"\n"] objectEnumerator];
