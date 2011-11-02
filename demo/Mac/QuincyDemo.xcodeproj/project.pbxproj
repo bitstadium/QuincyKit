@@ -18,6 +18,11 @@
 		1EB61442102B8BEE00B206A7 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0867D69BFE84028FC02AAC07 /* Foundation.framework */; };
 		1EB61462102B8C4400B206A7 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0867D6A5FE840307C02AAC07 /* AppKit.framework */; };
 		1EB614AE102B927900B206A7 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0867D69BFE84028FC02AAC07 /* Foundation.framework */; };
+		50052FDE1460A85C0056DC29 /* libCrashReporter-MacOSX-Static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 50052FDD1460A85C0056DC29 /* libCrashReporter-MacOSX-Static.a */; };
+		50052FDF1460A85C0056DC29 /* libCrashReporter-MacOSX-Static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 50052FDD1460A85C0056DC29 /* libCrashReporter-MacOSX-Static.a */; };
+		50052FE51460B2C00056DC29 /* CatchingWindow.h in Headers */ = {isa = PBXBuildFile; fileRef = 50052FE31460B2C00056DC29 /* CatchingWindow.h */; };
+		50052FE61460B2C00056DC29 /* CatchingWindow.m in Sources */ = {isa = PBXBuildFile; fileRef = 50052FE41460B2C00056DC29 /* CatchingWindow.m */; };
+		50052FE71460B2C00056DC29 /* CatchingWindow.m in Sources */ = {isa = PBXBuildFile; fileRef = 50052FE41460B2C00056DC29 /* CatchingWindow.m */; };
 		8DC2EF570486A6940098B216 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7B1FEA5585E11CA2CBB /* Cocoa.framework */; };
 /* End PBXBuildFile section */
 
@@ -64,6 +69,11 @@
 		1EB6127A102B785E00B206A7 /* QuincyDemoAppDelegate.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = QuincyDemoAppDelegate.m; sourceTree = "<group>"; };
 		1EB6127C102B787100B206A7 /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		1EB6127E102B787B00B206A7 /* QuincyDemo_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = QuincyDemo_Prefix.pch; sourceTree = "<group>"; };
+		50052FD91460A7830056DC29 /* QuincyDemo.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = QuincyDemo.entitlements; sourceTree = "<group>"; };
+		50052FDD1460A85C0056DC29 /* libCrashReporter-MacOSX-Static.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "libCrashReporter-MacOSX-Static.a"; path = "../../client/Mac/libCrashReporter-MacOSX-Static.a"; sourceTree = "<group>"; };
+		50052FE01460A8BB0056DC29 /* CrashReporter.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CrashReporter.framework; path = ../../client/Mac/CrashReporter.framework; sourceTree = "<group>"; };
+		50052FE31460B2C00056DC29 /* CatchingWindow.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CatchingWindow.h; sourceTree = "<group>"; };
+		50052FE41460B2C00056DC29 /* CatchingWindow.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CatchingWindow.m; sourceTree = "<group>"; };
 		8DC2EF5B0486A6940098B216 /* Quincy.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Quincy.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -75,6 +85,7 @@
 				1EB61442102B8BEE00B206A7 /* Foundation.framework in Frameworks */,
 				1EB61462102B8C4400B206A7 /* AppKit.framework in Frameworks */,
 				1E360774135A618B00A79125 /* Quincy.framework in Frameworks */,
+				50052FDF1460A85C0056DC29 /* libCrashReporter-MacOSX-Static.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -84,6 +95,7 @@
 			files = (
 				8DC2EF570486A6940098B216 /* Cocoa.framework in Frameworks */,
 				1EB614AE102B927900B206A7 /* Foundation.framework in Frameworks */,
+				50052FDE1460A85C0056DC29 /* libCrashReporter-MacOSX-Static.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -102,6 +114,7 @@
 		0867D691FE84028FC02AAC07 /* crashReporter */ = {
 			isa = PBXGroup;
 			children = (
+				50052FD91460A7830056DC29 /* QuincyDemo.entitlements */,
 				1E542D83135A4F12001D7981 /* Mac */,
 				08FB77AEFE84172EC02AAC07 /* Classes */,
 				32C88DFF0371C24200C91783 /* Other Sources */,
@@ -128,6 +141,8 @@
 				1E542D94135A535D001D7981 /* Info.plist */,
 				1EB61269102B779200B206A7 /* QuincyDemo-Info.plist */,
 				1E360773135A618B00A79125 /* Quincy.framework */,
+				50052FDD1460A85C0056DC29 /* libCrashReporter-MacOSX-Static.a */,
+				50052FE01460A8BB0056DC29 /* CrashReporter.framework */,
 			);
 			name = Resources;
 			sourceTree = "<group>";
@@ -137,6 +152,8 @@
 			children = (
 				1EB61279102B785E00B206A7 /* QuincyDemoAppDelegate.h */,
 				1EB6127A102B785E00B206A7 /* QuincyDemoAppDelegate.m */,
+				50052FE31460B2C00056DC29 /* CatchingWindow.h */,
+				50052FE41460B2C00056DC29 /* CatchingWindow.m */,
 			);
 			name = Classes;
 			sourceTree = "<group>";
@@ -185,6 +202,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				1E542D88135A4F31001D7981 /* BWQuincyManager.h in Headers */,
+				50052FE51460B2C00056DC29 /* CatchingWindow.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -285,6 +303,7 @@
 			files = (
 				1EB6127B102B785E00B206A7 /* QuincyDemoAppDelegate.m in Sources */,
 				1EB6127D102B787100B206A7 /* main.m in Sources */,
+				50052FE71460B2C00056DC29 /* CatchingWindow.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -293,6 +312,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				1E542D89135A4F31001D7981 /* BWQuincyManager.m in Sources */,
+				50052FE61460B2C00056DC29 /* CatchingWindow.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -305,6 +325,11 @@
 				COPY_PHASE_STRIP = NO;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SRCROOT)/../../client/iOS\"",
+					"\"$(SRCROOT)/../../client/Mac\"",
+				);
 				FRAMEWORK_VERSION = A;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_MODEL_TUNING = G5;
@@ -312,6 +337,10 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				INFOPLIST_FILE = Info.plist;
 				INSTALL_PATH = "@executable_path/../Frameworks";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SRCROOT)/../../client/Mac\"",
+				);
 				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				SKIP_INSTALL = YES;
 				WRAPPER_EXTENSION = framework;
@@ -324,12 +353,21 @@
 			buildSettings = {
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SRCROOT)/../../client/iOS\"",
+					"\"$(SRCROOT)/../../client/Mac\"",
+				);
 				FRAMEWORK_VERSION = A;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
 				GCC_MODEL_TUNING = G5;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				INFOPLIST_FILE = Info.plist;
 				INSTALL_PATH = "@executable_path/../Frameworks";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SRCROOT)/../../client/Mac\"",
+				);
 				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				SKIP_INSTALL = YES;
 				WRAPPER_EXTENSION = framework;
@@ -355,7 +393,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEBUG_INFORMATION_FORMAT = dwarf;
 				GCC_PREFIX_HEADER = Quincy_Prefix.pch;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
@@ -369,7 +407,14 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				CODE_SIGN_ENTITLEMENTS = QuincyDemo.entitlements;
+				CODE_SIGN_IDENTITY = "3rd Party Mac Developer Application";
 				COPY_PHASE_STRIP = NO;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SRCROOT)/../../client/iOS\"",
+					"\"$(SRCROOT)/../../client/Mac\"",
+				);
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 0;
@@ -377,6 +422,10 @@
 				GCC_PREFIX_HEADER = "$(SYSTEM_LIBRARY_DIR)/Frameworks/AppKit.framework/Headers/AppKit.h";
 				INFOPLIST_FILE = "QuincyDemo-Info.plist";
 				INSTALL_PATH = "$(HOME)/Applications";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SRCROOT)/../../client/Mac\"",
+				);
 				OTHER_LDFLAGS = (
 					"-framework",
 					Foundation,
@@ -391,13 +440,24 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				CODE_SIGN_ENTITLEMENTS = QuincyDemo.entitlements;
+				CODE_SIGN_IDENTITY = "3rd Party Mac Developer Application";
 				COPY_PHASE_STRIP = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SRCROOT)/../../client/iOS\"",
+					"\"$(SRCROOT)/../../client/Mac\"",
+				);
 				GCC_MODEL_TUNING = G5;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "$(SYSTEM_LIBRARY_DIR)/Frameworks/AppKit.framework/Headers/AppKit.h";
 				INFOPLIST_FILE = "QuincyDemo-Info.plist";
 				INSTALL_PATH = "$(HOME)/Applications";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SRCROOT)/../../client/Mac\"",
+				);
 				OTHER_LDFLAGS = (
 					"-framework",
 					Foundation,
