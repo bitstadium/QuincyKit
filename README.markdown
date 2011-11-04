@@ -170,30 +170,40 @@ The server requires at least PHP 5.2 and a MySQL server installation!
 
         #import <Quincy/BWQuincyManager.h>
 
-- In your appDelegate.h add the BWQuincyManagerDelegate protocol to your appDelegate
+- In your `appDelegate.h` add the `BWQuincyManagerDelegate` protocol to your appDelegate
 
         @interface DemoAppDelegate : NSObject <BWQuincyManagerDelegate> {}
 
-- In your `appDelegate` change the invocation of the main window to the following structure
+- If you want to override the built-in UI, also add `BWQuincyUIDelegate`
 
-        // this delegate method is required
-        - (void) showMainApplicationWindow
-        {
-            // launch the main app window
-            // remember not to automatically show the main window if using NIBs
-            [window makeFirstResponder: nil];
-            [window makeKeyAndOrderFront:nil];
-        }
+        @interface DemoAppDelegate : NSObject <BWQuincyManagerDelegate, BWQuincyUIDelegate> {}
 
+- In your `appDelegate` set up BWQuincyManager in `applicationDidFinishLaunching:`
 
         - (void)applicationDidFinishLaunching:(NSNotification *)note
         {
-          // Launch the crash reporter task
-          [[BWQuincyManager sharedQuincyManager] setSubmissionURL:@"http://yourserver.com/crash_v200.php"];
-          [[BWQuincyManager sharedQuincyManager] setDelegate:self];
+          // your code
+          
+          ...
+          
+          // Set up and launch the crash reporter
+          BWQuincyManager *quincy = [BWQuincyManager sharedQuincyManager];
+          [quincy setDelegate:self];
+          [quincy setCompanyName:@"ACME Inc."];
+          [quincy setSubmissionURL:@"http://yourserver.com/crash_v200.php"];
         }
 
-- Done.
+- Also implement `didFinishCrashReporting:`. This will be called after the crash reporter is done
+
+        // this delegate method will be called when Quincy is done with its work
+        - (void)didFinishCrashReporting:(BWQuincyStatus)status
+        {
+          // make sure your main window is showing
+          [window makeFirstResponder:nil];
+          [window makeKeyAndOrderFront:nil];
+        }
+
+- This is bascillay it. There are some more methods to override if you do not want to use the built-in UI or need a non-modal UI, etc. Please have a look at the example project and `BWQuincyManager.h` / `BWQuincyUIDelegate.h`.
 
 
 # BRANCHES:

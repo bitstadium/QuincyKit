@@ -27,25 +27,31 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#define DEBUG 0
+
 #import "BWQuincyManager.h"
-#import <sys/sysctl.h>
+
+#import "BWQuincyUI.h"
+#import "NSData+Base64.h"
+#import "BWQuincyUtilities.h"
 
 @interface BWQuincyManager(private)
-- (void) startManager;
+- (void)sendReport:(NSString *)xml;
+- (int)parseServerResponseXML:(NSData *)xml;
+- (void)finishManager:(BWQuincyStatus)status;
 
-- (void) _postXML:(NSString*)xml toURL:(NSURL*)url;
-- (void) searchCrashLogFile:(NSString *)path;
-- (BOOL) hasPendingCrashReport;
-- (void) returnToMainApplication;
+- (BOOL)hasCrashesTheUserDidNotSeeYet:(NSArray *)crashFiles content:(NSString **)crashFileContent;
+- (void)markReportsProcessed:(NSArray *)listOfReports;
+- (NSString *)consoleContent;
+
+- (void)storeComment:(NSString *)comment forReport:(NSString *)report;
+- (NSDictionary *)loadDataForCrashFiles:(NSArray *)crashReportFilenames;
+- (void)storeData:(NSDictionary *)data forCrashFile:(NSString *)crashReportFilename;
+- (void)storeLastCrashDate:(NSDate *) date;
+- (NSDate *)loadLastCrashDate;
+- (void)storeListOfAlreadyProcessedCrashFileNames:(NSArray *)listOfCrashReportFileNames;
+- (NSArray *)loadListOfAlreadyProcessedCrashFileNames;
 @end
-
-@interface BWQuincyUI(private)
-- (void) askCrashReportDetails;
-- (void) endCrashReporter;
-@end
-
-const CGFloat kCommentsHeight = 105;
-const CGFloat kDetailsHeight = 285;
 
 @implementation BWQuincyManager
 
@@ -53,523 +59,388 @@ const CGFloat kDetailsHeight = 285;
 @synthesize submissionURL = _submissionURL;
 @synthesize companyName = _companyName;
 @synthesize appIdentifier = _appIdentifier;
+@synthesize feedbackActivated = feedbackActivated_;
+@synthesize maxFeedbackDelay = maxFeedbackDelay_;
+@synthesize networkTimeoutInterval = networkTimeoutInterval_;
+@synthesize shouldPresentModalInterface = shouldPresentModalInterface_;
+@synthesize interfaceDelegate = interfaceDelegate_;
 
-+ (BWQuincyManager *)sharedQuincyManager {
-	static BWQuincyManager *quincyManager = nil;
-	
-	if (quincyManager == nil) {
-		quincyManager = [[BWQuincyManager alloc] init];
-	}
-	
-	return quincyManager;
++ (BWQuincyManager *)sharedQuincyManager
+{
+  static BWQuincyManager *quincyManager = nil;
+  
+  if (quincyManager == nil)
+    quincyManager = [[BWQuincyManager alloc] init];
+  
+  return quincyManager;
 }
 
-- (id) init {
-    if ((self = [super init])) {
-		_serverResult = CrashReportStatusFailureDatabaseNotAvailable;
-		_quincyUI = nil;
-        
-		_submissionURL = nil;
-        _appIdentifier = nil;
-        
-        _crashFile = nil;
-        
-		self.delegate = nil;
-		self.companyName = @"";		
-	}
-	return self;
-}
-
-- (void)dealloc {
-	_companyName = nil;
-	_delegate = nil;
-	_submissionURL = nil;
+- (id)init
+{
+  if ((self = [super init]))
+  {
+    _submissionURL = nil;
     _appIdentifier = nil;
-    
-    [_crashFile release];
-	[_quincyUI release];
-	
-	[super dealloc];
+
+    self.delegate                    = nil;
+    self.interfaceDelegate           = nil;
+    self.companyName                 = @"";
+    self.networkTimeoutInterval      = 15.0;
+    self.feedbackActivated           = NO;
+    self.maxFeedbackDelay            = 10.0;
+    self.shouldPresentModalInterface = YES;
+
+    crashReports_ = nil;
+  }
+  return self;
 }
 
-- (void) searchCrashLogFile:(NSString *)path {
-	NSFileManager* fman = [NSFileManager defaultManager];
-	
-    NSError* error;
-	NSMutableArray* filesWithModificationDate = [NSMutableArray array];
-	NSArray* crashLogFiles = [fman contentsOfDirectoryAtPath:path error:&error];
-	NSEnumerator* filesEnumerator = [crashLogFiles objectEnumerator];
-	NSString* crashFile;
-	while((crashFile = [filesEnumerator nextObject])) {
-		NSString* crashLogPath = [path stringByAppendingPathComponent:crashFile];
-		NSDate* modDate = [[[NSFileManager defaultManager] attributesOfItemAtPath:crashLogPath error:&error] fileModificationDate];
-		[filesWithModificationDate addObject:[NSDictionary dictionaryWithObjectsAndKeys:crashFile,@"name",crashLogPath,@"path",modDate,@"modDate",nil]];
-	}
-	
-	NSSortDescriptor* dateSortDescriptor = [[[NSSortDescriptor alloc] initWithKey:@"modDate" ascending:YES] autorelease];
-	NSArray* sortedFiles = [filesWithModificationDate sortedArrayUsingDescriptors:[NSArray arrayWithObject:dateSortDescriptor]];
-	
-	NSPredicate* filterPredicate = [NSPredicate predicateWithFormat:@"name BEGINSWITH %@", [self applicationName]];
-	NSArray* filteredFiles = [sortedFiles filteredArrayUsingPredicate:filterPredicate];
-	
-	_crashFile = [[[filteredFiles valueForKeyPath:@"path"] lastObject] copy];
+- (void)dealloc
+{
+  _companyName = nil;
+  _delegate = nil;
+  _submissionURL = nil;
+  _appIdentifier = nil;
+  
+  [crashReports_ release];
+  crashReports_ = nil;
+
+  [super dealloc];
+}
+
+- (void)run
+{
+  NSDate* lastCrashDate = [self loadLastCrashDate];
+  if (![lastCrashDate isEqualToDate:[NSDate distantPast]])
+  {
+    NSTimeInterval interval = -24*60*60; // look 24 hours back to catch possible time zone offsets
+    if ([lastCrashDate respondsToSelector:@selector(dateByAddingTimeInterval:)])
+      lastCrashDate = [lastCrashDate dateByAddingTimeInterval:interval];
+    else
+      [lastCrashDate addTimeInterval:interval]; // NOTE: add a category interface at the top of the source file to give the signature for the method once it is really gone
+  }
+
+  NSArray* listOfAlreadyProcessedCrashFileNames = [self loadListOfAlreadyProcessedCrashFileNames];
+
+  // test code to always find crash files
+#if DEBUG
+  lastCrashDate = [NSDate distantPast];
+  listOfAlreadyProcessedCrashFileNames = [NSArray array];
+#endif
+  
+  int limit = 10;
+  crashReports_ = [FindNewCrashFiles(lastCrashDate, listOfAlreadyProcessedCrashFileNames, limit) retain];
+  if ([crashReports_ count] < 1)
+  {
+    // no new crashes found
+    [self finishManager:BWQuincyStatusNoCrashFound];
+    return;
+  }
+  
+  NSString *crashFileContent;
+  BOOL hasNewCrashes = [self hasCrashesTheUserDidNotSeeYet:crashReports_ content:&crashFileContent];
+  
+  if (!hasNewCrashes)
+  {
+    [self performSelectorInBackground:@selector(sendSynchronously:) withObject:crashReports_];
+    return;
+  }
+  
+  if (!self.interfaceDelegate)
+  {
+    BWQuincyUI *ui = [[BWQuincyUI alloc] init];
+    ui.delegate           = self;
+    ui.companyName        = self.companyName;
+    ui.shouldPresentModal = self.shouldPresentModalInterface;
+    
+    self.interfaceDelegate = ui;
+  }
+  
+  [self.interfaceDelegate presentQuincyCrashSubmitInterfaceWithCrash:crashFileContent console:[self consoleContent]];
+}
+
+- (void)finishManager:(BWQuincyStatus)status
+{
+  BWQuincyManager *quincy = [BWQuincyManager sharedQuincyManager];
+  if ([quincy.delegate respondsToSelector:@selector(didFinishCrashReporting:)])
+    [quincy.delegate didFinishCrashReporting:status];
+}
+
+- (BOOL)hasCrashesTheUserDidNotSeeYet:(NSArray *)crashFiles content:(NSString **)crashFileContent
+{
+  NSString* newestCrashFile = [crashFiles objectAtIndex:0];
+  NSDictionary* dataForCrashFiles = [self loadDataForCrashFiles:crashFiles];
+  if ([[dataForCrashFiles allKeys] containsObject:newestCrashFile])
+  {
+    crashFileContent = nil;
+    return NO;
+  }
+
+  // get the last crash log
+  NSError *error;
+  NSString *crashLogs = [NSString stringWithContentsOfFile:newestCrashFile encoding:NSUTF8StringEncoding error:&error];
+  *crashFileContent = [[crashLogs componentsSeparatedByString: @"**********\n\n"] lastObject];
+  
+  NSString *userId = @"";
+  NSString *userContact = @"";
+  NSData *applicationdata = nil;
+  
+  if ([self.delegate respondsToSelector:@selector(crashReportUserID)])
+    userId = [self.delegate performSelector:@selector(crashReportUserID)];
+  
+  if ([self.delegate respondsToSelector:@selector(crashReportContact)])
+    userContact = [self.delegate performSelector:@selector(crashReportContact)];
+  
+  if ([self.delegate respondsToSelector:@selector(crashReportApplicationData)])
+    applicationdata = [self.delegate performSelector:@selector(crashReportApplicationData)];
+  
+  NSDictionary *dataForNewestCrash = [NSDictionary dictionaryWithObjectsAndKeys:
+                                      @"", @"comment",
+                                      [self consoleContent], @"console",
+                                      userId, @"userId",
+                                      userContact, @"userContact",
+                                      applicationdata, @"applicationData",
+                                      nil];
+  
+  [self storeData:dataForNewestCrash forCrashFile:newestCrashFile];
+
+  // remember we showed it to the user (and with that all the other new ones we found, too)
+  for (NSString *file in crashFiles)
+  {
+    if (![file isEqualToString:newestCrashFile])
+      [self storeData:[NSDictionary dictionary] forCrashFile:file];
+  }
+  
+//  NSMutableDictionary *mutableDict;
+//  mutableDict = dictOfUserCommentsByCrashFile ? [dictOfUserCommentsByCrashFile mutableCopy] : [NSMutableDictionary dictionary];
+//  [mutableDict setObject:@"" forKey:crashFile];
+//  
+//  [self storeDictOfUserCommentsByCrashFile:mutableDict];
+//  [mutableDict release];
+  
+  return YES;
+}
+
+- (void)markReportsProcessed:(NSArray *)listOfReports
+{
+  [self storeLastCrashDate:[NSDate date]];
+  [self storeListOfAlreadyProcessedCrashFileNames:listOfReports];
+}
+
+- (NSString *)consoleContent
+{
+  return @"";
+}
+
+#pragma mark -
+#pragma mark callbacks for UI
+
+- (void)sendReportWithComment:(NSString *)userComment
+{
+  [self storeComment:userComment forReport:[crashReports_ objectAtIndex:0]];
+  
+  if ([self.delegate respondsToSelector:@selector(connectionOpened)])
+    [self.delegate connectionOpened];
+
+  [self performSelectorInBackground:@selector(sendSynchronously:) withObject:crashReports_];
+  [self finishManager:BWQuincyStatusSendingReport];
+}
+
+- (void)cancelReport
+{
+  [self markReportsProcessed:crashReports_];
+  [self finishManager:BWQuincyStatusUserCancelled];
+}
+
+
+#pragma mark -
+#pragma mark Server interaction
+
+- (void)sendSynchronously:(NSArray *)reports
+{
+  NSString *crashId = @"";
+  NSTimeInterval delay = 0.0;
+  int status = sendCrashReportsToServerAndParseResponse(
+                                                        reports,
+                                                        [self loadDataForCrashFiles:reports],
+                                                        self.submissionURL,
+                                                        !!self.appIdentifier,
+                                                        self.networkTimeoutInterval,
+                                                        &crashId,
+                                                        &delay);
+
+  [self storeLastCrashDate:[NSDate date]];
+  [self storeListOfAlreadyProcessedCrashFileNames:reports];
+  
+  NSDictionary *dict = [NSDictionary dictionaryWithObjectsAndKeys:
+                        [NSNumber numberWithInt:status], @"status",
+                        crashId, @"crashId",
+                        [NSNumber numberWithFloat:delay], @"delay",
+                        nil];
+  [self performSelectorOnMainThread:@selector(didFinishSendingReport:) withObject:dict waitUntilDone:NO];
+}
+
+- (void) didFinishSendingReport:(NSDictionary *)response
+{
+  CrashReportStatus serverResponseCode = [[response objectForKey:@"status"] intValue];
+  NSString *crashId                    = [response objectForKey:@"crashId"];
+  NSTimeInterval delay                 = [[response objectForKey:@"delay"] floatValue];
+  
+  delay = delay + 1.0; // Note: add one more second to the delay to give the server time to breathe
+
+  if ([self.delegate respondsToSelector:@selector(connectionClosed)])
+    [self.delegate connectionClosed];
+  
+  NSString *newestCrashReport = [crashReports_ objectAtIndex:0];
+  NSDictionary *crashLogContents = contentsOfCrashReportsByFileName([NSArray arrayWithObject:newestCrashReport]);
+  NSString *crashLogContent = [crashLogContents objectForKey:newestCrashReport];
+  
+  NSString *crashedApplicationVersion = nil;
+  NSString *crashedApplicationShortVersion = nil;
+  parseVersionOfCrashedApplicationFromCrashLog(crashLogContent, &crashedApplicationVersion, &crashedApplicationShortVersion);
+  
+  BOOL shouldShowCrashStatus = NO;
+  NSString *currentApplicationVersion = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleVersion"];
+  BOOL isCrashAppVersionIdenticalToAppVersion = [currentApplicationVersion isEqualTo:crashedApplicationVersion];
+
+  BOOL isHockeyApp = !!self.appIdentifier;
+  if (self.feedbackActivated && isCrashAppVersionIdenticalToAppVersion && self.maxFeedbackDelay > delay)
+  {
+    if (isHockeyApp)
+    {
+      // only proceed if the server did not report any problem
+      if (serverResponseCode == CrashReportStatusQueued)
+      {
+        // the report is still in the queue
+        //[NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(checkForFeedbackStatus) object:nil];
+        [self performSelector:@selector(checkForFeedbackStatusAfterDelay:) withObject:crashId afterDelay:delay];
+      }
+      else
+      {
+        // we do have a status, show it if needed
+        shouldShowCrashStatus = YES;
+      }
+    }
+    else
+    {
+      shouldShowCrashStatus = YES;
+    }
+  }
+  
+  if (shouldShowCrashStatus)
+  {
+    if ([self.interfaceDelegate respondsToSelector:@selector(presentQuincyServerFeedbackInterface:)])
+      [self.interfaceDelegate presentQuincyServerFeedbackInterface:serverResponseCode];
+  }
+  
+}
+
+- (void)checkForFeedbackStatusAfterDelay:(NSString *)crashId
+{
+  [self performSelectorInBackground:@selector(checkForFeedbackStatusSynchronously:) withObject:crashId];
+}
+
+- (void)checkForFeedbackStatusSynchronously:(NSString *)crashId
+{
+  NSString *url = [self.submissionURL stringByAppendingFormat:@"/%@", crashId];
+  int status = checkForFeedbackStatus(url, self.networkTimeoutInterval);
+  [self performSelectorOnMainThread:@selector(didReceiveFeedback:) withObject:[NSNumber numberWithInt:status] waitUntilDone:NO];
+}
+
+- (void)didReceiveFeedback:(NSNumber *)status
+{
+  if ([self.interfaceDelegate respondsToSelector:@selector(presentQuincyServerFeedbackInterface:)])
+    [self.interfaceDelegate presentQuincyServerFeedbackInterface:[status intValue]];
 }
 
 #pragma mark -
 #pragma mark setter
-- (void)setSubmissionURL:(NSString *)anSubmissionURL {
+
+- (void)setSubmissionURL:(NSString *)anSubmissionURL
+{
     if (_submissionURL != anSubmissionURL) {
         [_submissionURL release];
         _submissionURL = [anSubmissionURL copy];
     }
-    
-    [self performSelector:@selector(startManager) withObject:nil afterDelay:0.1f];
 }
 
-- (void)setAppIdentifier:(NSString *)anAppIdentifier {    
-    if (_appIdentifier != anAppIdentifier) {
+- (void)setAppIdentifier:(NSString *)anAppIdentifier
+{
+    if (_appIdentifier != anAppIdentifier)
+    {
         [_appIdentifier release];
         _appIdentifier = [anAppIdentifier copy];
     }
     
-    [self setSubmissionURL:@"https://rink.hockeyapp.net/"];
+    [self setSubmissionURL:[NSString stringWithFormat:@"https://beta.hockeyapp.net/api/2/apps/%@/crashes", anAppIdentifier]];
 }
 
 #pragma mark -
-#pragma mark GetCrashData
+#pragma mark persistence
 
-- (BOOL) hasPendingCrashReport {
-	BOOL returnValue = NO;
-    
-    if (![[NSUserDefaults standardUserDefaults] valueForKey: @"CrashReportSender.lastCrashDate"]) {
-        [[NSUserDefaults standardUserDefaults] setValue: [NSDate date]
-                                                 forKey: @"CrashReportSender.lastCrashDate"];
-        return returnValue;
-    }
-    
-    NSArray* libraryDirectories = NSSearchPathForDirectoriesInDomains(NSLibraryDirectory, NSUserDomainMask, TRUE);
-    // Snow Leopard is having the log files in another location
-    [self searchCrashLogFile:[[libraryDirectories lastObject] stringByAppendingPathComponent:@"Logs/DiagnosticReports"]];
-    if (_crashFile == nil) {
-        [self searchCrashLogFile:[[libraryDirectories lastObject] stringByAppendingPathComponent:@"Logs/CrashReporter"]];
-    }		
-    
-    if (_crashFile) {
-        NSError* error;
-        
-        NSDate *lastCrashDate = [[NSUserDefaults standardUserDefaults] valueForKey: @"CrashReportSender.lastCrashDate"];
-        
-        NSDate *crashLogModificationDate = [[[NSFileManager defaultManager] attributesOfItemAtPath:_crashFile error:&error] fileModificationDate];
-        
-        if (!lastCrashDate || (lastCrashDate && crashLogModificationDate && ([crashLogModificationDate compare: lastCrashDate] == NSOrderedDescending))) {
-            returnValue = YES;
-        }
-        
-        [[NSUserDefaults standardUserDefaults] setValue: crashLogModificationDate
-                                                 forKey: @"CrashReportSender.lastCrashDate"];
-    }
-	
-	return returnValue;
-}
-
-- (void) returnToMainApplication {
-	if ( self.delegate != nil && [self.delegate respondsToSelector:@selector(showMainApplicationWindow)])
-		[self.delegate showMainApplicationWindow];
-}
-
-- (void) startManager {
-    if ([self hasPendingCrashReport]) {
-        
-        _quincyUI = [[BWQuincyUI alloc] init:self crashFile:_crashFile companyName:_companyName applicationName:[self applicationName]];
-        [_quincyUI askCrashReportDetails];
-    } else {
-        [self returnToMainApplication];
-    }
-}
-
-- (NSString*) modelVersion {
-    NSString * modelString  = nil;
-    int        modelInfo[2] = { CTL_HW, HW_MODEL };
-    size_t     modelSize;
-	
-    if (sysctl(modelInfo,
-               2,
-               NULL,
-               &modelSize,
-               NULL, 0) == 0) {
-        void * modelData = malloc(modelSize);
-        
-        if (modelData) {
-            if (sysctl(modelInfo,
-                       2,
-                       modelData,
-                       &modelSize,
-                       NULL, 0) == 0) {
-                modelString = [NSString stringWithUTF8String:modelData];
-            }
-            
-            free(modelData);
-        }
-    }
-    
-    return modelString;
-}
-
-
-
-- (void) cancelReport {
-    [self returnToMainApplication];
-}
-
-
-- (void) sendReport:(NSString *)xml {
-    [self returnToMainApplication];
-	
-    [self _postXML:[NSString stringWithFormat:@"<crashes>%@</crashes>", xml]
-             toURL:[NSURL URLWithString:self.submissionURL]];
-}
-
-- (void)_postXML:(NSString*)xml toURL:(NSURL*)url {
-	NSMutableURLRequest *request = nil;
-    NSString *boundary = @"----FOO";
-
-    if (self.appIdentifier) {
-        request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:[NSString stringWithFormat:@"%@api/2/apps/%@/crashes",
-                                                                            self.submissionURL,
-                                                                            [self.appIdentifier stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding]
-                                                                            ]
-                                                       ]];
-    } else {
-        request = [NSMutableURLRequest requestWithURL:url];
-    }
-	
-	[request setValue:@"Quincy/Mac" forHTTPHeaderField:@"User-Agent"];
-    [request setValue:@"gzip" forHTTPHeaderField:@"Accept-Encoding"];
-	[request setTimeoutInterval: 15];
-	[request setHTTPMethod:@"POST"];
-	NSString *contentType = [NSString stringWithFormat:@"multipart/form-data; boundary=%@", boundary];
-	[request setValue:contentType forHTTPHeaderField:@"Content-type"];
-	
-	NSMutableData *postBody =  [NSMutableData data];	
-    [postBody appendData:[[NSString stringWithFormat:@"--%@\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
-    if (self.appIdentifier) {
-        [postBody appendData:[@"Content-Disposition: form-data; name=\"xml\"; filename=\"crash.xml\"\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
-        [postBody appendData:[[NSString stringWithFormat:@"Content-Type: text/xml\r\n\r\n"] dataUsingEncoding:NSUTF8StringEncoding]];
-    } else {
-        [postBody appendData:[@"Content-Disposition: form-data; name=\"xmlstring\"\r\n\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
-	}
-	[postBody appendData:[xml dataUsingEncoding:NSUTF8StringEncoding]];
-    [postBody appendData:[[NSString stringWithFormat:@"\r\n--%@--\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
-	[request setHTTPBody:postBody];
-    
-	_serverResult = CrashReportStatusUnknown;
-	_statusCode = 200;
-	
-	NSHTTPURLResponse *response = nil;
-	NSError *error = nil;
-	
-	NSData *responseData = nil;
-	responseData = [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:&error];
-	_statusCode = [response statusCode];
-
-	if (responseData != nil) {
-		if (_statusCode >= 200 && _statusCode < 400) {
-			NSXMLParser *parser = [[NSXMLParser alloc] initWithData:responseData];
-			// Set self as the delegate of the parser so that it will receive the parser delegate methods callbacks.
-			[parser setDelegate:self];
-			// Depending on the XML document you're parsing, you may want to enable these features of NSXMLParser.
-			[parser setShouldProcessNamespaces:NO];
-			[parser setShouldReportNamespacePrefixes:NO];
-			[parser setShouldResolveExternalEntities:NO];
-			
-			[parser parse];
-			
-			[parser release];
-		}
-	}
-}
-
-
-#pragma mark NSXMLParser
-
-- (void)parser:(NSXMLParser *)parser didStartElement:(NSString *)elementName namespaceURI:(NSString *)namespaceURI qualifiedName:(NSString *)qName attributes:(NSDictionary *)attributeDict {
-	if (qName) {
-		elementName = qName;
-	}
-	
-	if ([elementName isEqualToString:@"result"]) {
-		_contentOfProperty = [NSMutableString string];
-	}
-}
-
-- (void)parser:(NSXMLParser *)parser didEndElement:(NSString *)elementName namespaceURI:(NSString *)namespaceURI qualifiedName:(NSString *)qName {
-	if (qName) {
-		elementName = qName;
-	}
-	
-	if ([elementName isEqualToString:@"result"]) {
-		if ([_contentOfProperty intValue] > _serverResult) {
-			_serverResult = [_contentOfProperty intValue];
-		}
-	}
-}
-
-
-- (void)parser:(NSXMLParser *)parser foundCharacters:(NSString *)string {
-	if (_contentOfProperty) {
-		// If the current element is one whose content we care about, append 'string'
-		// to the property that holds the content of the current element.
-		if (string != nil) {
-			[_contentOfProperty appendString:string];
-		}
-	}
-}
-
-
-#pragma mark GetterSetter
-
-- (NSString *) applicationName {
-	NSString *applicationName = [[[NSBundle mainBundle] localizedInfoDictionary] valueForKey: @"CFBundleExecutable"];
-	
-	if (!applicationName)
-		applicationName = [[[NSBundle mainBundle] infoDictionary] valueForKey: @"CFBundleExecutable"];
-	
-	return applicationName;
-}
-
-
-- (NSString*) applicationVersionString {
-	NSString* string = [[[NSBundle mainBundle] localizedInfoDictionary] valueForKey: @"CFBundleShortVersionString"];
-	
-	if (!string)
-		string = [[[NSBundle mainBundle] infoDictionary] valueForKey: @"CFBundleShortVersionString"];
-	
-	return string;
-}
-
-- (NSString *) applicationVersion {
-	NSString* string = [[[NSBundle mainBundle] localizedInfoDictionary] valueForKey: @"CFBundleVersion"];
-	
-	if (!string)
-		string = [[[NSBundle mainBundle] infoDictionary] valueForKey: @"CFBundleVersion"];
-	
-	return string;
-}
-
-@end
-
-
-
-
-@implementation BWQuincyUI
-
-- (id)init:(id)delegate crashFile:(NSString *)crashFile companyName:(NSString *)companyName applicationName:(NSString *)applicationName {
-	
-	self = [super initWithWindowNibName: @"BWQuincyMain"];
-	
-	if ( self != nil) {
-		_xml = nil;
-		_delegate = delegate;
-		_crashFile = crashFile;
-		_companyName = companyName;
-		_applicationName = applicationName;
-		[self setShowComments: YES];
-		[self setShowDetails: NO];
-	}
-	return self;	
-}
-
-
-- (void) endCrashReporter {
-	[self close];
-}
-
-
-- (IBAction) showComments: (id) sender {
-	NSRect windowFrame = [[self window] frame];
-	
-	if ([sender intValue]) {
-		[self setShowComments: NO];
-		
-		windowFrame.size = NSMakeSize(windowFrame.size.width, windowFrame.size.height + kCommentsHeight);
-        windowFrame.origin.y -= kCommentsHeight;
-		[[self window] setFrame: windowFrame
-						display: YES
-						animate: YES];
-		
-		[self setShowComments: YES];
-	} else {
-		[self setShowComments: NO];
-		
-		windowFrame.size = NSMakeSize(windowFrame.size.width, windowFrame.size.height - kCommentsHeight);
-        windowFrame.origin.y += kCommentsHeight;
-		[[self window] setFrame: windowFrame
-						display: YES
-						animate: YES];
-	}
-}
-
-
-- (IBAction) showDetails:(id)sender {
-	NSRect windowFrame = [[self window] frame];
-
-	windowFrame.size = NSMakeSize(windowFrame.size.width, windowFrame.size.height + kDetailsHeight);
-    windowFrame.origin.y -= kDetailsHeight;
-	[[self window] setFrame: windowFrame
-					display: YES
-					animate: YES];
-	
-	[self setShowDetails:YES];
-
-}
-
-
-- (IBAction) hideDetails:(id)sender {
-	NSRect windowFrame = [[self window] frame];
-
-	[self setShowDetails:NO];
-
-	windowFrame.size = NSMakeSize(windowFrame.size.width, windowFrame.size.height - kDetailsHeight);
-    windowFrame.origin.y += kDetailsHeight;
-	[[self window] setFrame: windowFrame
-					display: YES
-					animate: YES];
-}
-
-
-- (IBAction) cancelReport:(id)sender {
-	[self endCrashReporter];
-	[NSApp stopModal];
-	
-	if ( _delegate != nil && [_delegate respondsToSelector:@selector(cancelReport)])
-		[_delegate cancelReport];
-}
-
-
-- (IBAction) submitReport:(id)sender {
-	[submitButton setEnabled:NO];
-	
-	[[self window] makeFirstResponder: nil];
-	
-	NSString *userid = @"";
-	NSString *contact = @"";
-	
-	NSString *notes = [NSString stringWithFormat:@"Comments:\n%@\n\nConsole:\n%@", [descriptionTextField stringValue], _consoleContent];	
-	
-	SInt32 versionMajor, versionMinor, versionBugFix;
-	if (Gestalt(gestaltSystemVersionMajor, &versionMajor) != noErr) versionMajor = 0;
-	if (Gestalt(gestaltSystemVersionMinor, &versionMinor) != noErr)  versionMinor= 0;
-	if (Gestalt(gestaltSystemVersionBugFix, &versionBugFix) != noErr) versionBugFix = 0;
-	
-	_xml = [[NSString stringWithFormat:@"<crash><applicationname>%s</applicationname><bundleidentifier>%s</bundleidentifier><systemversion>%@</systemversion><senderversion>%@</senderversion><version>%@</version><platform>%@</platform><userid>%@</userid><contact>%@</contact><description><![CDATA[%@]]></description><log><![CDATA[%@]]></log></crash>",
-			[[_delegate applicationName] UTF8String],
-			[[[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleIdentifier"] UTF8String],
-			[NSString stringWithFormat:@"%i.%i.%i", versionMajor, versionMinor, versionBugFix],
-			[_delegate applicationVersion],
-			[_delegate applicationVersion],
-			[_delegate modelVersion],
-			userid,
-			contact,
-			notes,
-			_crashLogContent
-			] retain];
-	
-	[self endCrashReporter];
-	[NSApp stopModal];
-	
-	if ( _delegate != nil && [_delegate respondsToSelector:@selector(sendReport:)])
-        [_delegate performSelector:@selector(sendReport:) withObject:_xml afterDelay:0.01];
-}
-
-
-- (void) askCrashReportDetails {
-	NSError *error;
-	
-	[[self window] setTitle:[NSString stringWithFormat:NSLocalizedString(@"Problem Report for %@", @"Window title"), _applicationName]];
-
-	[[descriptionTextField cell] setPlaceholderString:NSLocalizedString(@"Please describe any steps needed to trigger the problem", @"User description placeholder")];
-	[noteText setStringValue:NSLocalizedString(@"No personal information will be sent with this report.", @"Note text")];
-
-	// get the crash log
-	NSString *crashLogs = [NSString stringWithContentsOfFile:_crashFile encoding:NSUTF8StringEncoding error:&error];
-	NSString *lastCrash = [[crashLogs componentsSeparatedByString: @"**********\n\n"] lastObject];
-	
-	_crashLogContent = lastCrash;
-	
-	// get the console log
-	NSEnumerator *theEnum = [[[NSString stringWithContentsOfFile:@"/private/var/log/system.log" encoding:NSUTF8StringEncoding error:&error] componentsSeparatedByString: @"\n"] objectEnumerator];
-	NSString* currentObject;
-	NSMutableArray* applicationStrings = [NSMutableArray array];
-	
-	NSString* searchString = [[_delegate applicationName] stringByAppendingString:@"["];
-	while ( (currentObject = [theEnum nextObject]) )
-	{
-		if ([currentObject rangeOfString:searchString].location != NSNotFound)
-			[applicationStrings addObject: currentObject];
-	}
-	
-	_consoleContent = [NSMutableString string];
-	
-    NSInteger i;
-    for(i = ((NSInteger)[applicationStrings count])-1; (i>=0 && i>((NSInteger)[applicationStrings count])-100); i--) {
-		[_consoleContent appendString:[applicationStrings objectAtIndex:i]];
-		[_consoleContent appendString:@"\n"];
-	}
-	
-    // Now limit the content to CRASHREPORTSENDER_MAX_CONSOLE_SIZE (default: 50kByte)
-    if ([_consoleContent length] > CRASHREPORTSENDER_MAX_CONSOLE_SIZE)
-    {
-        _consoleContent = (NSMutableString *)[_consoleContent substringWithRange:NSMakeRange([_consoleContent length]-CRASHREPORTSENDER_MAX_CONSOLE_SIZE-1, CRASHREPORTSENDER_MAX_CONSOLE_SIZE)]; 
-    }
-        
-	[crashLogTextView setString:[NSString stringWithFormat:@"%@\n\n%@", _crashLogContent, _consoleContent]];
-
-
-	NSBeep();
-	[NSApp runModalForWindow:[self window]];
-}
-
-
-- (void)dealloc {
-	_companyName = nil;
-	_delegate = nil;
-	
-	[super dealloc];
-}
-
-
-- (BOOL)showComments {
-	return showComments;
-}
-
-
-- (void)setShowComments:(BOOL)value {
-	showComments = value;
-}
-
-
-- (BOOL)showDetails {
-	return showDetails;
-}
-
-
-- (void)setShowDetails:(BOOL)value {
-	showDetails = value;
-}
-
-#pragma mark NSTextField Delegate
-
-- (BOOL)control:(NSControl *)control textView:(NSTextView *)textView doCommandBySelector:(SEL)commandSelector
+- (void)storeComment:(NSString *)comment forReport:(NSString *)report
 {
-    BOOL commandHandled = NO;
-    
-    if (commandSelector == @selector(insertNewline:)) {
-        [textView insertNewlineIgnoringFieldEditor:self];
-        commandHandled = YES;
-    }
-    
-    return commandHandled;
+  NSMutableDictionary* dataForThisCrash = [[[self loadDataForCrashFiles:nil] objectForKey:report] mutableCopy];
+  [dataForThisCrash setObject:comment forKey:@"comment"];
+  [self storeData:dataForThisCrash forCrashFile:report];
+  [dataForThisCrash release];
 }
 
+- (NSDictionary *)loadDataForCrashFiles:(NSArray *)crashReportFilenames
+{
+  NSDictionary *dict = [[NSUserDefaults standardUserDefaults] valueForKey:@"CrashReportSender.dataForCrashFiles"];
+  if (crashReportFilenames)
+  {
+    // TODO filter loaded data for crashes?
+  }
+  return dict ?: [NSDictionary dictionary];
+}
+
+- (void)storeData:(NSDictionary *)data forCrashFile:(NSString *)crashReportFilename
+{
+  NSMutableDictionary *dataForAllCrashes = [[self loadDataForCrashFiles:nil] mutableCopy];
+  [dataForAllCrashes setObject:data forKey:crashReportFilename];
+  [[NSUserDefaults standardUserDefaults] setValue:dataForAllCrashes forKey:@"CrashReportSender.dataForCrashFiles"];
+  [dataForAllCrashes release];
+}
+
+
+- (void)storeLastCrashDate:(NSDate *) date
+{
+  [[NSUserDefaults standardUserDefaults] setValue:date forKey:@"CrashReportSender.lastCrashDate"];
+  [[NSUserDefaults standardUserDefaults] synchronize];
+}
+
+- (NSDate *)loadLastCrashDate
+{
+  NSDate *date = [[NSUserDefaults standardUserDefaults] valueForKey:@"CrashReportSender.lastCrashDate"];
+  return date ?: [NSDate distantPast];
+}
+
+
+- (void)storeListOfAlreadyProcessedCrashFileNames:(NSArray *)listOfCrashReportFileNames
+{
+  NSArray* list = [self loadListOfAlreadyProcessedCrashFileNames];
+  
+  NSMutableArray* mutableList = list ?
+    [list mutableCopy] :
+    [[NSMutableArray alloc] init];
+  
+  [mutableList addObjectsFromArray:listOfCrashReportFileNames];
+  [[NSUserDefaults standardUserDefaults] setValue:mutableList forKey:@"CrashReportSender.listOfAlreadyProcessedCrashFileNames"];
+  [[NSUserDefaults standardUserDefaults] synchronize];
+  [mutableList release];
+}
+
+- (NSArray *)loadListOfAlreadyProcessedCrashFileNames
+{
+  NSArray *list = [[NSUserDefaults standardUserDefaults] valueForKey:@"CrashReportSender.listOfAlreadyProcessedCrashFileNames"];
+  return list ?: [NSArray array];
+}
+
+
+
+
 @end
+
 

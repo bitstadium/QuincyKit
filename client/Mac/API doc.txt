@@ -1,0 +1,102 @@
+# Sending a crash report
+
+## Request
+
+URL
+: `http://yourserver.com/crash_v200.php` OR `https://beta.hockeyapp.net/api/2/apps/##APP_PUBLIC_ID##/crashes` (where `##APP_PUBLIC_ID##` is your app’s Public ID)
+
+Verb
+: POST
+
+Payload Format
+: XML
+
+Payload Example
+:
+
+    <?xml version="1.0" encoding="UTF-8"?>
+    <crash>
+      <applicationname>QuincyDemo</applicationname>
+      <bundleidentifier>de.buzzworks.QuincyMacDemo</bundleidentifier>
+      <systemversion>10.6.8</systemversion>
+      <senderversion>2</senderversion>
+      <version>2</version>
+      <platform>MacBookPro5,3</platform>
+      <userid/>
+      <contact/>
+      <description><![CDATA[Comments:##USER_COMMENTS## Console: ##CONSOLE_CONTENT##]]></description>
+      <log><![CDATA[##CRASH_LOG_CONTENT##]]></log>
+    </crash>
+
+Comments
+:
+
+* `senderversion` is the version of the app that sent the report
+* `version` ist the version of the app that crashed
+
+If a version of the app crashed that does not exist in hockeyapp yet, that version will be created automatically. To symbolicate the crashes for that version you will have to upload the `dSym` files.
+
+## Reponse
+
+HTTP code
+:
+
+* 201 if crash report was created on the server
+* 400
+
+Format
+: `plist`
+
+Payload example
+:
+
+    <?xml version="1.0" encoding="UTF-8"?>
+    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+    <plist version="1.0">
+      <dict>
+        <key>id</key>
+        <string>78562</string>
+        <key>delay</key>
+        <integer>1000</integer>
+        <key>status</key>
+        <integer>-80</integer>
+      </dict>
+    </plist>
+
+Comments
+:
+
+* The created crash report on the server has the id `78562`.
+* Status code `-80` says it will be parsed later (there is a queue for this on the server). For more status codes see `BWQuincyServerAPI.h`.
+* The `delay` (in milliseconds) tells the client to wait that amount of time before asking the server for feedback on this crash report. The feedback function can be used to tell the user whether the bug has already been fixed (marked as fixed on the server). This can be done without symbolicating the crash report first, so the `delay` value should normally be fairly small.
+
+# Getting feedback on a crash report (hockeyapp only feature)
+
+
+## Request
+
+URL
+: `https://beta.hockeyapp.net/api/2/apps/##APP_PUBLIC_ID##/crashes/##CRASH_ID##` (where `##APP_PUBLIC_ID##` is your app’s Public ID and ##CRASH_ID## the ID of the crash as in the response when posting the crash)
+
+Verb
+: GET
+
+## Response
+
+Example Payload
+:
+
+    <?xml version="1.0" encoding="UTF-8"?>
+    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+    <plist version="1.0">
+      <dict>
+        <key>id</key>
+        <string>78562</string>
+        <key>delay</key>
+        <integer>0</integer>
+        <key>status</key>
+        <integer>1</integer>
+      </dict>
+    </plist>
+
+* Status codes > 0 (here `1`) means the bug has been marked as fixed.

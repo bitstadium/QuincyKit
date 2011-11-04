@@ -1,8 +1,9 @@
 /*
  * Author: Andreas Linde <mail@andreaslinde.de>
  *         Kent Sutherland
+ *         Stanley Rost
  *
- * Copyright (c) 2011 Andreas Linde & Kent Sutherland. All rights reserved.
+ * Copyright (c) 2011 Andreas Linde & Kent Sutherland.
  * All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person
@@ -27,13 +28,47 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#import <Cocoa/Cocoa.h>
-#import <Quincy/BWQuincyManager.h>
+#import "BWQuincyUIDelegate.h"
 
-@interface QuincyDemoAppDelegate : NSObject <BWQuincyManagerDelegate, BWQuincyUIDelegate> {
-    IBOutlet NSWindow *window;
+#define BWQuincyLocalize(StringToken) NSLocalizedStringFromTable(StringToken, @"Quincy", @"")
+
+@interface BWQuincyUI : NSWindowController <BWQuincyUIDelegate>
+{
+  IBOutlet NSTextField *descriptionTextField;
+  IBOutlet NSTextView *crashLogTextView;
+  
+  IBOutlet NSTextField *noteText;
+  
+  IBOutlet NSButton *showButton;
+  IBOutlet NSButton *hideButton;
+  IBOutlet NSButton *cancelButton;
+  IBOutlet NSButton *submitButton;
+  
+  id delegate_;
+  
+  BOOL showComments;
+  BOOL showDetails;
+  
+  NSString *companyName_;
+  NSString *applicationName_;
+  BOOL shouldPresentModal_;
 }
 
-- (IBAction)doCrash:(id)sender;
+- (IBAction)cancelReport:(id)sender;
+- (IBAction)submitReport:(id)sender;
+- (IBAction)showDetails:(id)sender;
+- (IBAction)hideDetails:(id)sender;
+- (IBAction)showComments:(id)sender;
+
+- (BOOL)showComments;
+- (void)setShowComments:(BOOL)value;
+
+- (BOOL)showDetails;
+- (void)setShowDetails:(BOOL)value;
+
+@property (nonatomic, assign) id delegate;
+@property (nonatomic, retain) NSString *companyName;
+@property (nonatomic, retain) NSString *applicationName;
+@property (nonatomic, assign) BOOL shouldPresentModal;
 
 @end

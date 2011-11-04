@@ -1,8 +1,9 @@
 /*
  * Author: Andreas Linde <mail@andreaslinde.de>
  *         Kent Sutherland
+ *         Stanley Rost
  *
- * Copyright (c) 2011 Andreas Linde & Kent Sutherland. All rights reserved.
+ * Copyright (c) 2011 Andreas Linde & Kent Sutherland.
  * All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person
@@ -27,13 +28,14 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#import <Cocoa/Cocoa.h>
-#import <Quincy/BWQuincyManager.h>
+#import <Foundation/Foundation.h>
+#import "BWQuincyServerAPI.h"
 
-@interface QuincyDemoAppDelegate : NSObject <BWQuincyManagerDelegate, BWQuincyUIDelegate> {
-    IBOutlet NSWindow *window;
-}
+@protocol BWQuincyUIDelegate <NSObject>
 
-- (IBAction)doCrash:(id)sender;
+- (void)presentQuincyCrashSubmitInterfaceWithCrash:(NSString *)crashFileContent
+                                           console:(NSString *)consoleContent;
+
+- (void)presentQuincyServerFeedbackInterface:(CrashReportStatus)status;
 
 @end
