@@ -11,6 +11,7 @@
 		1E542D88135A4F31001D7981 /* BWQuincyManager.h in Headers */ = {isa = PBXBuildFile; fileRef = 1E542D84135A4F31001D7981 /* BWQuincyManager.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		1E542D89135A4F31001D7981 /* BWQuincyManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 1E542D85135A4F31001D7981 /* BWQuincyManager.m */; };
 		1E542D8B135A4F31001D7981 /* BWQuincyMain.xib in Resources */ = {isa = PBXBuildFile; fileRef = 1E542D87135A4F31001D7981 /* BWQuincyMain.xib */; };
+		1E86F0D91464940A00F4EEF1 /* Quincy.strings in Resources */ = {isa = PBXBuildFile; fileRef = 1E86F0DB1464940A00F4EEF1 /* Quincy.strings */; };
 		1EB61278102B784900B206A7 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 1EB61277102B784900B206A7 /* MainMenu.xib */; };
 		1EB6127B102B785E00B206A7 /* QuincyDemoAppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 1EB6127A102B785E00B206A7 /* QuincyDemoAppDelegate.m */; };
 		1EB6127D102B787100B206A7 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 1EB6127C102B787100B206A7 /* main.m */; };
@@ -24,7 +25,6 @@
 		DA4F15A613CA09C300667A7D /* BWQuincyServerAPI.h in Headers */ = {isa = PBXBuildFile; fileRef = DA4F15A513CA09C300667A7D /* BWQuincyServerAPI.h */; };
 		DA74D9F513DC5FDF00DDFF79 /* NSData+Base64.h in Headers */ = {isa = PBXBuildFile; fileRef = DA74D9F313DC5FDF00DDFF79 /* NSData+Base64.h */; };
 		DA74D9F613DC5FDF00DDFF79 /* NSData+Base64.m in Sources */ = {isa = PBXBuildFile; fileRef = DA74D9F413DC5FDF00DDFF79 /* NSData+Base64.m */; };
-		DAB9182413D247FC00CF1650 /* Quincy.strings in Resources */ = {isa = PBXBuildFile; fileRef = DAB9182313D247FC00CF1650 /* Quincy.strings */; };
 		DAB9182613D2480800CF1650 /* BWQuincyUIDelegate.h in Headers */ = {isa = PBXBuildFile; fileRef = DAB9182513D2480800CF1650 /* BWQuincyUIDelegate.h */; };
 		DAE8F56B13E54C5D00F682BD /* BWQuincyUtilities.m in Sources */ = {isa = PBXBuildFile; fileRef = DAE8F56A13E54C5C00F682BD /* BWQuincyUtilities.m */; };
 		DAE8F56E13E5508600F682BD /* BWQuincyUtilities.h in Headers */ = {isa = PBXBuildFile; fileRef = DAE8F56D13E5508600F682BD /* BWQuincyUtilities.h */; };
@@ -66,6 +66,8 @@
 		1E542D85135A4F31001D7981 /* BWQuincyManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = BWQuincyManager.m; path = ../../client/Mac/BWQuincyManager.m; sourceTree = "<group>"; };
 		1E542D87135A4F31001D7981 /* BWQuincyMain.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = BWQuincyMain.xib; path = ../../client/Mac/BWQuincyMain.xib; sourceTree = "<group>"; };
 		1E542D94135A535D001D7981 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		1E86F0DA1464940A00F4EEF1 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Quincy.strings; sourceTree = "<group>"; };
+		1E86F0DC1464941F00F4EEF1 /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/Quincy.strings; sourceTree = "<group>"; };
 		1EB61267102B779200B206A7 /* QuincyDemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = QuincyDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1EB61269102B779200B206A7 /* QuincyDemo-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "QuincyDemo-Info.plist"; sourceTree = "<group>"; };
 		1EB61277102B784900B206A7 /* MainMenu.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = MainMenu.xib; sourceTree = "<group>"; };
@@ -79,7 +81,6 @@
 		DA4F15A513CA09C300667A7D /* BWQuincyServerAPI.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = BWQuincyServerAPI.h; path = ../../client/Mac/BWQuincyServerAPI.h; sourceTree = "<group>"; };
 		DA74D9F313DC5FDF00DDFF79 /* NSData+Base64.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "NSData+Base64.h"; path = "../../client/Mac/NSData+Base64.h"; sourceTree = "<group>"; };
 		DA74D9F413DC5FDF00DDFF79 /* NSData+Base64.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = "NSData+Base64.m"; path = "../../client/Mac/NSData+Base64.m"; sourceTree = "<group>"; };
-		DAB9182313D247FC00CF1650 /* Quincy.strings */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = Quincy.strings; path = ../../client/Mac/Quincy.strings; sourceTree = "<group>"; };
 		DAB9182513D2480800CF1650 /* BWQuincyUIDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = BWQuincyUIDelegate.h; path = ../../client/Mac/BWQuincyUIDelegate.h; sourceTree = "<group>"; };
 		DAE8F56A13E54C5C00F682BD /* BWQuincyUtilities.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = BWQuincyUtilities.m; path = ../../client/Mac/BWQuincyUtilities.m; sourceTree = "<group>"; };
 		DAE8F56D13E5508600F682BD /* BWQuincyUtilities.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = BWQuincyUtilities.h; path = ../../client/Mac/BWQuincyUtilities.h; sourceTree = "<group>"; };
@@ -186,7 +187,7 @@
 				DA4F159D13C9F4FB00667A7D /* BWQuincyUI.m */,
 				DAB9182513D2480800CF1650 /* BWQuincyUIDelegate.h */,
 				DA4F15A513CA09C300667A7D /* BWQuincyServerAPI.h */,
-				DAB9182313D247FC00CF1650 /* Quincy.strings */,
+				1E86F0DB1464940A00F4EEF1 /* Quincy.strings */,
 				1E542D87135A4F31001D7981 /* BWQuincyMain.xib */,
 				DAE8F56A13E54C5C00F682BD /* BWQuincyUtilities.m */,
 				DAE8F56D13E5508600F682BD /* BWQuincyUtilities.h */,
@@ -284,6 +285,7 @@
 				French,
 				German,
 				Italian,
+				de,
 			);
 			mainGroup = 0867D691FE84028FC02AAC07 /* crashReporter */;
 			productRefGroup = 034768DFFF38A50411DB9C8B /* Products */;
@@ -310,7 +312,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				1E542D8B135A4F31001D7981 /* BWQuincyMain.xib in Resources */,
-				DAB9182413D247FC00CF1650 /* Quincy.strings in Resources */,
+				1E86F0D91464940A00F4EEF1 /* Quincy.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -338,6 +340,19 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXVariantGroup section */
+		1E86F0DB1464940A00F4EEF1 /* Quincy.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				1E86F0DA1464940A00F4EEF1 /* en */,
+				1E86F0DC1464941F00F4EEF1 /* de */,
+			);
+			name = Quincy.strings;
+			path = ../../client/Mac;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
 		1DEB91AE08733DA50010E9CD /* Debug */ = {
