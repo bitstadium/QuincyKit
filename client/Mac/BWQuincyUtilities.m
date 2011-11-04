@@ -225,7 +225,7 @@ NSString* generateXMLPayload(NSArray *listOfCrashReportFileNames, NSDictionary *
         [payload appendFormat:@"<description><![CDATA[%@]]></description>", description];
         [payload appendFormat:@"<usercomment><![CDATA[%@]]></usercomment>", comment];
         [payload appendFormat:@"<console><![CDATA[%@]]></console>", console];
-        [payload appendFormat:@"<applicationdata><![CDATA[%@]]></applicationdata>", [applicationData base64EncodedString]];
+        [payload appendFormat:@"<applicationdata><![CDATA[%@]]></applicationdata>", [applicationData bw_base64EncodedString]];
         [payload appendFormat:@"<log><![CDATA[%@]]></log>", crashLogContent];
         [payload appendString:@"</crash>"];
     }
