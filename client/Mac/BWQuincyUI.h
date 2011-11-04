@@ -34,24 +34,24 @@
 
 @interface BWQuincyUI : NSWindowController <BWQuincyUIDelegate>
 {
-  IBOutlet NSTextField *descriptionTextField;
-  IBOutlet NSTextView *crashLogTextView;
-  
-  IBOutlet NSTextField *noteText;
-  
-  IBOutlet NSButton *showButton;
-  IBOutlet NSButton *hideButton;
-  IBOutlet NSButton *cancelButton;
-  IBOutlet NSButton *submitButton;
-  
-  id delegate_;
-  
-  BOOL showComments;
-  BOOL showDetails;
-  
-  NSString *companyName_;
-  NSString *applicationName_;
-  BOOL shouldPresentModal_;
+    IBOutlet NSTextField *descriptionTextField;
+    IBOutlet NSTextView *crashLogTextView;
+    
+    IBOutlet NSTextField *noteText;
+    
+    IBOutlet NSButton *showButton;
+    IBOutlet NSButton *hideButton;
+    IBOutlet NSButton *cancelButton;
+    IBOutlet NSButton *submitButton;
+    
+    id delegate_;
+    
+    BOOL showComments;
+    BOOL showDetails;
+    
+    NSString *companyName_;
+    NSString *applicationName_;
+    BOOL shouldPresentModal_;
 }
 
 - (IBAction)cancelReport:(id)sender;

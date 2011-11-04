@@ -36,9 +36,9 @@
 #define CRASHREPORTSENDER_MAX_CONSOLE_SIZE 50000
 
 typedef enum BWQuincyStatus {
-  BWQuincyStatusNoCrashFound = 0,
-  BWQuincyStatusUserCancelled,
-  BWQuincyStatusSendingReport,
+    BWQuincyStatusNoCrashFound = 0,
+    BWQuincyStatusUserCancelled,
+    BWQuincyStatusSendingReport,
 } BWQuincyStatus;
 
 // This protocol is used to send the image updates
@@ -67,24 +67,24 @@ typedef enum BWQuincyStatus {
 
 @interface BWQuincyManager : NSObject
 {
-  NSInteger statusCode_;
-
-  NSMutableString *_contentOfProperty;
-
-  id _delegate;
-  id<BWQuincyUIDelegate> interfaceDelegate_;
-
-  NSString *_submissionURL;
-  NSString *_companyName;
-  NSString *_appIdentifier;
-
-  BOOL isCrashAppVersionIdenticalToAppVersion_;
-  BOOL feedbackActivated_;
-  BOOL shouldPresentModalInterface_;
-  NSString *_feedbackRequestID;
-  NSTimeInterval maxFeedbackDelay_;
-  NSTimeInterval networkTimeoutInterval_;
-  NSArray *crashReports_;
+    NSInteger statusCode_;
+    
+    NSMutableString *_contentOfProperty;
+    
+    id _delegate;
+    id<BWQuincyUIDelegate> interfaceDelegate_;
+    
+    NSString *_submissionURL;
+    NSString *_companyName;
+    NSString *_appIdentifier;
+    
+    BOOL isCrashAppVersionIdenticalToAppVersion_;
+    BOOL feedbackActivated_;
+    BOOL shouldPresentModalInterface_;
+    NSString *_feedbackRequestID;
+    NSTimeInterval maxFeedbackDelay_;
+    NSTimeInterval networkTimeoutInterval_;
+    NSArray *crashReports_;
 }
 
 + (BWQuincyManager *)sharedQuincyManager;
