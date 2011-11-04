@@ -106,7 +106,8 @@
 
 - (void)run {
     NSDate* lastCrashDate = [self loadLastCrashDate];
-    if (![lastCrashDate isEqualToDate:[NSDate distantPast]]) {
+    BOOL quincyFreshSetup = [lastCrashDate isEqualToDate:[NSDate distantPast]];
+    if (!quincyFreshSetup) {
         NSTimeInterval interval = -24*60*60; // look 24 hours back to catch possible time zone offsets
         if ([lastCrashDate respondsToSelector:@selector(dateByAddingTimeInterval:)])
             lastCrashDate = [lastCrashDate dateByAddingTimeInterval:interval];
@@ -124,6 +125,16 @@
     
     int limit = 10;
     crashReports_ = [FindNewCrashFiles(lastCrashDate, listOfAlreadyProcessedCrashFileNames, limit) retain];
+    
+    // if lastCrashDate was distantPast and we have crashes, then mark them as processed
+    // otherwise the dialog would show up every time the app data is reset
+    // we only care about crashes from now on
+    if ([crashReports_ count] > 0 && quincyFreshSetup) {
+        [self markReportsProcessed:crashReports_];
+        [self finishManager:BWQuincyStatusNoCrashFound];
+        return;
+    }
+    
     if ([crashReports_ count] < 1) {
         // no new crashes found
         [self finishManager:BWQuincyStatusNoCrashFound];
