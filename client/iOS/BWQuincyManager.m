@@ -146,10 +146,6 @@ NSString *BWQuincyLocalize(NSString *stringToken) {
 			_crashReportActivated = YES;
 			[[NSUserDefaults standardUserDefaults] setValue:[NSNumber numberWithBool:YES] forKey:kQuincyKitActivated];
 		}
-		
-        if ([[NSUserDefaults standardUserDefaults] stringForKey:kAutomaticallySendCrashReports]) {
-            self.autoSubmitCrashReport = [[NSUserDefaults standardUserDefaults] boolForKey: kAutomaticallySendCrashReports];
-        }
         
 		if (_crashReportActivated) {
 			_crashFiles = [[NSMutableArray alloc] init];
@@ -231,6 +227,20 @@ NSString *BWQuincyLocalize(NSString *stringToken) {
 
 #pragma mark -
 #pragma mark private methods
+
+- (BOOL)autoSendCrashReports {
+    BOOL result = NO;
+    
+    if (!self.autoSubmitCrashReport) {
+        if (self.isShowingAlwaysButton && [[NSUserDefaults standardUserDefaults] boolForKey: kAutomaticallySendCrashReports]) {
+            result = YES;
+        }
+    } else {
+        result = YES;
+    }
+    
+    return result;
+}
 
 // begin the startup process
 - (void)startManager {
