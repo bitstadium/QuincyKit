@@ -48,6 +48,13 @@ const CGFloat kDetailsHeight = 285;
         [self setShowComments:YES];
         [self setShowDetails:NO];
         
+        NSRect windowFrame = [[self window] frame];
+        windowFrame.size = NSMakeSize(windowFrame.size.width, windowFrame.size.height - kDetailsHeight);
+        windowFrame.origin.y -= kDetailsHeight;
+        [[self window] setFrame: windowFrame
+                        display: YES
+                        animate: NO];
+        
         self.shouldPresentModal = YES;
         
         NSString *bundleName = [[[NSBundle mainBundle] localizedInfoDictionary] valueForKey: @"CFBundleName"];
