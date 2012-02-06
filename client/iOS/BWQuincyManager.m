@@ -498,24 +498,24 @@ NSString *BWQuincyLocalize(NSString *stringToken) {
     
 	while (NULL != (m = aslresponse_next(r)))
 	{
-		const char *value = asl_get(m, ASL_KEY_SENDER);
-		NSString *sender = (value != NULL) ? [NSString stringWithUTF8String:value] : @"";
+        const char *value = asl_get(m, ASL_KEY_SENDER);
+        NSString *sender = (value != NULL) ? [NSString stringWithUTF8String:value] : @"";
         
         value = asl_get(m, ASL_KEY_PID);
-		NSString *processID = (value != NULL) ? [NSString stringWithUTF8String:value] : @"";
+        NSString *processID = (value != NULL) ? [NSString stringWithUTF8String:value] : @"";
         
         value = asl_get(m, ASL_KEY_MSG);
-		NSString *message = (value != NULL) ? [NSString stringWithUTF8String:value] : @"";
+        NSString *message = (value != NULL) ? [NSString stringWithUTF8String:value] : @"";
         
         value = asl_get(m, "CFLog Local Time");
-		NSString *localizedTime = (value != NULL) ? [NSString stringWithUTF8String:value] : @"";
+        NSString *localizedTime = (value != NULL) ? [NSString stringWithUTF8String:value] : @"";
         
         value = asl_get(m, "CFLog Thread");
-		NSString *threadName = (value != NULL) ? [NSString stringWithUTF8String:value] : @"";
+        NSString *threadName = (value != NULL) ? [NSString stringWithUTF8String:value] : @"";
 
-		NSString *combinedLogEntry = [NSString stringWithFormat:@"%@ %@[%@:%@] %@", localizedTime, sender, processID, threadName, message];
+        NSString *combinedLogEntry = [NSString stringWithFormat:@"%@ %@[%@:%@] %@", localizedTime, sender, processID, threadName, message];
         
-		[logEntries addObject:combinedLogEntry];
+        [logEntries addObject:combinedLogEntry];
 	}
 	aslresponse_free(r);
 	asl_free(q);
