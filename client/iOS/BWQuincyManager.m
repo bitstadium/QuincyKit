@@ -576,9 +576,10 @@ NSString *BWQuincyLocalize(NSString *stringToken) {
                                                                   processID:report.processInfo.processID
                                                                   timestamp:report.systemInfo.timestamp
                                                               maxEntryCount:self.consoleLogMaxCount];
-          
-          description = [description stringByAppendingString:@"\n\n"];
-          description = [description stringByAppendingString:[logEntries componentsJoinedByString:@"\n"]];
+          if([logEntries count] > 0) {
+              description = [description stringByAppendingString:@"\n\n"];
+              description = [description stringByAppendingString:[logEntries componentsJoinedByString:@"\n"]];
+          }
       }
 
       NSString *crashLogString = [PLCrashReportTextFormatter stringValueForCrashReport:report withTextFormat:PLCrashReportTextFormatiOS];
