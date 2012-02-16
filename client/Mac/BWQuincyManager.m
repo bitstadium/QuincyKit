@@ -269,6 +269,14 @@ const CGFloat kDetailsHeight = 285;
 {
   NSString *userid = @"";
 	NSString *contact = @"";
+
+    if ([self delegate] != nil && [[self delegate] respondsToSelector:@selector(crashReportUserID)]) {
+        userid = [[self delegate] crashReportUserID] ?: @"";
+    }
+    
+    if ([self delegate] != nil && [[self delegate] respondsToSelector:@selector(crashReportContact)]) {
+        contact = [[self delegate] crashReportContact] ?: @"";
+    }
 		
 	SInt32 versionMajor, versionMinor, versionBugFix;
 	if (Gestalt(gestaltSystemVersionMajor, &versionMajor) != noErr) versionMajor = 0;
