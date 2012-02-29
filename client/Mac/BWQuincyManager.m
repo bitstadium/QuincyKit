@@ -28,6 +28,7 @@
  */
 
 #import "BWQuincyManager.h"
+#import "BWQuincyUI.h"
 #import <sys/sysctl.h>
 
 @interface BWQuincyManager(private)
@@ -39,13 +40,6 @@
 - (void) returnToMainApplication;
 @end
 
-@interface BWQuincyUI(private)
-- (void) askCrashReportDetails;
-- (void) endCrashReporter;
-@end
-
-const CGFloat kCommentsHeight = 105;
-const CGFloat kDetailsHeight = 285;
 
 @implementation BWQuincyManager
 
@@ -207,7 +201,7 @@ const CGFloat kDetailsHeight = 285;
 - (void) startManager {
   if ([self hasPendingCrashReport]) {
     if (!self.autoSubmitCrashReport) {
-      _quincyUI = [[BWQuincyUI alloc] init:self crashFile:_crashFile companyName:_companyName applicationName:[self applicationName]];
+      _quincyUI = [[BWQuincyUI alloc] initWithManager:self crashFile:_crashFile companyName:_companyName applicationName:[self applicationName]];
       [_quincyUI askCrashReportDetails];
     } else {
       NSError* error = nil;
@@ -424,208 +418,3 @@ const CGFloat kDetailsHeight = 285;
 }
 
 @end
-
-
-
-
-@implementation BWQuincyUI
-
-- (id)init:(id)delegate crashFile:(NSString *)crashFile companyName:(NSString *)companyName applicationName:(NSString *)applicationName {
-  
-  self = [super initWithWindowNibName: @"BWQuincyMain"];
-  
-  if ( self != nil) {
-    _xml = nil;
-    _delegate = delegate;
-    _crashFile = crashFile;
-    _companyName = companyName;
-    _applicationName = applicationName;
-    [self setShowComments: YES];
-    [self setShowDetails: NO];
-    
-    NSRect windowFrame = [[self window] frame];
-    windowFrame.size = NSMakeSize(windowFrame.size.width, windowFrame.size.height - kDetailsHeight);
-    windowFrame.origin.y -= kDetailsHeight;
-    [[self window] setFrame: windowFrame
-                    display: YES
-                    animate: NO];
-    
-  }
-  return self;  
-}
-
-
-- (void) endCrashReporter {
-  [self close];
-}
-
-
-- (IBAction) showComments: (id) sender {
-  NSRect windowFrame = [[self window] frame];
-  
-  if ([sender intValue]) {
-    [self setShowComments: NO];
-    
-    windowFrame.size = NSMakeSize(windowFrame.size.width, windowFrame.size.height + kCommentsHeight);
-    windowFrame.origin.y -= kCommentsHeight;
-    [[self window] setFrame: windowFrame
-                    display: YES
-                    animate: YES];
-    
-    [self setShowComments: YES];
-  } else {
-    [self setShowComments: NO];
-    
-    windowFrame.size = NSMakeSize(windowFrame.size.width, windowFrame.size.height - kCommentsHeight);
-    windowFrame.origin.y += kCommentsHeight;
-    [[self window] setFrame: windowFrame
-                    display: YES
-                    animate: YES];
-  }
-}
-
-
-- (IBAction) showDetails:(id)sender {
-  NSRect windowFrame = [[self window] frame];
-  
-  windowFrame.size = NSMakeSize(windowFrame.size.width, windowFrame.size.height + kDetailsHeight);
-  windowFrame.origin.y -= kDetailsHeight;
-  [[self window] setFrame: windowFrame
-                  display: YES
-                  animate: YES];
-  
-  [self setShowDetails:YES];
-  
-}
-
-
-- (IBAction) hideDetails:(id)sender {
-  NSRect windowFrame = [[self window] frame];
-  
-  [self setShowDetails:NO];
-  
-  windowFrame.size = NSMakeSize(windowFrame.size.width, windowFrame.size.height - kDetailsHeight);
-  windowFrame.origin.y += kDetailsHeight;
-  [[self window] setFrame: windowFrame
-                  display: YES
-                  animate: YES];
-}
-
-
-- (IBAction) cancelReport:(id)sender {
-  [self endCrashReporter];
-  [NSApp stopModal];
-  
-  if ( _delegate != nil && [_delegate respondsToSelector:@selector(cancelReport)])
-    [_delegate cancelReport];
-}
-
-- (void) _sendReportAfterDelay {
-  if ( _delegate != nil && [_delegate respondsToSelector:@selector(sendReportCrash:description:)]) {
-    NSString *notes = [NSString stringWithFormat:@"Comments:\n%@\n\nConsole:\n%@", [descriptionTextField stringValue], _consoleContent];
-    
-    [_delegate sendReportCrash:_crashLogContent description:notes];
-  }
-}
-
-- (IBAction) submitReport:(id)sender {
-  [submitButton setEnabled:NO];
-  
-  [[self window] makeFirstResponder: nil];
-  
-  [self performSelector:@selector(_sendReportAfterDelay) withObject:nil afterDelay:0.01];
-    
-  [self endCrashReporter];
-  [NSApp stopModal];
-}
-
-
-- (void) askCrashReportDetails {
-  NSError *error;
-  
-  [[self window] setTitle:[NSString stringWithFormat:NSLocalizedString(@"Problem Report for %@", @"Window title"), _applicationName]];
-  
-  [[descriptionTextField cell] setPlaceholderString:NSLocalizedString(@"Please describe any steps needed to trigger the problem", @"User description placeholder")];
-  [noteText setStringValue:NSLocalizedString(@"No personal information will be sent with this report.", @"Note text")];
-  
-  // get the crash log
-  NSString *crashLogs = [NSString stringWithContentsOfFile:_crashFile encoding:NSUTF8StringEncoding error:&error];
-  NSString *lastCrash = [[crashLogs componentsSeparatedByString: @"**********\n\n"] lastObject];
-  
-  _crashLogContent = lastCrash;
-  
-  // get the console log
-  NSEnumerator *theEnum = [[[NSString stringWithContentsOfFile:@"/private/var/log/system.log" encoding:NSUTF8StringEncoding error:&error] componentsSeparatedByString: @"\n"] objectEnumerator];
-  NSString* currentObject;
-  NSMutableArray* applicationStrings = [NSMutableArray array];
-  
-  NSString* searchString = [[_delegate applicationName] stringByAppendingString:@"["];
-  while ( (currentObject = [theEnum nextObject]) ) {
-    if ([currentObject rangeOfString:searchString].location != NSNotFound)
-      [applicationStrings addObject: currentObject];
-  }
-  
-  _consoleContent = [[NSMutableString alloc] initWithString:@""];
-  
-  NSInteger i;
-  for(i = ((NSInteger)[applicationStrings count])-1; (i>=0 && i>((NSInteger)[applicationStrings count])-100); i--) {
-    [_consoleContent appendString:[applicationStrings objectAtIndex:i]];
-    [_consoleContent appendString:@"\n"];
-  }
-  
-  // Now limit the content to CRASHREPORTSENDER_MAX_CONSOLE_SIZE (default: 50kByte)
-  if ([_consoleContent length] > CRASHREPORTSENDER_MAX_CONSOLE_SIZE) {
-    _consoleContent = (NSMutableString *)[_consoleContent substringWithRange:NSMakeRange([_consoleContent length]-CRASHREPORTSENDER_MAX_CONSOLE_SIZE-1, CRASHREPORTSENDER_MAX_CONSOLE_SIZE)]; 
-  }
-  
-  [crashLogTextView setString:[NSString stringWithFormat:@"%@\n\n%@", _crashLogContent, _consoleContent]];
-  
-  
-  NSBeep();
-  [NSApp runModalForWindow:[self window]];
-}
-
-
-- (void)dealloc {
-  [_consoleContent release]; _consoleContent = nil;
-  _companyName = nil;
-  _delegate = nil;
-  
-  [super dealloc];
-}
-
-
-- (BOOL)showComments {
-  return showComments;
-}
-
-
-- (void)setShowComments:(BOOL)value {
-  showComments = value;
-}
-
-
-- (BOOL)showDetails {
-  return showDetails;
-}
-
-
-- (void)setShowDetails:(BOOL)value {
-  showDetails = value;
-}
-
-#pragma mark NSTextField Delegate
-
-- (BOOL)control:(NSControl *)control textView:(NSTextView *)textView doCommandBySelector:(SEL)commandSelector {
-  BOOL commandHandled = NO;
-  
-  if (commandSelector == @selector(insertNewline:)) {
-    [textView insertNewlineIgnoringFieldEditor:self];
-    commandHandled = YES;
-  }
-  
-  return commandHandled;
-}
-
-@end
-

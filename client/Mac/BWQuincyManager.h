@@ -29,8 +29,6 @@
 
 #import <Cocoa/Cocoa.h>
 
-#define CRASHREPORTSENDER_MAX_CONSOLE_SIZE 50000
-
 typedef enum CrashAlertType {
   CrashAlertTypeSend = 0,
   CrashAlertTypeFeedback = 1,
@@ -94,7 +92,6 @@ typedef enum CrashReportStatus {
 
 @class BWQuincyUI;
 
-
 @protocol BWQuincyManagerDelegate <NSObject>
 
 @required
@@ -114,27 +111,27 @@ typedef enum CrashReportStatus {
 -(NSString *) crashReportContact;
 @end
 
+
 @interface BWQuincyManager : NSObject 
 #if defined(MAC_OS_X_VERSION_10_6) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_6) 
  <NSXMLParserDelegate> 
 #endif
 {
   CrashReportStatus _serverResult;
-  
-  NSInteger     _statusCode;
+  NSInteger         _statusCode;
     
   NSMutableString   *_contentOfProperty;
 
-  id          _delegate;
+  id<BWQuincyManagerDelegate> _delegate;
 
-  NSString      *_submissionURL;
-  NSString      *_companyName;
-  NSString      *_appIdentifier;
-  BOOL                _autoSubmitCrashReport;
+  NSString   *_submissionURL;
+  NSString   *_companyName;
+  NSString   *_appIdentifier;
+  BOOL       _autoSubmitCrashReport;
 
-  NSString      *_crashFile;
+  NSString   *_crashFile;
   
-  BWQuincyUI      *_quincyUI;
+  BWQuincyUI *_quincyUI;
 }
 
 - (NSString*) modelVersion;
@@ -168,50 +165,5 @@ typedef enum CrashReportStatus {
 - (NSString *) applicationName;
 - (NSString *) applicationVersionString;
 - (NSString *) applicationVersion;
-
-@end
-
-
-@interface BWQuincyUI : NSWindowController {
-  IBOutlet NSTextField  *descriptionTextField;
-  IBOutlet NSTextView   *crashLogTextView;
-
-  IBOutlet NSTextField  *noteText;
-
-  IBOutlet NSButton   *showButton;
-  IBOutlet NSButton   *hideButton;
-  IBOutlet NSButton   *cancelButton;
-  IBOutlet NSButton   *submitButton;
-  
-  BWQuincyManager   *_delegate;
-  
-  NSString      *_xml;
-  
-  NSString      *_crashFile;
-  NSString      *_companyName;
-  NSString      *_applicationName;
-  
-  NSMutableString   *_consoleContent;
-  NSString      *_crashLogContent;
-  
-  BOOL showComments;
-  BOOL showDetails;
-}
-
-- (id)init:(id)delegate crashFile:(NSString *)crashFile companyName:(NSString *)companyName applicationName:(NSString *)applicationName;
-
-- (void) askCrashReportDetails;
-
-- (IBAction) cancelReport:(id)sender;
-- (IBAction) submitReport:(id)sender;
-- (IBAction) showDetails:(id)sender;
-- (IBAction) hideDetails:(id)sender;
-- (IBAction) showComments:(id)sender;
-
-- (BOOL)showComments;
-- (void)setShowComments:(BOOL)value;
-
-- (BOOL)showDetails;
-- (void)setShowDetails:(BOOL)value;
 
 @end
