@@ -94,7 +94,7 @@ typedef enum CrashReportStatus {
 
 @class BWQuincyUI;
 
-// This protocol is used to send the image updates
+
 @protocol BWQuincyManagerDelegate <NSObject>
 
 @required
@@ -106,8 +106,6 @@ typedef enum CrashReportStatus {
 
 // Return the description the crashreport should contain, empty by default. The string will automatically be wrapped into <[DATA[ ]]>, so make sure you don't do that in your string.
 -(NSString *) crashReportDescription;
-
-@optional
 
 // Return the userid the crashreport should contain, empty by default
 -(NSString *) crashReportUserID;

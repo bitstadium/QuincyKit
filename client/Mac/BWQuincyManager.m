@@ -222,6 +222,8 @@ const CGFloat kDetailsHeight = 285;
         }
               
         [self sendReportCrash:lastCrash description:description];
+      } else {
+        [self returnToMainApplication];
       }
     }
   } else {
@@ -519,7 +521,7 @@ const CGFloat kDetailsHeight = 285;
 }
 
 - (void) _sendReportAfterDelay {
-  if ( _delegate != nil && [_delegate respondsToSelector:@selector(sendReport:)]) {
+  if ( _delegate != nil && [_delegate respondsToSelector:@selector(sendReportCrash:description:)]) {
     NSString *notes = [NSString stringWithFormat:@"Comments:\n%@\n\nConsole:\n%@", [descriptionTextField stringValue], _consoleContent];
     
     [_delegate sendReportCrash:_crashLogContent description:notes];
@@ -563,7 +565,7 @@ const CGFloat kDetailsHeight = 285;
 			[applicationStrings addObject: currentObject];
 	}
 	
-	_consoleContent = [NSMutableString string];
+	_consoleContent = [[NSMutableString alloc] initWithString:@""];
 	
   NSInteger i;
   for(i = ((NSInteger)[applicationStrings count])-1; (i>=0 && i>((NSInteger)[applicationStrings count])-100); i--) {
@@ -585,6 +587,7 @@ const CGFloat kDetailsHeight = 285;
 
 
 - (void)dealloc {
+  [_consoleContent release]; _consoleContent = nil;
 	_companyName = nil;
 	_delegate = nil;
 	
