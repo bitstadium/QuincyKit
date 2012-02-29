@@ -2,7 +2,7 @@
  * Author: Andreas Linde <mail@andreaslinde.de>
  *         Kent Sutherland
  *
- * Copyright (c) 2011 Andreas Linde & Kent Sutherland. All rights reserved.
+ * Copyright (c) 2011 Andreas Linde & Kent Sutherland.
  * All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person
@@ -28,12 +28,49 @@
  */
 
 #import <Cocoa/Cocoa.h>
-#import <Quincy/BWQuincyManager.h>
 
-@interface QuincyDemoAppDelegate : NSObject <BWQuincyManagerDelegate> {
-  IBOutlet NSWindow *window;
+@class BWQuincyManager;
+
+@interface BWQuincyUI : NSWindowController {
+  IBOutlet NSTextField  *descriptionTextField;
+  IBOutlet NSTextView   *crashLogTextView;
+
+  IBOutlet NSTextField  *noteText;
+
+  IBOutlet NSButton   *showButton;
+  IBOutlet NSButton   *hideButton;
+  IBOutlet NSButton   *cancelButton;
+  IBOutlet NSButton   *submitButton;
+  
+  BWQuincyManager   *_quincyManager;
+  
+  NSString      *_xml;
+  
+  NSString      *_crashFile;
+  NSString      *_companyName;
+  NSString      *_applicationName;
+  
+  NSMutableString   *_consoleContent;
+  NSString      *_crashLogContent;
+  
+  BOOL showComments;
+  BOOL showDetails;
 }
 
-- (IBAction)doCrash:(id)sender;
+- (id)initWithManager:(BWQuincyManager *)quincyManager crashFile:(NSString *)crashFile companyName:(NSString *)companyName applicationName:(NSString *)applicationName;
+
+- (void) askCrashReportDetails;
+
+- (IBAction) cancelReport:(id)sender;
+- (IBAction) submitReport:(id)sender;
+- (IBAction) showDetails:(id)sender;
+- (IBAction) hideDetails:(id)sender;
+- (IBAction) showComments:(id)sender;
+
+- (BOOL)showComments;
+- (void)setShowComments:(BOOL)value;
+
+- (BOOL)showDetails;
+- (void)setShowDetails:(BOOL)value;
 
 @end
