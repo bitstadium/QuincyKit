@@ -31,7 +31,7 @@
 #import <Quincy/BWQuincyManager.h>
 
 @interface QuincyDemoAppDelegate : NSObject <BWQuincyManagerDelegate> {
-    IBOutlet NSWindow *window;
+  IBOutlet NSWindow *window;
 }
 
 - (IBAction)doCrash:(id)sender;

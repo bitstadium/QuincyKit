@@ -34,33 +34,33 @@
 // set the main nibs window to hidden on startup
 // this delegate method is required to be implemented!
 - (void) showMainApplicationWindow {
-	[window makeFirstResponder: nil];
-	[window makeKeyAndOrderFront:nil];
+  [window makeFirstResponder: nil];
+  [window makeKeyAndOrderFront:nil];
 }
 
 
 - (void)applicationDidFinishLaunching:(NSNotification *)note {
-	// Launch the crash reporter task
+  // Launch the crash reporter task
     
-    // setSubmissionURL for self hosted Example: http://yourserver.com/crash_v200.php
-    // setAppIdentifier for HockeyApp Example: 658b693ff4c164e65168fe0f43112ac0
-    //    [[BWQuincyManager sharedQuincyManager] setAppIdentifier:@"658b693ff4c164e65168fe0f43112ac0"];
-    //    [[BWQuincyManager sharedQuincyManager] setSubmissionURL:@"http://yourserver.com/crash_v200.php"];
-    
-    [[BWQuincyManager sharedQuincyManager] setCompanyName:@"My company"];
-    [[BWQuincyManager sharedQuincyManager] setDelegate:self];
+// setSubmissionURL for self hosted Example: http://yourserver.com/crash_v200.php
+// setAppIdentifier for HockeyApp Example: 658b693ff4c164e65168fe0f43112ac0
+//  [[BWQuincyManager sharedQuincyManager] setAppIdentifier:@"658b693ff4c164e65168fe0f43112ac0"];
+//  [[BWQuincyManager sharedQuincyManager] setSubmissionURL:@"http://yourserver.com/crash_v200.php"];
+
+  [[BWQuincyManager sharedQuincyManager] setCompanyName:@"My company"];
+  [[BWQuincyManager sharedQuincyManager] setDelegate:self];
 }
 
 
 - (void)bam {
-	signal(SIGBUS, SIG_DFL);
-	
-	*(long*)0 = 0xDEADBEEF;
+  signal(SIGBUS, SIG_DFL);
+  
+  *(long*)0 = 0xDEADBEEF;
 }
 
 
 - (IBAction)doCrash:(id)sender {
-	[self bam];
+  [self bam];
 }
 
 @end
