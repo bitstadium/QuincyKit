@@ -136,6 +136,8 @@ const CGFloat kDetailsHeight = 285;
   NSString *notes = [NSString stringWithFormat:@"Comments:\n%@\n\nConsole:\n%@", [descriptionTextField stringValue], _consoleContent];
   
   [_quincyManager sendReportCrash:_crashLogContent description:notes];
+  [_crashLogContent release];
+  _crashLogContent = nil;
 }
 
 - (IBAction) submitReport:(id)sender {
@@ -162,7 +164,7 @@ const CGFloat kDetailsHeight = 285;
   NSString *crashLogs = [NSString stringWithContentsOfFile:_crashFile encoding:NSUTF8StringEncoding error:&error];
   NSString *lastCrash = [[crashLogs componentsSeparatedByString: @"**********\n\n"] lastObject];
   
-  _crashLogContent = lastCrash;
+  _crashLogContent = [lastCrash retain];
   
   // get the console log
   NSEnumerator *theEnum = [[[NSString stringWithContentsOfFile:@"/private/var/log/system.log" encoding:NSUTF8StringEncoding error:&error] componentsSeparatedByString: @"\n"] objectEnumerator];
