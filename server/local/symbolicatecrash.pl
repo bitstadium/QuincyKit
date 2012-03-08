@@ -18,6 +18,7 @@ use Cwd qw(realpath);
 use Math::BigInt;
 use List::MoreUtils qw(uniq);
 use File::Basename qw(basename);
+use File::Glob ':glob';
 
 #############################
 
@@ -107,20 +108,21 @@ exit 1;
 sub getSymbolDirPaths {
     my ($osVersion, $osBuild) = @_;
     
-    my @foundPaths = `mdfind "kMDItemCFBundleIdentifier == 'com.apple.dt.Xcode' || kMDItemCFBundleIdentifier == 'com.apple.Xcode'"`;
-    my @result = ();
+    print STDERR "(\$osVersion, \$osBuild) = ($osVersion, $osBuild)\n" if $opt{v};
     
-    foreach my $foundPath (@foundPaths) {
+    my $versionPattern = "{$osVersion ($osBuild),$osVersion,$osBuild}";
+    #my $versionPattern  = '*';
+    print STDERR "\$versionPattern = $versionPattern\n" if $opt{v};
+    
+    my @result = grep { -e && -d } bsd_glob('{/System,,~}/Library/Developer/Xcode/iOS DeviceSupport/'.$versionPattern.'/Symbols*', GLOB_BRACE | GLOB_TILDE);
+    
+    foreach my $foundPath (`mdfind "kMDItemCFBundleIdentifier == 'com.apple.dt.Xcode' || kMDItemCFBundleIdentifier == 'com.apple.Xcode'"`) {
         chomp $foundPath;
-        $foundPath =~ s/\/Applications\/Xcode.app$//;
-        $foundPath = quotemeta($foundPath);
-        
-        my @pathResults = grep { -e && -d && !/Simulator/ } glob $foundPath.'\/Platforms\/*\.platform/DeviceSupport\/*\/Symbols*';
-        push(@pathResults, grep { -e && -d } glob '{\/System,,~}\/Library\/Developer\/Xcode\/iOS\ DeviceSupport\/*\/Symbols*');
-        print STDERR "Symbol directory paths:  @pathResults\n" if $opt{v};
+        my @pathResults = grep { -e && -d && !/Simulator/ }  bsd_glob($foundPath.'/Contents/Developer/Platforms/*.platform/DeviceSupport/'.$versionPattern.'/Symbols*/');
         push(@result, @pathResults);
     }
     
+    print STDERR "Symbol directory paths:  @result\n" if $opt{v};
     return @result;
 }
 
@@ -129,14 +131,9 @@ sub getSymbolPathFor_searchpaths {
     my @result;
     for my $item (@extra_search_paths)
     {
-        my $glob = "";
-        
-        $glob .=       quotemeta($item) . '\/' . quotemeta($bin) . "*";
-        $glob .= " " . quotemeta($item) . '\/*\/' . quotemeta($bin) . "*";
-        $glob .= " " . quotemeta($item) . quotemeta($path) . "*";
-        
-        #print STDERR "\nSearching [$glob]..." if $opt{v};
-        push(@result, grep { -e && (! -d) } glob $glob);
+        my $glob = "$item"."{$bin,*/$bin,$path}*";
+        #print STDERR "\nSearching pattern: [$glob]..." if $opt{v};
+        push(@result, grep { -e && (! -d) } bsd_glob ($glob, GLOB_BRACE));
     }
     
     print STDERR "\nSearching [@result]..." if $opt{v};

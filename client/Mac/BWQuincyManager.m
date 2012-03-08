@@ -31,6 +31,9 @@
 #import "BWQuincyUI.h"
 #import <sys/sysctl.h>
 
+#define SDK_NAME @"Quincy"
+#define SDK_VERSION @"2.1.6"
+
 @interface BWQuincyManager(private)
 - (void) startManager;
 
@@ -295,11 +298,14 @@
   NSString *boundary = @"----FOO";
   
   if (self.appIdentifier) {
-    request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:[NSString stringWithFormat:@"%@api/2/apps/%@/crashes",
-                                                                        self.submissionURL,
-                                                                        [self.appIdentifier stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding]
-                                                                        ]
-                                                   ]];
+    request = [NSMutableURLRequest requestWithURL:
+               [NSURL URLWithString:[NSString stringWithFormat:@"%@api/2/apps/%@/crashes?sdk=%@&sdk_version=%@",
+                                     self.submissionURL,
+                                     [self.appIdentifier stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding],
+                                     SDK_NAME,
+                                     SDK_VERSION
+                                     ]
+                ]];
   } else {
     request = [NSMutableURLRequest requestWithURL:url];
   }
