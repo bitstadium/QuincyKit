@@ -27,6 +27,7 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <asl.h>
 #import <CrashReporter/CrashReporter.h>
 #import <SystemConfiguration/SystemConfiguration.h>
 #import <UIKit/UIKit.h>
@@ -91,6 +92,8 @@ NSString *BWQuincyLocalize(NSString *stringToken) {
 @synthesize languageStyle = _languageStyle;
 @synthesize didCrashInLastSession = _didCrashInLastSession;
 @synthesize loggingEnabled = _loggingEnabled;
+@synthesize appendConsoleLogsToDescription = _appendConsoleLogsToDescription;
+@synthesize consoleLogMaxCount = _consoleLogMaxCount;
 
 @synthesize appIdentifier = _appIdentifier;
 
@@ -131,6 +134,8 @@ NSString *BWQuincyLocalize(NSString *stringToken) {
     _languageStyle = nil;
     _didCrashInLastSession = NO;
     _loggingEnabled = NO;
+    _appendConsoleLogsToDescription = NO;
+    _consoleLogMaxCount = 50;  
     
     self.delegate = nil;
     self.feedbackActivated = NO;
@@ -471,6 +476,63 @@ NSString *BWQuincyLocalize(NSString *stringToken) {
   }
 }
 
+- (NSArray *) _fetchConsoleLogEntriesForProcessName:(NSString *)processName
+                                     processID:(NSUInteger)processID
+                                     timestamp:(NSDate *)timestamp
+                                 maxEntryCount:(NSUInteger)maxEntryCount
+{
+    if(processName == nil || processID == 0 || timestamp == nil || maxEntryCount == 0)
+        return nil;
+    
+    NSString *processIDString = [NSString stringWithFormat:@"%u", (unsigned int)processID];
+    NSTimeInterval timestampInterval = [timestamp timeIntervalSince1970];
+    timestampInterval += 2.0; // Give it a buffer of 2 seconds - some log entries might have been outputted during the crash
+    NSString *timestampString = [NSString stringWithFormat:@"%u", (unsigned int)timestampInterval];
+    
+	NSMutableArray *logEntries = [NSMutableArray array];
+    
+	aslmsg q = asl_new(ASL_TYPE_QUERY);
+	asl_set_query(q, ASL_KEY_SENDER, [processName UTF8String], ASL_QUERY_OP_EQUAL);
+    asl_set_query(q, ASL_KEY_PID, [processIDString UTF8String], ASL_QUERY_OP_EQUAL);
+    asl_set_query(q, ASL_KEY_TIME, [timestampString UTF8String], ASL_QUERY_OP_LESS_EQUAL | ASL_QUERY_OP_NUMERIC);
+    
+	aslresponse r = asl_search(NULL, q);
+	aslmsg m = NULL;
+    
+	while (NULL != (m = aslresponse_next(r)))
+	{
+        const char *value = asl_get(m, ASL_KEY_SENDER);
+        NSString *sender = (value != NULL) ? [NSString stringWithUTF8String:value] : @"";
+        
+        value = asl_get(m, ASL_KEY_PID);
+        NSString *processID = (value != NULL) ? [NSString stringWithUTF8String:value] : @"";
+        
+        value = asl_get(m, ASL_KEY_MSG);
+        NSString *message = (value != NULL) ? [NSString stringWithUTF8String:value] : @"";
+        
+        value = asl_get(m, "CFLog Local Time");
+        NSString *localizedTime = (value != NULL) ? [NSString stringWithUTF8String:value] : @"";
+        
+        value = asl_get(m, "CFLog Thread");
+        NSString *threadName = (value != NULL) ? [NSString stringWithUTF8String:value] : @"";
+
+        NSString *combinedLogEntry = [NSString stringWithFormat:@"%@ %@[%@:%@] %@", localizedTime, sender, processID, threadName, message];
+        
+        [logEntries addObject:combinedLogEntry];
+	}
+	aslresponse_free(r);
+	asl_free(q);
+    
+    if([logEntries count] > maxEntryCount)
+    {
+        // Select last entries, since they're most recent ones
+        [logEntries removeObjectsInRange:NSMakeRange([logEntries count] - maxEntryCount - 1, maxEntryCount)];
+    }
+    
+    // Reverse the order so that most recent are at the beginning of the array
+    return [[logEntries reverseObjectEnumerator] allObjects];
+}
+
 - (void)_performSendingCrashReports {
   NSMutableDictionary *approvedCrashReports = [NSMutableDictionary dictionaryWithDictionary:[[NSUserDefaults standardUserDefaults] dictionaryForKey: kApprovedCrashReports]];
   
@@ -510,6 +572,19 @@ NSString *BWQuincyLocalize(NSString *stringToken) {
         continue;
       }
       
+      if(self.appendConsoleLogsToDescription) {
+          // Collect console log of this process up to the time of crash.
+          // Limit the number of entries to self.consoleLogMaxCount to avoid sending too much data.
+          NSArray *logEntries = [self _fetchConsoleLogEntriesForProcessName:report.processInfo.processName
+                                                                  processID:report.processInfo.processID
+                                                                  timestamp:report.systemInfo.timestamp
+                                                              maxEntryCount:self.consoleLogMaxCount];
+          if([logEntries count] > 0) {
+              description = [description stringByAppendingString:@"\n\n"];
+              description = [description stringByAppendingString:[logEntries componentsJoinedByString:@"\n"]];
+          }
+      }
+
       NSString *crashLogString = [PLCrashReportTextFormatter stringValueForCrashReport:report withTextFormat:PLCrashReportTextFormatiOS];
       
       if ([report.applicationInfo.applicationVersion compare:[[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleVersion"]] == NSOrderedSame) {

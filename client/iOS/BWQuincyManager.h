@@ -150,6 +150,8 @@ typedef enum CrashReportStatus {
   id <BWQuincyManagerDelegate> _delegate;
   
   BOOL _loggingEnabled;
+  BOOL _appendConsoleLogsToDescription;
+  NSUInteger _consoleLogMaxCount;
   BOOL _showAlwaysButton;
   BOOL _feedbackActivated;
   BOOL _autoSubmitCrashReport;
@@ -198,6 +200,15 @@ typedef enum CrashReportStatus {
 // if YES, states will be logged using NSLog. Only enable this for debugging!
 // if NO, nothing will be logged. (default)
 @property (nonatomic, assign, getter=isLoggingEnabled) BOOL loggingEnabled;
+
+// if YES, console logs of the current process will be appended to crash descriptions and uploaded to the server.
+// Only log entries which were generated just before the crash will be included. 
+// if NO, console logs won't be appended to crash descriptions. (default)
+@property (nonatomic, assign) BOOL appendConsoleLogsToDescription;
+
+// How many most recent log entries should be sent if appendConsoleLogsToDescription is set to YES
+// Default: 50 lines.
+@property (nonatomic, assign) NSUInteger consoleLogMaxCount;
 
 // nil, using the default localization files (Default)
 // set to another string which will be appended to the Quincy localization file name, "Alternate" is another provided text set
