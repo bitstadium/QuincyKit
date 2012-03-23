@@ -132,23 +132,29 @@ const CGFloat kDetailsHeight = 285;
   [_quincyManager cancelReport];
 }
 
-- (void) _sendReportAfterDelay {
-  NSString *notes = [NSString stringWithFormat:@"Comments:\n%@\n\nConsole:\n%@", [descriptionTextField stringValue], _consoleContent];
-  
-  [_quincyManager sendReportCrash:_crashLogContent description:notes];
-  [_crashLogContent release];
-  _crashLogContent = nil;
-}
+//- (void) _sendReportAfterDelay {
+//    NSString *notes = [NSString stringWithFormat:@"Comments:\n%@\n\nConsole:\n%@", [descriptionTextField stringValue], _consoleContent];
+//    
+//    [_quincyManager sendReportCrash:_crashLogContent description:notes];
+//    [_crashLogContent release];
+//    _crashLogContent = nil;
+//}
 
 - (IBAction) submitReport:(id)sender {
-  [submitButton setEnabled:NO];
-  
-  [[self window] makeFirstResponder: nil];
-  
-  [self performSelector:@selector(_sendReportAfterDelay) withObject:nil afterDelay:0.01];
+    [submitButton setEnabled:NO];
     
-  [self endCrashReporter];
-  [NSApp stopModal];
+    [[self window] makeFirstResponder: nil];
+    
+    // [self performSelector:@selector(_sendReportAfterDelay) withObject:nil afterDelay:0.01];
+    
+    NSString *notes = [NSString stringWithFormat:@"Comments:\n%@\n\nConsole:\n%@", [descriptionTextField stringValue], _consoleContent];
+    
+    [_quincyManager sendReportCrash:_crashLogContent description:notes];
+    [_crashLogContent release];
+    _crashLogContent = nil;
+    
+    [self endCrashReporter];
+    [NSApp stopModal];
 }
 
 
