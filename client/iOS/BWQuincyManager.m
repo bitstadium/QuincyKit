@@ -36,7 +36,7 @@
 #include <inttypes.h> //needed for PRIx64 macro
 
 #define SDK_NAME @"Quincy"
-#define SDK_VERSION @"2.1.7-develop"
+#define SDK_VERSION @"2.1.7"
 
 NSBundle *quincyBundle(void) {
   static NSBundle* bundle = nil;
