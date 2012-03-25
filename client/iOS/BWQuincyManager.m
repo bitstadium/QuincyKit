@@ -36,7 +36,7 @@
 #include <inttypes.h> //needed for PRIx64 macro
 
 #define SDK_NAME @"Quincy"
-#define SDK_VERSION @"2.1.6"
+#define SDK_VERSION @"2.1.7"
 
 NSBundle *quincyBundle(void) {
   static NSBundle* bundle = nil;
@@ -78,6 +78,8 @@ NSString *BWQuincyLocalize(NSString *stringToken) {
 - (BOOL)hasNonApprovedCrashReports;
 - (BOOL)hasPendingCrashReport;
 
+@property (nonatomic, retain) NSFileManager *fileManager;
+
 @end
 
 @implementation BWQuincyManager
@@ -87,12 +89,13 @@ NSString *BWQuincyLocalize(NSString *stringToken) {
 @synthesize showAlwaysButton = _showAlwaysButton;
 @synthesize feedbackActivated = _feedbackActivated;
 @synthesize autoSubmitCrashReport = _autoSubmitCrashReport;
-@synthesize autoSubmitDeviceUDID = _autoSubmitDeviceUDID;
 @synthesize languageStyle = _languageStyle;
 @synthesize didCrashInLastSession = _didCrashInLastSession;
 @synthesize loggingEnabled = _loggingEnabled;
 
 @synthesize appIdentifier = _appIdentifier;
+
+@synthesize fileManager = _fileManager;
 
 #if __IPHONE_OS_VERSION_MIN_REQUIRED >= 40000
 +(BWQuincyManager *)sharedQuincyManager {
@@ -131,12 +134,12 @@ NSString *BWQuincyLocalize(NSString *stringToken) {
     _languageStyle = nil;
     _didCrashInLastSession = NO;
     _loggingEnabled = NO;
+    _fileManager = [[NSFileManager alloc] init];
     
     self.delegate = nil;
     self.feedbackActivated = NO;
     self.showAlwaysButton = NO;
     self.autoSubmitCrashReport = NO;
-    self.autoSubmitDeviceUDID = NO;
     
     NSString *testValue = [[NSUserDefaults standardUserDefaults] stringForKey:kQuincyKitAnalyzerStarted];
     if (testValue) {
@@ -159,13 +162,11 @@ NSString *BWQuincyLocalize(NSString *stringToken) {
       NSArray *paths = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES);
       _crashesDir = [[NSString stringWithFormat:@"%@", [[paths objectAtIndex:0] stringByAppendingPathComponent:@"/crashes/"]] retain];
 			
-      NSFileManager *fm = [NSFileManager defaultManager];
-			
-      if (![fm fileExistsAtPath:_crashesDir]) {
+      if (![self.fileManager fileExistsAtPath:_crashesDir]) {
         NSDictionary *attributes = [NSDictionary dictionaryWithObject: [NSNumber numberWithUnsignedLong: 0755] forKey: NSFilePosixPermissions];
         NSError *theError = NULL;
 				
-        [fm createDirectoryAtPath:_crashesDir withIntermediateDirectories: YES attributes: attributes error: &theError];
+        [self.fileManager createDirectoryAtPath:_crashesDir withIntermediateDirectories: YES attributes: attributes error: &theError];
       }
       
       PLCrashReporter *crashReporter = [PLCrashReporter sharedReporter];
@@ -212,6 +213,9 @@ NSString *BWQuincyLocalize(NSString *stringToken) {
   
   [_crashesDir release];
   [_crashFiles release];
+  
+  [_fileManager release];
+  _fileManager = nil;
   
   [super dealloc];
 }
@@ -305,16 +309,14 @@ NSString *BWQuincyLocalize(NSString *stringToken) {
 
 - (BOOL)hasPendingCrashReport {
   if (_crashReportActivated) {
-    NSFileManager *fm = [NSFileManager defaultManager];
-		
-    if ([_crashFiles count] == 0 && [fm fileExistsAtPath:_crashesDir]) {
+    if ([_crashFiles count] == 0 && [self.fileManager fileExistsAtPath:_crashesDir]) {
       NSString *file = nil;
       NSError *error = NULL;
       
-      NSDirectoryEnumerator *dirEnum = [fm enumeratorAtPath: _crashesDir];
+      NSDirectoryEnumerator *dirEnum = [self.fileManager enumeratorAtPath: _crashesDir];
 			
       while ((file = [dirEnum nextObject])) {
-        NSDictionary *fileAttributes = [fm attributesOfItemAtPath:[_crashesDir stringByAppendingPathComponent:file] error:&error];
+        NSDictionary *fileAttributes = [self.fileManager attributesOfItemAtPath:[_crashesDir stringByAppendingPathComponent:file] error:&error];
         if ([[fileAttributes objectForKey:NSFileSize] intValue] > 0) {
           [_crashFiles addObject:file];
         }
@@ -462,28 +464,16 @@ NSString *BWQuincyLocalize(NSString *stringToken) {
   return platform;
 }
 
-- (NSString *)deviceIdentifier {
-  if ([[UIDevice currentDevice] respondsToSelector:@selector(uniqueIdentifier)]) {
-    return [[UIDevice currentDevice] performSelector:@selector(uniqueIdentifier)];
-  }
-  else {
-    return @"invalid";
-  }
-}
-
 - (void)_performSendingCrashReports {
   NSMutableDictionary *approvedCrashReports = [NSMutableDictionary dictionaryWithDictionary:[[NSUserDefaults standardUserDefaults] dictionaryForKey: kApprovedCrashReports]];
   
-  NSFileManager *fm = [NSFileManager defaultManager];
   NSError *error = NULL;
 	
   NSString *userid = @"";
   NSString *contact = @"";
   NSString *description = @"";
   
-  if (self.autoSubmitDeviceUDID && [[NSBundle mainBundle] pathForResource:@"embedded" ofType:@"mobileprovision"]) {
-    userid = [self deviceIdentifier];
-  } else if (self.delegate != nil && [self.delegate respondsToSelector:@selector(crashReportUserID)]) {
+  if (self.delegate != nil && [self.delegate respondsToSelector:@selector(crashReportUserID)]) {
     userid = [self.delegate crashReportUserID] ?: @"";
   }
 	
@@ -537,7 +527,7 @@ NSString *BWQuincyLocalize(NSString *stringToken) {
       [approvedCrashReports setObject:[NSNumber numberWithBool:YES] forKey:[_crashFiles objectAtIndex:i]];
     } else {
       // we cannot do anything with this report, so delete it
-      [fm removeItemAtPath:filename error:&error];
+      [self.fileManager removeItemAtPath:filename error:&error];
     }
   }
 	
@@ -555,10 +545,8 @@ NSString *BWQuincyLocalize(NSString *stringToken) {
 - (void)_cleanCrashReports {
   NSError *error = NULL;
   
-  NSFileManager *fm = [NSFileManager defaultManager];
-  
   for (NSUInteger i=0; i < [_crashFiles count]; i++) {		
-    [fm removeItemAtPath:[_crashesDir stringByAppendingPathComponent:[_crashFiles objectAtIndex:i]] error:&error];
+    [self.fileManager removeItemAtPath:[_crashesDir stringByAppendingPathComponent:[_crashFiles objectAtIndex:i]] error:&error];
   }
   [_crashFiles removeAllObjects];
   
