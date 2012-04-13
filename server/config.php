@@ -63,6 +63,7 @@ define("FAILURE_PHP_CURL_LIB", -41);                    // PHP: cURL library mis
 define("SEARCH_TYPE_ID", 0);                            // Search for a crash ID
 define("SEARCH_TYPE_DESCRIPTION", 1);                   // Search for in the crash descriptions
 define("SEARCH_TYPE_CRASHLOG", 2);                      // Search for in the crashlogs
+define("SEARCH_TYPE_CONTACT", 3);			// Search for in the Contact Name
 
 $statusversions = array(0 => 'Unknown', 1 => 'In development', 2 => 'Submitted', 3 => 'Available', 4 => 'Discontinued');
 
