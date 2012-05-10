@@ -168,18 +168,23 @@
     return NO;
   }
   
-  NSArray* libraryDirectories = NSSearchPathForDirectoriesInDomains(NSLibraryDirectory, NSUserDomainMask, TRUE);
-  // Snow Leopard is having the log files in another location
-  [self searchCrashLogFile:[[libraryDirectories lastObject] stringByAppendingPathComponent:@"Logs/DiagnosticReports"]];
-  if (_crashFile == nil) {
-    [self searchCrashLogFile:[[libraryDirectories lastObject] stringByAppendingPathComponent:@"Logs/CrashReporter"]];
+  NSArray* libraryDirectories = NSSearchPathForDirectoriesInDomains(NSLibraryDirectory, NSAllDomainsMask, TRUE);
+  NSEnumerator *e = [libraryDirectories objectEnumerator];
+  id dir;
+  while (dir = [e nextObject]) {
+    // Snow Leopard is having the log files in another location
+    [self searchCrashLogFile:[dir stringByAppendingPathComponent:@"Logs/DiagnosticReports"]];
     if (_crashFile == nil) {
-      NSString *sandboxFolder = [NSString stringWithFormat:@"/Containers/%@/Data/Library", [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleIdentifier"]];
-      if ([[libraryDirectories lastObject] rangeOfString:sandboxFolder].location != NSNotFound) {
-        NSString *libFolderName = [[libraryDirectories lastObject] stringByReplacingOccurrencesOfString:sandboxFolder withString:@""];
-        [self searchCrashLogFile:[libFolderName stringByAppendingPathComponent:@"Logs/DiagnosticReports"]];
+      [self searchCrashLogFile:[dir stringByAppendingPathComponent:@"Logs/CrashReporter"]];
+      if (_crashFile == nil) {
+        NSString *sandboxFolder = [NSString stringWithFormat:@"/Containers/%@/Data/Library", [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleIdentifier"]];
+        if ([dir rangeOfString:sandboxFolder].location != NSNotFound) {
+          NSString *libFolderName = [dir stringByReplacingOccurrencesOfString:sandboxFolder withString:@""];
+          [self searchCrashLogFile:[libFolderName stringByAppendingPathComponent:@"Logs/DiagnosticReports"]];
+        }
       }
     }
+    if (_crashFile) break;
   }
   
   if (_crashFile) {
