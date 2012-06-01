@@ -46,9 +46,12 @@ if (!isset($description)) $description = "";
 if ($action == "") die('Wrong parameters');
 
 if ($action == "deletecrashid" && $id != "") {
+    $query = "DELETE FROM ".$dbsymbolicatetable." WHERE crashid = ".$id;
+    $result = mysql_query($query) or die('Error in SQL '.$query);
+
     $query = "DELETE from " . $dbcrashtable . " WHERE id=" . $id;
     $result = mysql_query($query) or die('Error in SQL '.$query);
-    
+        
     if ($groupid != "" && $groupid > -1) {
         // adjust amount and timestamp
         $query = "SELECT amount, latesttimestamp FROM ".$dbgrouptable." WHERE id = ".$groupid;
