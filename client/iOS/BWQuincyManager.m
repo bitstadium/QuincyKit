@@ -36,7 +36,7 @@
 #include <inttypes.h> //needed for PRIx64 macro
 
 #define SDK_NAME @"Quincy"
-#define SDK_VERSION @"2.1.7"
+#define SDK_VERSION @"2.1.8"
 
 NSBundle *quincyBundle(void) {
   static NSBundle* bundle = nil;
@@ -662,10 +662,6 @@ NSString *BWQuincyLocalize(NSString *stringToken) {
 }
 
 - (void)connection:(NSURLConnection *)connection didFailWithError:(NSError *)error {
-  [_responseData release];
-  _responseData = nil;
-  _urlConnection = nil;
-	
   if (self.delegate != nil && [self.delegate respondsToSelector:@selector(connectionClosed)]) {
     [self.delegate connectionClosed];
   }
@@ -673,6 +669,11 @@ NSString *BWQuincyLocalize(NSString *stringToken) {
   BWQuincyLog(@"ERROR: %@", [error localizedDescription]);
   
   _sendingInProgress = NO;
+  
+  [_responseData release];
+  _responseData = nil;
+  [_urlConnection release];
+  _urlConnection = nil;
 }
 
 - (void)connectionDidFinishLoading:(NSURLConnection *)connection {
@@ -733,16 +734,17 @@ NSString *BWQuincyLocalize(NSString *stringToken) {
       BWQuincyLog(@"ERROR: Sending failed with status code: %i", _statusCode);
     }
   }
-	
-  [_responseData release];
-  _responseData = nil;
-  _urlConnection = nil;
-	
+		
   if (self.delegate != nil && [self.delegate respondsToSelector:@selector(connectionClosed)]) {
     [self.delegate connectionClosed];
   }
   
   _sendingInProgress = NO;
+
+  [_responseData release];
+  _responseData = nil;
+  [_urlConnection release];
+  _urlConnection = nil;
 }
 
 #pragma mark PLCrashReporter
