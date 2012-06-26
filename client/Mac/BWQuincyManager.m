@@ -295,10 +295,12 @@
                    crashContent
                    ];
 
-    
-    [self returnToMainApplication];
-  
+    // Is synchronous
     [self _postXML:[NSString stringWithFormat:@"<crashes>%@</crashes>", xml] toURL:[NSURL URLWithString:self.submissionURL]];
+    
+    // Only return to main application, if crash is send
+    // Scenario: Crash on app start would never be send!
+    [self returnToMainApplication];
 }
 
 - (void)_postXML:(NSString*)xml toURL:(NSURL*)url {
