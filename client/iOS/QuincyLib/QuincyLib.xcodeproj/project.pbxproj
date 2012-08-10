@@ -10,7 +10,7 @@
 		36892BF0145EC96A0036932D /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 36892BEF145EC96A0036932D /* Foundation.framework */; };
 		36908F20145ECB090070379E /* CrashReporter.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 36908F1F145ECB090070379E /* CrashReporter.framework */; };
 		36908F23145ECB2E0070379E /* BWQuincyManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 36908F22145ECB2E0070379E /* BWQuincyManager.m */; };
-		36908F25145ECB370070379E /* BWQuincyManager.h in Headers */ = {isa = PBXBuildFile; fileRef = 36908F24145ECB370070379E /* BWQuincyManager.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		36908F25145ECB370070379E /* BWQuincyManager.h in Headers */ = {isa = PBXBuildFile; fileRef = 36908F24145ECB370070379E /* BWQuincyManager.h */; settings = {ATTRIBUTES = (); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
