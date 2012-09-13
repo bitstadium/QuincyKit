@@ -1,6 +1,6 @@
     Author: Andreas Linde <mail@andreaslinde.de>
 
-    Copyright (c) 2009-2011 Andreas Linde.
+    Copyright (c) 2009-2012 Andreas Linde.
     All rights reserved.
 
     Permission is hereby granted, free of charge, to any person
@@ -234,7 +234,7 @@ Requires Max OS X 10.5+
 
 ## iOS
 
-Requires iOS 3.0+
+Requires iOS 4.3+ (Starting version 2.1.9 armv6 is not supported any more!)
 
 ## ARC Support
 
