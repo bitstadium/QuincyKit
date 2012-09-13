@@ -17,6 +17,7 @@
 		1E542D75135A3075001D7981 /* MainWindow-iPad.xib in Resources */ = {isa = PBXBuildFile; fileRef = 1E542D74135A3075001D7981 /* MainWindow-iPad.xib */; };
 		1E542D77135A343F001D7981 /* CrashReporter.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1E542D76135A343F001D7981 /* CrashReporter.framework */; };
 		1E94B4850F5F229D002D4D2C /* Settings.bundle in Resources */ = {isa = PBXBuildFile; fileRef = 1E94B4840F5F229D002D4D2C /* Settings.bundle */; };
+		1E982A0416026C8600C23A79 /* BWCrashReportTextFormatter.m in Sources */ = {isa = PBXBuildFile; fileRef = 1E982A0316026C8600C23A79 /* BWCrashReportTextFormatter.m */; };
 		288765A50DF7441C002DB57D /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 288765A40DF7441C002DB57D /* CoreGraphics.framework */; };
 		28AD733F0D9D9553002E5188 /* MainWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = 28AD733E0D9D9553002E5188 /* MainWindow.xib */; };
 		28D7ACF80DDB3853001CB0EB /* QuincyDemoViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 28D7ACF70DDB3853001CB0EB /* QuincyDemoViewController.m */; };
@@ -36,6 +37,8 @@
 		1E542D74135A3075001D7981 /* MainWindow-iPad.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = "MainWindow-iPad.xib"; sourceTree = "<group>"; };
 		1E542D76135A343F001D7981 /* CrashReporter.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = CrashReporter.framework; sourceTree = "<group>"; };
 		1E94B4840F5F229D002D4D2C /* Settings.bundle */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.plug-in"; path = Settings.bundle; sourceTree = "<group>"; };
+		1E982A0216026C8600C23A79 /* BWCrashReportTextFormatter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BWCrashReportTextFormatter.h; sourceTree = "<group>"; };
+		1E982A0316026C8600C23A79 /* BWCrashReportTextFormatter.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = BWCrashReportTextFormatter.m; sourceTree = "<group>"; };
 		288765A40DF7441C002DB57D /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
 		28AD733E0D9D9553002E5188 /* MainWindow.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = MainWindow.xib; sourceTree = "<group>"; };
 		28D7ACF60DDB3853001CB0EB /* QuincyDemoViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = QuincyDemoViewController.h; sourceTree = "<group>"; };
@@ -86,6 +89,8 @@
 			children = (
 				1E542D4F135A2F84001D7981 /* BWQuincyManager.h */,
 				1E542D50135A2F84001D7981 /* BWQuincyManager.m */,
+				1E982A0216026C8600C23A79 /* BWCrashReportTextFormatter.h */,
+				1E982A0316026C8600C23A79 /* BWCrashReportTextFormatter.m */,
 				1E542D5D135A2FFA001D7981 /* Quincy.bundle */,
 				1E542D76135A343F001D7981 /* CrashReporter.framework */,
 			);
@@ -213,6 +218,7 @@
 				1D3623260D0F684500981E51 /* QuincyDemoAppDelegate.m in Sources */,
 				28D7ACF80DDB3853001CB0EB /* QuincyDemoViewController.m in Sources */,
 				1E542D51135A2F84001D7981 /* BWQuincyManager.m in Sources */,
+				1E982A0416026C8600C23A79 /* BWCrashReportTextFormatter.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
