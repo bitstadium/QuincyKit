@@ -11,6 +11,8 @@
 		36908F20145ECB090070379E /* CrashReporter.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 36908F1F145ECB090070379E /* CrashReporter.framework */; };
 		36908F23145ECB2E0070379E /* BWQuincyManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 36908F22145ECB2E0070379E /* BWQuincyManager.m */; };
 		36908F25145ECB370070379E /* BWQuincyManager.h in Headers */ = {isa = PBXBuildFile; fileRef = 36908F24145ECB370070379E /* BWQuincyManager.h */; settings = {ATTRIBUTES = (); }; };
+		A04977691602AF6600DDF6BF /* BWCrashReportTextFormatter.h in Headers */ = {isa = PBXBuildFile; fileRef = A04977671602AF6600DDF6BF /* BWCrashReportTextFormatter.h */; };
+		A049776A1602AF6600DDF6BF /* BWCrashReportTextFormatter.m in Sources */ = {isa = PBXBuildFile; fileRef = A04977681602AF6600DDF6BF /* BWCrashReportTextFormatter.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -19,6 +21,8 @@
 		36908F1F145ECB090070379E /* CrashReporter.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CrashReporter.framework; path = ../CrashReporter.framework; sourceTree = "<group>"; };
 		36908F22145ECB2E0070379E /* BWQuincyManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = BWQuincyManager.m; path = ../BWQuincyManager.m; sourceTree = "<group>"; };
 		36908F24145ECB370070379E /* BWQuincyManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = BWQuincyManager.h; path = ../BWQuincyManager.h; sourceTree = "<group>"; };
+		A04977671602AF6600DDF6BF /* BWCrashReportTextFormatter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = BWCrashReportTextFormatter.h; path = ../BWCrashReportTextFormatter.h; sourceTree = "<group>"; };
+		A04977681602AF6600DDF6BF /* BWCrashReportTextFormatter.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = BWCrashReportTextFormatter.m; path = ../BWCrashReportTextFormatter.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -63,6 +67,8 @@
 		36908F21145ECB220070379E /* Classes */ = {
 			isa = PBXGroup;
 			children = (
+				A04977671602AF6600DDF6BF /* BWCrashReportTextFormatter.h */,
+				A04977681602AF6600DDF6BF /* BWCrashReportTextFormatter.m */,
 				36908F24145ECB370070379E /* BWQuincyManager.h */,
 				36908F22145ECB2E0070379E /* BWQuincyManager.m */,
 			);
@@ -77,6 +83,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				36908F25145ECB370070379E /* BWQuincyManager.h in Headers */,
+				A04977691602AF6600DDF6BF /* BWCrashReportTextFormatter.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -132,6 +139,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				36908F23145ECB2E0070379E /* BWQuincyManager.m in Sources */,
+				A049776A1602AF6600DDF6BF /* BWCrashReportTextFormatter.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
