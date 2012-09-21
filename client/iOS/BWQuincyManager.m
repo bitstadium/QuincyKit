@@ -31,12 +31,13 @@
 #import <SystemConfiguration/SystemConfiguration.h>
 #import <UIKit/UIKit.h>
 #import "BWQuincyManager.h"
+#import "BWCrashReportTextFormatter.h"
 
 #include <sys/sysctl.h>
 #include <inttypes.h> //needed for PRIx64 macro
 
 #define SDK_NAME @"Quincy"
-#define SDK_VERSION @"2.1.8"
+#define SDK_VERSION @"2.1.9"
 
 NSBundle *quincyBundle(void) {
   static NSBundle* bundle = nil;
@@ -500,8 +501,8 @@ NSString *BWQuincyLocalize(NSString *stringToken) {
         continue;
       }
       
-      NSString *crashLogString = [PLCrashReportTextFormatter stringValueForCrashReport:report withTextFormat:PLCrashReportTextFormatiOS];
-      
+      NSString *crashLogString = [BWCrashReportTextFormatter stringValueForCrashReport:report];
+        NSLog(@"%@", crashLogString);
       if ([report.applicationInfo.applicationVersion compare:[[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleVersion"]] == NSOrderedSame) {
         _crashIdenticalCurrentVersion = YES;
       }
