@@ -502,7 +502,6 @@ NSString *BWQuincyLocalize(NSString *stringToken) {
       }
       
       NSString *crashLogString = [BWCrashReportTextFormatter stringValueForCrashReport:report];
-        NSLog(@"%@", crashLogString);
       if ([report.applicationInfo.applicationVersion compare:[[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleVersion"]] == NSOrderedSame) {
         _crashIdenticalCurrentVersion = YES;
       }
