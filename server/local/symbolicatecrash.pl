@@ -58,6 +58,7 @@ my %architectures = (
     "ARMV5"  =>  "armv5",
     "ARMV6"  =>  "armv6",
     "ARMV7"  =>  "armv7",
+    "ARMV7S" =>  "armv7s",
 );
 #############################
 
