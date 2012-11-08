@@ -107,6 +107,28 @@ if ($numrows1 > 0) {
 	
         // this stores the offset which we need for grouping
         $crash_offset = "";
+
+        if (strpos(strtolower($logdata), "java") === false)
+        {
+            // extract the block which contains the data of the crashing thread
+            preg_match('%Thread [0-9]+ Crashed:  Dispatch queue: com.apple.main-thread\n(.*?)\n\n%is', $logdata, $matches);
+            $crash_offset = parseblock($matches, $applicationname); 
+            if ($crash_offset == "") {
+                $crash_offset = parseblock($matches, $bundleidentifier);
+            }
+            if ($crash_offset == "") {
+                preg_match('%Thread [0-9]+ Crashed:\n(.*?)\n\n%is', $logdata, $matches);
+                $crash_offset = parseblock($matches, $applicationname);
+            }
+            if ($crash_offset == "") {
+                $crash_offset = parseblock($matches, $bundleidentifier);
+            }
+        }
+        else
+        {
+            $arr = split ("\n", trim($logdata));
+            $crash_offset = $arr[0] . "\n" . $arr[1] ;
+        }
 	
         // extract the block which contains the data of the crashing thread
         preg_match('%Thread [0-9]+ Crashed:  Dispatch queue: com.apple.main-thread\n(.*?)\n\n%is', $logdata, $matches);
