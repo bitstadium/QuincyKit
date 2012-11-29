@@ -198,7 +198,7 @@ if ($acceptallapps)
 else
 	echo $bundleidentifier;
 
-echo "</td><td><input type='text' name='version' size='7' maxlength='20'/></td><td><select name='status'>";
+echo "</td><td><input type='text' name='version' size='7' maxlength='64'/></td><td><select name='status'>";
 
 for ($i=0; $i < count($statusversions); $i++)
 {
