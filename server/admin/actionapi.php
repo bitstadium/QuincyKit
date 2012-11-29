@@ -183,9 +183,9 @@ if ($action == "deletecrashid" && $id != "") {
 } else if ($action == "downloadcrashid" && ($id != "" || $groupid != "")) {
     $query = "";
     if ($groupid != "") {
-        $query = "SELECT log FROM ".$dbcrashtable." WHERE groupid = '".$groupid."' ORDER BY systemversion desc, timestamp desc LIMIT 1";
+        $query = "SELECT log, timestamp FROM ".$dbcrashtable." WHERE groupid = '".$groupid."' ORDER BY systemversion desc, timestamp desc LIMIT 1";
     } else {
-        $query = "SELECT log FROM ".$dbcrashtable." WHERE id = '".$id."' ORDER BY systemversion desc, timestamp desc LIMIT 1";
+        $query = "SELECT log, timestamp FROM ".$dbcrashtable." WHERE id = '".$id."' ORDER BY systemversion desc, timestamp desc LIMIT 1";
     }
     $result = mysql_query($query) or die('Error in SQL '.$query);
     
@@ -194,11 +194,12 @@ if ($action == "deletecrashid" && $id != "") {
         // get the status
         $row = mysql_fetch_row($result);
         $log = $row[0];
+        $timestamp = $row[1];
         
         // We'll be outputting a text file
         header('Content-type: application/text');
     
-        // It will be called abc.txt
+        // It will be called $timestamp.crash
         header('Content-Disposition: attachment; filename="'.$timestamp.'.crash"');
         echo $log;
         
