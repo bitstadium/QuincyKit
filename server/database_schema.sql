@@ -67,7 +67,7 @@ CREATE TABLE IF NOT EXISTS `crash` (
   `bundleidentifier` varchar(250) collate utf8_unicode_ci default NULL,
   `applicationname` varchar(50) collate utf8_unicode_ci default NULL,
   `senderversion` varchar(15) collate utf8_unicode_ci NOT NULL default '',
-  `version` varchar(15) collate utf8_unicode_ci default NULL,
+  `version` varchar(64) collate utf8_unicode_ci default NULL,
   `description` mediumtext collate utf8_unicode_ci,
   `log` text collate utf8_unicode_ci NOT NULL,
   `timestamp` timestamp NOT NULL default CURRENT_TIMESTAMP,
@@ -103,8 +103,8 @@ CREATE TABLE IF NOT EXISTS `crash` (
 CREATE TABLE IF NOT EXISTS `crash_groups` (
   `id` bigint(20) unsigned NOT NULL auto_increment,
   `bundleidentifier` varchar(250) collate utf8_unicode_ci default NULL,
-  `affected` varchar(20) collate utf8_unicode_ci default NULL,
-  `fix` varchar(20) collate utf8_unicode_ci default NULL,
+  `affected` varchar(64) collate utf8_unicode_ci default NULL,
+  `fix` varchar(64) collate utf8_unicode_ci default NULL,
   `pattern` varchar(250) collate utf8_unicode_ci NOT NULL default '',
   `description` text collate utf8_unicode_ci,
   `amount` bigint(20) default '0',
@@ -148,7 +148,7 @@ CREATE TABLE IF NOT EXISTS `symbolicated` (
 CREATE TABLE IF NOT EXISTS `versions` (
   `id` bigint(20) unsigned NOT NULL auto_increment,
   `bundleidentifier` varchar(250) collate utf8_unicode_ci default NULL,
-  `version` varchar(20) collate utf8_unicode_ci default NULL,
+  `version` varchar(64) collate utf8_unicode_ci default NULL,
   `status` int(11) NOT NULL default '0',
   `notify` int(11) NOT NULL default '0',
   PRIMARY KEY  (`id`),

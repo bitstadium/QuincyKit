@@ -186,7 +186,7 @@ if ($groupid !='') {
             
             echo '<form name="groupmetadata" action="" method="get">';
             echo '<b style="vertical-align: top;">Description:</b><textarea id="description'.$groupid.'" cols="50" rows="2" name="description" class="description" style="margin-left: 10px;">'.$description.'</textarea>';
-            echo '<b style="vertical-align: top; margin-left:20px;">Assigned Fix Version:</b><input style="vertical-align: top; margin-left:10px;" type="text" id="fixversion'.$groupid.'" name="fixversion" size="20" maxlength="20" value="'.$fix.'"/>';
+            echo '<b style="vertical-align: top; margin-left:20px;">Assigned Fix Version:</b><input style="vertical-align: top; margin-left:10px;" type="text" id="fixversion'.$groupid.'" name="fixversion" size="64" maxlength="64" value="'.$fix.'"/>';
             echo "<a href=\"javascript:updateGroupMeta(".$groupid.",'".$bundleidentifier."')\" class='button' style='float: right;'>Update</a>";
          	  echo create_issue($bundleidentifier, currentPageURL());
             echo '</form></td>';
