@@ -8,7 +8,7 @@
 -- PHP Version: 5.2.6-3
 
 SET SQL_MODE="NO_AUTO_VALUE_ON_ZERO";
-
+SET FOREIGN_KEY_CHECKS = 0;
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -38,8 +38,8 @@ CREATE TABLE IF NOT EXISTS `apps` (
   `notifypush` text default NULL,
   `hockeyappidentifier` text default NULL,
   PRIMARY KEY  (`id`),
-  KEY `symbolicate` (`symbolicate`)
-) ENGINE=MyISAM  DEFAULT CHARSET=latin1;
+  KEY `bundleIdentifier` (`bundleidentifier`)
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
 
 -- --------------------------------------------------------
 
@@ -74,18 +74,10 @@ CREATE TABLE IF NOT EXISTS `crash` (
   `groupid` bigint(20) unsigned default '0',
   `jailbreak` int(11) unsigned default '0',
   PRIMARY KEY  (`id`),
-  KEY `jailbreak` (`jailbreak`),
-  KEY `timestamp` (`timestamp`),
-  KEY `applicationname` (`applicationname`),
-  KEY `userid` (`userid`),
-  KEY `version` (`version`),
-  KEY `platform` (`platform`),
-  KEY `senderversion` (`senderversion`),
-  KEY `contact` (`contact`),
-  KEY `systemversion` (`systemversion`),
+  KEY `groupid` (`groupid`),
   KEY `bundleidentifier` (`bundleidentifier`),
-  FULLTEXT KEY `log` (`log`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+  CONSTRAINT `FK_CRASH_GROUPID` FOREIGN KEY (`groupid`) REFERENCES `crash_groups` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -110,12 +102,8 @@ CREATE TABLE IF NOT EXISTS `crash_groups` (
   `amount` bigint(20) default '0',
   `latesttimestamp` bigint(20) default '0',
   PRIMARY KEY  (`id`),
-  KEY `affected` (`affected`,`fix`),
-  KEY `applicationname` (`bundleidentifier`),
-  KEY `pattern` (`pattern`),
-  KEY `amount` (`amount`),
-  KEY `latesttimestamp` (`latesttimestamp`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+  KEY `bundleIdentifier` (`bundleidentifier`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -132,8 +120,8 @@ CREATE TABLE IF NOT EXISTS `symbolicated` (
   `done` int(11) NOT NULL default '0',
   PRIMARY KEY  (`id`),
   KEY `crashid` (`crashid`),
-  KEY `done` (`done`)
-) ENGINE=MyISAM  DEFAULT CHARSET=latin1;
+  CONSTRAINT `FK_SYMBOLICATED_CRASH` FOREIGN KEY (`crashid`) REFERENCES `crash` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
 
 -- --------------------------------------------------------
 
@@ -154,4 +142,6 @@ CREATE TABLE IF NOT EXISTS `versions` (
   PRIMARY KEY  (`id`),
   KEY `version` (`version`,`status`),
   KEY `applicationname` (`bundleidentifier`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+SET FOREIGN_KEY_CHECKS = 0;
