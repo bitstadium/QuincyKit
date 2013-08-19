@@ -42,7 +42,6 @@ Backup[ ]of[ ]*.numbers/
 *.swp
 *~.nib
 profile
-.gitignore
 
 # project configs
 server/local/serverconfig.php
