@@ -184,7 +184,6 @@ NSString *BWQuincyLocalize(NSString *stringToken) {
     UIDeviceOrientation ori = [[UIDevice currentDevice] orientation];
     UIDeviceOrientation barori = [[UIApplication sharedApplication] statusBarOrientation];
     
-    NSLog(@" %d %d %d %f %f", wifi, g3, jailbreak, memory, freeSpace );
     [data setObject:[NSString stringWithFormat:@"%d", wifi] forKey:@"wifi"];
     [data setObject:[NSString stringWithFormat:@"%d", g3] forKey:@"3G"];
     [data setObject:[NSString stringWithFormat:@"%d", jailbreak] forKey:@"jailbreak"];

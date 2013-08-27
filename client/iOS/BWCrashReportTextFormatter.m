@@ -262,8 +262,10 @@ static NSInteger binaryImageSort(id binary1, id binary2, void *context) {
         [text appendFormat: @"Wifi:             %@\n", [dic valueForKey:@"wifi"]];
         if ([dic valueForKey:@"jailbreak"])
         [text appendFormat: @"Jailbreak:        %@\n", [dic valueForKey:@"jailbreak"]];
-        if ([dic valueForKey:@"3g"])
-        [text appendFormat: @"3G:               %@\n", [dic valueForKey:@"3g"]];
+        if ([dic valueForKey:@"3G"])
+        [text appendFormat: @"3G:               %@\n", [dic valueForKey:@"3G"]];
+        if ([dic valueForKey:@"locale"])
+        [text appendFormat: @"Locale:           %@\n", [dic valueForKey:@"locale"]];
         if ([dic valueForKey:@"availableMemory"])
         [text appendFormat: @"Available Memory: %@ MB\n", [dic valueForKey:@"availableMemory"]];
         if ([dic valueForKey:@"freeSpace"])
