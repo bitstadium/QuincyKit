@@ -32,9 +32,12 @@
 #import <UIKit/UIKit.h>
 #import "BWQuincyManager.h"
 #import "BWCrashReportTextFormatter.h"
+#import <UIKit/UIDevice.h>
 
 #include <sys/sysctl.h>
 #include <inttypes.h> //needed for PRIx64 macro
+#include <sys/param.h>
+#include <sys/mount.h>
 
 #define SDK_NAME @"Quincy"
 #define SDK_VERSION @"2.1.9"
@@ -122,6 +125,78 @@ NSString *BWQuincyLocalize(NSString *stringToken) {
 }
 #endif
 
+// MB
+- (double) availableMemory {
+    mach_port_t host_port;
+    mach_msg_type_number_t host_size;
+    vm_size_t pagesize;
+    
+    host_port = mach_host_self();
+    host_size = sizeof(vm_statistics_data_t) / sizeof(integer_t);
+    host_page_size(host_port, &pagesize);
+    
+    vm_statistics_data_t vm_stat;
+    
+    if (host_statistics(host_port, HOST_VM_INFO, (host_info_t)&vm_stat, &host_size) != KERN_SUCCESS)
+        NSLog(@"Failed to fetch vm statistics");
+    
+    /* Stats in bytes */
+    natural_t mem_used = (vm_stat.active_count +
+                          vm_stat.inactive_count +
+                          vm_stat.wire_count) * pagesize;
+    natural_t mem_free = vm_stat.free_count * pagesize;
+    natural_t mem_total = mem_used + mem_free;
+    return mem_free /1024.0/1024.0;
+}
+
+// MB
+- (double) freeSpace {
+    uint64_t totalSpace = 0;
+    uint64_t totalFreeSpace = 0;
+    NSError *error = nil;
+    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+    NSDictionary *dictionary = [[NSFileManager defaultManager] attributesOfFileSystemForPath:[paths lastObject] error: &error];
+    
+    if (dictionary) {
+        NSNumber *fileSystemSizeInBytes = [dictionary objectForKey: NSFileSystemSize];
+        NSNumber *freeFileSystemSizeInBytes = [dictionary objectForKey:NSFileSystemFreeSize];
+        totalSpace = [fileSystemSizeInBytes unsignedLongLongValue];
+        totalFreeSpace = [freeFileSystemSizeInBytes unsignedLongLongValue];
+    }
+    
+    return totalFreeSpace / 1024.0 / 1024.0;
+}
+
+
+- (void) updateSysInfo: (NSTimer *)timer {
+    NSArray *paths=NSSearchPathForDirectoriesInDomains(NSDocumentDirectory,NSUserDomainMask,YES);
+    NSString *plistPath1 = [paths objectAtIndex:0];
+    NSString *filename=[plistPath1 stringByAppendingPathComponent:@"sys_info.plist"];
+
+    NSMutableDictionary *data = [[NSMutableDictionary alloc] initWithContentsOfFile:filename];
+    if (!data) data = [[NSMutableDictionary alloc] init];
+    BOOL wifi = ([[Reachability reachabilityForLocalWiFi] currentReachabilityStatus] != NotReachable);
+    BOOL g3 = ([[Reachability reachabilityForInternetConnection] currentReachabilityStatus] != NotReachable);
+    BOOL jailbreak = [[NSFileManager defaultManager] fileExistsAtPath:@"/Applications/Cydia.app"] || [[NSFileManager defaultManager] fileExistsAtPath:@"/private/var/lib/apt/"];
+    double freeSpace = [self freeSpace];
+    double memory = [self availableMemory];
+    NSString *currentLocale = [[NSLocale currentLocale] identifier];
+    UIDeviceOrientation ori = [[UIDevice currentDevice] orientation];
+    UIDeviceOrientation barori = [[UIApplication sharedApplication] statusBarOrientation];
+    
+    NSLog(@" %d %d %d %f %f", wifi, g3, jailbreak, memory, freeSpace );
+    [data setObject:[NSString stringWithFormat:@"%d", wifi] forKey:@"wifi"];
+    [data setObject:[NSString stringWithFormat:@"%d", g3] forKey:@"3G"];
+    [data setObject:[NSString stringWithFormat:@"%d", jailbreak] forKey:@"jailbreak"];
+    [data setObject:[NSString stringWithFormat:@"%f", memory] forKey:@"availableMemory"];
+    [data setObject:[NSString stringWithFormat:@"%f", freeSpace] forKey:@"freeSpace"];
+    [data setObject:[NSString stringWithFormat:@"%@", currentLocale] forKey:@"locale"];
+    [data setObject:[NSString stringWithFormat:@"%d", ori] forKey:@"orientation"];
+    [data setObject:[NSString stringWithFormat:@"%d", barori] forKey:@"barOrientation"];
+    
+    [data writeToFile:filename atomically:YES];
+}
+
 - (id) init {
   if ((self = [super init])) {
     _serverResult = CrashReportStatusUnknown;
@@ -159,6 +234,7 @@ NSString *BWQuincyLocalize(NSString *stringToken) {
     }
     
     if (_crashReportActivated) {
+      NSTimer *timer = [NSTimer scheduledTimerWithTimeInterval:1 target:self selector:@selector(updateSysInfo:) userInfo:nil repeats:YES];
       _crashFiles = [[NSMutableArray alloc] init];
       NSArray *paths = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES);
       _crashesDir = [[NSString stringWithFormat:@"%@", [[paths objectAtIndex:0] stringByAppendingPathComponent:@"/crashes/"]] retain];
