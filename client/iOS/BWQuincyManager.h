@@ -28,6 +28,9 @@
  */
 
 #import <Foundation/Foundation.h>
+#import "Reachability.h"
+#import <sys/sysctl.h>
+#import <mach/mach.h>
 
 #define BWQuincyLog(fmt, ...) do { if([BWQuincyManager sharedQuincyManager].isLoggingEnabled) { NSLog((@"[QuincyLib] %s/%d " fmt), __PRETTY_FUNCTION__, __LINE__, ##__VA_ARGS__); }} while(0)
 

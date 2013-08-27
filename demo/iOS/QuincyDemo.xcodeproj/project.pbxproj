@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		01A1B9DA17CC4D0B00875028 /* Reachability.m in Sources */ = {isa = PBXBuildFile; fileRef = 01A1B9D917CC4D0B00875028 /* Reachability.m */; };
 		1D3623260D0F684500981E51 /* QuincyDemoAppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 1D3623250D0F684500981E51 /* QuincyDemoAppDelegate.m */; };
 		1D60589B0D05DD56006BFB54 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 29B97316FDCFA39411CA2CEA /* main.m */; };
 		1D60589F0D05DD5A006BFB54 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1D30AB110D05D00D00671497 /* Foundation.framework */; };
@@ -25,6 +26,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		01A1B9D817CC4D0B00875028 /* Reachability.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Reachability.h; sourceTree = "<group>"; };
+		01A1B9D917CC4D0B00875028 /* Reachability.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Reachability.m; sourceTree = "<group>"; };
 		1D30AB110D05D00D00671497 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		1D3623240D0F684500981E51 /* QuincyDemoAppDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = QuincyDemoAppDelegate.h; sourceTree = "<group>"; };
 		1D3623250D0F684500981E51 /* QuincyDemoAppDelegate.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = QuincyDemoAppDelegate.m; sourceTree = "<group>"; };
@@ -65,6 +68,15 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		01A1B9DB17CC4D1200875028 /* Reachability */ = {
+			isa = PBXGroup;
+			children = (
+				01A1B9D817CC4D0B00875028 /* Reachability.h */,
+				01A1B9D917CC4D0B00875028 /* Reachability.m */,
+			);
+			name = Reachability;
+			sourceTree = "<group>";
+		};
 		080E96DDFE201D6D7F000001 /* Classes */ = {
 			isa = PBXGroup;
 			children = (
@@ -87,6 +99,7 @@
 		1E542D4E135A2F5E001D7981 /* iOS */ = {
 			isa = PBXGroup;
 			children = (
+				01A1B9DB17CC4D1200875028 /* Reachability */,
 				1E542D4F135A2F84001D7981 /* BWQuincyManager.h */,
 				1E542D50135A2F84001D7981 /* BWQuincyManager.m */,
 				1E982A0216026C8600C23A79 /* BWCrashReportTextFormatter.h */,
@@ -219,6 +232,7 @@
 				28D7ACF80DDB3853001CB0EB /* QuincyDemoViewController.m in Sources */,
 				1E542D51135A2F84001D7981 /* BWQuincyManager.m in Sources */,
 				1E982A0416026C8600C23A79 /* BWCrashReportTextFormatter.m in Sources */,
+				01A1B9DA17CC4D0B00875028 /* Reachability.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

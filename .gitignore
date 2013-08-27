@@ -43,3 +43,5 @@ Backup[ ]of[ ]*.numbers/
 *~.nib
 profile
 
+# project configs
+server/local/serverconfig.php

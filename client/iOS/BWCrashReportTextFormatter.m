@@ -68,6 +68,14 @@ static NSInteger binaryImageSort(id binary1, id binary2, void *context) {
 @implementation BWCrashReportTextFormatter
 
 
++ (NSMutableDictionary *) getSysInfo
+{
+    NSArray *paths=NSSearchPathForDirectoriesInDomains(NSDocumentDirectory,NSUserDomainMask,YES);
+    NSString *plistPath1 = [paths objectAtIndex:0];
+    NSString *filename=[plistPath1 stringByAppendingPathComponent:@"sys_info.plist"];
+    NSMutableDictionary *data = [[NSMutableDictionary alloc] initWithContentsOfFile:filename];
+    return data;
+}
 /**
  * Formats the provided @a report as human-readable text in the given @a textFormat, and return
  * the formatted result as a string.
@@ -245,9 +253,30 @@ static NSInteger binaryImageSort(id binary1, id binary2, void *context) {
         [text appendFormat: @"OS Version:      %@ %@ (%@)\n", osName, report.systemInfo.operatingSystemVersion, osBuild];
         [text appendFormat: @"Report Version:  104\n"];        
     }
-
+    
+    /* addtional info */
+    {
+        NSMutableDictionary *dic = [self getSysInfo];
+        NSString *value = NULL;
+        if ([dic valueForKey:@"wifi"])
+        [text appendFormat: @"Wifi:             %@\n", [dic valueForKey:@"wifi"]];
+        if ([dic valueForKey:@"jailbreak"])
+        [text appendFormat: @"Jailbreak:        %@\n", [dic valueForKey:@"jailbreak"]];
+        if ([dic valueForKey:@"3G"])
+        [text appendFormat: @"3G:               %@\n", [dic valueForKey:@"3G"]];
+        if ([dic valueForKey:@"locale"])
+        [text appendFormat: @"Locale:           %@\n", [dic valueForKey:@"locale"]];
+        if ([dic valueForKey:@"availableMemory"])
+        [text appendFormat: @"Available Memory: %@ MB\n", [dic valueForKey:@"availableMemory"]];
+        if ([dic valueForKey:@"freeSpace"])
+        [text appendFormat: @"Free Space:       %@ MB\n", [dic valueForKey:@"freeSpace"]];
+        if ([dic valueForKey:@"orientation"])
+        [text appendFormat: @"Orientation:      %@\n", [dic valueForKey:@"orientation"]];
+        if ([dic valueForKey:@"barOrientation"])
+        [text appendFormat: @"Bar Orientation:  %@\n", [dic valueForKey:@"barOrientation"]];
+    }
     [text appendString: @"\n"];
-
+    
     /* Exception code */
     [text appendFormat: @"Exception Type:  %@\n", report.signalInfo.name];
     [text appendFormat: @"Exception Codes: %@ at 0x%" PRIx64 "\n", report.signalInfo.code, report.signalInfo.address];
@@ -260,7 +289,6 @@ static NSInteger binaryImageSort(id binary1, id binary2, void *context) {
     }
     
     [text appendString: @"\n"];
-    
     /* Uncaught Exception */
     if (report.hasExceptionInfo) {
         [text appendFormat: @"Application Specific Information:\n"];
