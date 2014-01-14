@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1E584C1B1883306000C4D800 /* BWQuincyManagerDelegate.h in Headers */ = {isa = PBXBuildFile; fileRef = 1E584C1A1883306000C4D800 /* BWQuincyManagerDelegate.h */; };
 		36892BF0145EC96A0036932D /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 36892BEF145EC96A0036932D /* Foundation.framework */; };
 		36908F20145ECB090070379E /* CrashReporter.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 36908F1F145ECB090070379E /* CrashReporter.framework */; };
 		36908F23145ECB2E0070379E /* BWQuincyManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 36908F22145ECB2E0070379E /* BWQuincyManager.m */; };
@@ -16,6 +17,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		1E584C1A1883306000C4D800 /* BWQuincyManagerDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = BWQuincyManagerDelegate.h; path = ../BWQuincyManagerDelegate.h; sourceTree = "<group>"; };
 		36892BEC145EC96A0036932D /* libQuincyLib.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libQuincyLib.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		36892BEF145EC96A0036932D /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		36908F1F145ECB090070379E /* CrashReporter.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CrashReporter.framework; path = ../CrashReporter.framework; sourceTree = "<group>"; };
@@ -69,6 +71,7 @@
 			children = (
 				A04977671602AF6600DDF6BF /* BWCrashReportTextFormatter.h */,
 				A04977681602AF6600DDF6BF /* BWCrashReportTextFormatter.m */,
+				1E584C1A1883306000C4D800 /* BWQuincyManagerDelegate.h */,
 				36908F24145ECB370070379E /* BWQuincyManager.h */,
 				36908F22145ECB2E0070379E /* BWQuincyManager.m */,
 			);
@@ -83,6 +86,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				36908F25145ECB370070379E /* BWQuincyManager.h in Headers */,
+				1E584C1B1883306000C4D800 /* BWQuincyManagerDelegate.h in Headers */,
 				A04977691602AF6600DDF6BF /* BWCrashReportTextFormatter.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -150,6 +154,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_OBJC_ARC = YES;
 				COPY_PHASE_STRIP = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_DYNAMIC_NO_PIC = NO;
@@ -163,7 +168,7 @@
 				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 5.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 4.3;
 				PUBLIC_HEADERS_FOLDER_PATH = /include/Quincy;
 				SDKROOT = iphoneos;
 			};
@@ -173,13 +178,14 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_OBJC_ARC = YES;
 				COPY_PHASE_STRIP = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
 				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 5.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 4.3;
 				PUBLIC_HEADERS_FOLDER_PATH = /include/Quincy;
 				SDKROOT = iphoneos;
 				VALIDATE_PRODUCT = YES;
@@ -197,7 +203,6 @@
 				);
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "";
-				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 			};
@@ -214,7 +219,6 @@
 				);
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "";
-				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 			};

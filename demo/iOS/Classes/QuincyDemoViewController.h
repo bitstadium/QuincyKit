@@ -1,6 +1,7 @@
 /*
  * Author: Andreas Linde <mail@andreaslinde.de>
  *
+ * Copyright (c) 2012-2014 HockeyApp, Bit Stadium GmbH.
  * Copyright (c) 2009-2011 Andreas Linde.
  * All rights reserved.
  *
@@ -33,7 +34,7 @@
 	IBOutlet UIButton *triggerButtonExceptionCrash;
 }
 
-@property (nonatomic, retain) IBOutlet UIButton *triggerButtonCrash;
+@property (nonatomic, strong) IBOutlet UIButton *triggerButtonCrash;
 
 - (IBAction) triggerCrash;
 - (IBAction) triggerExceptionCrash;

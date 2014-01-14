@@ -2,6 +2,7 @@
  * Author: Andreas Linde <mail@andreaslinde.de>
  *         Kent Sutherland
  *
+ * Copyright (c) 2012-2014 HockeyApp, Bit Stadium GmbH.
  * Copyright (c) 2011 Andreas Linde & Kent Sutherland.
  * All rights reserved.
  *
@@ -29,195 +30,295 @@
 
 #import <Foundation/Foundation.h>
 
-#define BWQuincyLog(fmt, ...) do { if([BWQuincyManager sharedQuincyManager].isLoggingEnabled) { NSLog((@"[QuincyLib] %s/%d " fmt), __PRETTY_FUNCTION__, __LINE__, ##__VA_ARGS__); }} while(0)
+#import <CrashReporter/CrashReporter.h>
+#import "BWQuincyManagerDelegate.h"
 
-#define kQuincyBundleName @"Quincy.bundle"
-
-NSBundle *quincyBundle(void);
-NSString *BWQuincyLocalize(NSString *stringToken);
-
-//#define BWQuincyLocalize(StringToken) NSLocalizedStringFromTableInBundle(StringToken, @"Quincy", quincyBundle(), @"")
-
-// flags if the crashlog analyzer is started. since this may theoretically crash we need to track it
-#define kQuincyKitAnalyzerStarted @"QuincyKitAnalyzerStarted"
-
-// flags if the QuincyKit is activated at all
-#define kQuincyKitActivated @"QuincyKitActivated"
-
-// flags if the crashreporter should automatically send crashes without asking the user again
-#define kAutomaticallySendCrashReports @"AutomaticallySendCrashReports"
-
-// stores the set of crashreports that have been approved but aren't sent yet
-#define kApprovedCrashReports @"ApprovedCrashReports"
 
 // Notification message which QuincyManager is listening to, to retry sending pending crash reports to the server
 #define BWQuincyNetworkBecomeReachable @"NetworkDidBecomeReachable"
 
-typedef enum QuincyKitAlertType {
-  QuincyKitAlertTypeSend = 0,
-  QuincyKitAlertTypeFeedback = 1,
-} CrashAlertType;
+/**
+ Handle crash reports.
+ 
+ Quincy provides functionality for handling crash reports, including when distributed via the App Store.
+ As a foundation it is using the open source, reliable and async-safe crash reporting framework
+ [PLCrashReporter](https://code.google.com/p/plcrashreporter/).
+ 
+ This module works as a wrapper around the underlying crash reporting framework and provides functionality to
+ detect new crashes, queues them if networking is not available, present a user interface to approve sending
+ the reports to the HockeyApp servers and more.
+ 
+ It also provides options to add additional meta information to each crash report, like `userName`, `userEmail`,
+ and additional textual log via `BWQuincyManagerDelegate` protocol and a way to detect startup crashes so you
+ can adjust your startup process to get these crash reports too and delay your app initialization.
+ 
+ Crashes are send the next time the app starts. If `autoSubmitCrashReport` is set to `YES`, crashes will be send
+ without any user interaction, otherwise an alert will appear allowing the users to decide whether they want to
+ send the report or not. This module is not sending the reports right when the crash happens deliberately,
+ because if is not safe to implement such a mechanism while being async-safe (any Objective-C code
+ is _NOT_ async-safe!) and not causing more danger like a deadlock of the device, than helping. We found that users
+ do start the app again because most don't know what happened, and you will get by far most of the reports.
+ 
+ Sending the reports on startup is done asynchronously (non-blocking). This is the only safe way to ensure
+ that the app won't be possibly killed by the iOS watchdog process, because startup could take too long
+ and the app could not react to any user input when network conditions are bad or connectivity might be
+ very slow.
+ 
+ It is possible to check upon startup if the app crashed before using `didCrashInLastSession` and also how much
+ time passed between the app launch and the crash using `timeintervalCrashInLastSessionOccured`. This allows you
+ to add additional code to your app delaying the app start until the crash has been successfully send if the crash
+ occured within a critical startup timeframe, e.g. after 10 seconds. The `BWQuincyManagerDelegate` protocol provides
+ various delegates to inform the app about it's current status so you can continue the remaining app startup setup
+ after sending has been completed. The documentation contains a guide
+ [How to handle Crashes on startup](HowTo-Handle-Crashes-On-Startup) with an example on how to do that.
+ 
+ More background information on this topic can be found in the following blog post by Landon Fuller, the
+ developer of [PLCrashReporter](https://www.plcrashreporter.org), about writing reliable and
+ safe crash reporting: [Reliable Crash Reporting](http://goo.gl/WvTBR)
+ 
+ @warning If you start the app with the Xcode debugger attached, detecting crashes will _NOT_ be enabled!
+ */
+@interface BWQuincyManager : NSObject
 
-typedef enum CrashReportStatus {
-  // The status of the crash is queued, need to check later (HockeyApp)
-  CrashReportStatusQueued = -80,
-  
-  // This app version is set to discontinued, no new crash reports accepted by the server
-  CrashReportStatusFailureVersionDiscontinued = -30,
-  
-  // XML: Sender version string contains not allowed characters, only alphanumberical including space and . are allowed
-  CrashReportStatusFailureXMLSenderVersionNotAllowed = -21,
-  
-  // XML: Version string contains not allowed characters, only alphanumberical including space and . are allowed
-  CrashReportStatusFailureXMLVersionNotAllowed = -20,
-  
-  // SQL for adding a symoblicate todo entry in the database failed
-  CrashReportStatusFailureSQLAddSymbolicateTodo = -18,
-  
-  // SQL for adding crash log in the database failed
-  CrashReportStatusFailureSQLAddCrashlog = -17,
-  
-  // SQL for adding a new version in the database failed
-  CrashReportStatusFailureSQLAddVersion = -16,
-	
-  // SQL for checking if the version is already added in the database failed
-  CrashReportStatusFailureSQLCheckVersionExists = -15,
-	
-  // SQL for creating a new pattern for this bug and set amount of occurrances to 1 in the database failed
-  CrashReportStatusFailureSQLAddPattern = -14,
-	
-  // SQL for checking the status of the bugfix version in the database failed
-  CrashReportStatusFailureSQLCheckBugfixStatus = -13,
-	
-  // SQL for updating the occurances of this pattern in the database failed
-  CrashReportStatusFailureSQLUpdatePatternOccurances = -12,
-	
-  // SQL for getting all the known bug patterns for the current app version in the database failed
-  CrashReportStatusFailureSQLFindKnownPatterns = -11,
-	
-  // SQL for finding the bundle identifier in the database failed
-  CrashReportStatusFailureSQLSearchAppName = -10,
-	
-  // the post request didn't contain valid data
-  CrashReportStatusFailureInvalidPostData = -3,
-	
-  // incoming data may not be added, because e.g. bundle identifier wasn't found
-  CrashReportStatusFailureInvalidIncomingData = -2,
-	
-  // database cannot be accessed, check hostname, username, password and database name settings in config.php
-  CrashReportStatusFailureDatabaseNotAvailable = -1,
-	
-  CrashReportStatusUnknown = 0,
-	
-  CrashReportStatusAssigned = 1,
-	
-  CrashReportStatusSubmitted = 2,
-	
-  CrashReportStatusAvailable = 3,
-} CrashReportStatus;
+#pragma mark - Public Methods
 
-// This protocol is used to send the image updates
-@protocol BWQuincyManagerDelegate <NSObject>
-
-@optional
-
-// Return the userid the crashreport should contain, empty by default
--(NSString *) crashReportUserID;
-
-// Return the contact value (e.g. email) the crashreport should contain, empty by default
--(NSString *) crashReportContact;
-
-// Return the description the crashreport should contain, empty by default. The string will automatically be wrapped into <[DATA[ ]]>, so make sure you don't do that in your string.
--(NSString *) crashReportDescription;
-
-// Invoked when the internet connection is started, to let the app enable the activity indicator
--(void) connectionOpened;
-
-// Invoked when the internet connection is closed, to let the app disable the activity indicator
--(void) connectionClosed;
-
-// Invoked before the user is asked to send a crash report, so you can do additional actions. E.g. to make sure not to ask the user for an app rating :) 
--(void) willShowSubmitCrashReportAlert;
-
-// Invoked after the user did choose to send crashes always in the alert 
--(void) userDidChooseSendAlways;
-
-@end
-
-@interface BWQuincyManager : NSObject <NSXMLParserDelegate> {
-  NSString *_submissionURL;
-  
-  id <BWQuincyManagerDelegate> _delegate;
-  
-  BOOL _loggingEnabled;
-  BOOL _showAlwaysButton;
-  BOOL _feedbackActivated;
-  BOOL _autoSubmitCrashReport;
-  
-  BOOL _didCrashInLastSession;
-  
-  NSString *_appIdentifier;
-  
-  NSString *_feedbackRequestID;
-  float _feedbackDelayInterval;
-  
-  NSMutableString *_contentOfProperty;
-  CrashReportStatus _serverResult;
-  
-  int _analyzerStarted;
-  NSString *_crashesDir;
-	
-  BOOL _crashIdenticalCurrentVersion;
-  BOOL _crashReportActivated;
-  
-  NSMutableArray *_crashFiles;
-	
-  NSMutableData *_responseData;
-  NSInteger _statusCode;
-  
-  NSURLConnection *_urlConnection;
-  
-  NSData *_crashData;
-  
-  NSString *_languageStyle;
-  BOOL _sendingInProgress;
-}
+///-----------------------------------------------------------------------------
+/// @name Initialization
+///-----------------------------------------------------------------------------
 
 + (BWQuincyManager *)sharedQuincyManager;
 
-// submission URL defines where to send the crash reports to (required)
-@property (nonatomic, retain) NSString *submissionURL;
+/**
+ Starts the manager and runs all modules
+ 
+ Call this after configuring the manager and setting up all modules.
+ 
+ @see submissionURL:
+ */
+- (void)startManager;
 
-// delegate is optional
-@property (nonatomic, assign) id <BWQuincyManagerDelegate> delegate;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
-// settings
+#pragma mark - Public Properties
 
-// if YES, states will be logged using NSLog. Only enable this for debugging!
-// if NO, nothing will be logged. (default)
-@property (nonatomic, assign, getter=isLoggingEnabled) BOOL loggingEnabled;
+///-----------------------------------------------------------------------------
+/// @name Configuration
+///-----------------------------------------------------------------------------
 
-// nil, using the default localization files (Default)
-// set to another string which will be appended to the Quincy localization file name, "Alternate" is another provided text set
-@property (nonatomic, retain) NSString *languageStyle;
 
-// if YES, the user will get the option to choose "Always" for sending crash reports. This will cause the dialog not to show the alert description text landscape mode! (default)
-// if NO, the dialog will not show a "Always" button
-@property (nonatomic, assign, getter=isShowingAlwaysButton) BOOL showAlwaysButton;
+/**
+ Configure the URL to the QuincyKit Server
+ 
+ @see appIdentifier;
+ */
+@property (nonatomic, strong) NSString *submissionURL;
 
-// if YES, the user will be presented with a status of the crash, if known
-// if NO, the user will not see any feedback information (default)
-@property (nonatomic, assign, getter=isFeedbackActivated) BOOL feedbackActivated;
+/**
+ Define the appIdentifier when using HockeyApp.net as a backend
 
-// if YES, the crash report will be submitted without asking the user
-// if NO, the user will be asked if the crash report can be submitted (default)
-@property (nonatomic, assign, getter=isAutoSubmitCrashReport) BOOL autoSubmitCrashReport;
+ @see submissionURL;
+ */
+@property (nonatomic, strong) NSString *appIdentifier;
 
-// will return if the last session crashed, to e.g. make sure a "rate my app" alert will not show up
+
+/**
+ Sets the optional `BWQuincyManagerDelegate` delegate.
+ */
+@property (nonatomic, unsafe_unretained) id <BWQuincyManagerDelegate> delegate;
+
+/**
+ Defines if crash reports should be submitted without asking the user
+ 
+ Default: _NO_
+ */
+@property (nonatomic, assign, getter=shouldAutoSubmitCrashReport) BOOL autoSubmitCrashReport;
+
+
+/**
+ *  Trap fatal signals via a Mach exception server.
+ *
+ *  By default the SDK is using the safe and proven in-process BSD Signals for catching crashes.
+ *  This option provides an option to enable catching fatal signals via a Mach exception server
+ *  instead.
+ *
+ *  We strongly advice _NOT_ to enable Mach exception handler in release versions of your apps!
+ *
+ *  Default: _NO_
+ *
+ * @warning The Mach exception handler executes in-process, and will interfere with debuggers when
+ *  they attempt to suspend all active threads (which will include the Mach exception handler).
+ *  Mach-based handling should _NOT_ be used when a debugger is attached. The SDK will not
+ *  enabled catching exceptions if the app is started with the debugger running. If you attach
+ *  the debugger during runtime, this may cause issues the Mach exception handler is enabled!
+ * @see isDebuggerAttached
+ */
+@property (nonatomic, assign, getter=isMachExceptionHandlerEnabled) BOOL enableMachExceptionHandler;
+
+
+/**
+ * Set the callbacks that will be executed prior to program termination after a crash has occurred
+ *
+ * PLCrashReporter provides support for executing an application specified function in the context
+ * of the crash reporter's signal handler, after the crash report has been written to disk.
+ *
+ * Writing code intended for execution inside of a signal handler is exceptionally difficult, and is _NOT_ recommended!
+ *
+ * _Program Flow and Signal Handlers_
+ *
+ * When the signal handler is called the normal flow of the program is interrupted, and your program is an unknown state. Locks may be held, the heap may be corrupt (or in the process of being updated), and your signal handler may invoke a function that was being executed at the time of the signal. This may result in deadlocks, data corruption, and program termination.
+ *
+ * _Async-Safe Functions_
+ *
+ * A subset of functions are defined to be async-safe by the OS, and are safely callable from within a signal handler. If you do implement a custom post-crash handler, it must be async-safe. A table of POSIX-defined async-safe functions and additional information is available from the CERT programming guide - SIG30-C, see https://www.securecoding.cert.org/confluence/display/seccode/SIG30-C.+Call+only+asynchronous-safe+functions+within+signal+handlers
+ *
+ * Most notably, the Objective-C runtime itself is not async-safe, and Objective-C may not be used within a signal handler.
+ *
+ * Documentation taken from PLCrashReporter: https://www.plcrashreporter.org/documentation/api/v1.2-rc2/async_safety.html
+ *
+ * @param callbacks A pointer to an initialized PLCrashReporterCallback structure, see https://www.plcrashreporter.org/documentation/api/v1.2-rc2/struct_p_l_crash_reporter_callbacks.html
+ */
+- (void)setCrashCallbacks: (PLCrashReporterCallbacks *) callbacks;
+
+
+/**
+ Flag that determines if an "Always" option should be shown
+ 
+ If enabled the crash reporting alert will also present an "Always" option, so
+ the user doesn't have to approve every single crash over and over again.
+ 
+ If If `crashManagerStatus` is set to `BITCrashManagerStatusAutoSend`, this property
+ has no effect, since no alert will be presented.
+ 
+ Default: _YES_
+ 
+ @see crashManagerStatus
+ */
+@property (nonatomic, assign, getter=shouldShowAlwaysButton) BOOL showAlwaysButton;
+
+
+///-----------------------------------------------------------------------------
+/// @name Crash Meta Information
+///-----------------------------------------------------------------------------
+
+/** Set the userid that should used in the SDK components
+ 
+ The value is attach to a crash report.
+ 
+ @see userName
+ @see userEmail
+ */
+@property (nonatomic, retain) NSString *userID;
+
+
+/** Set the user name that should used in the SDK components
+ 
+ The value is attach to a crash report.
+ 
+ @see userID
+ @see userEmail
+ */
+@property (nonatomic, retain) NSString *userName;
+
+
+/** Set the users email address that should used in the SDK components
+ 
+ The value is attach to a crash report.
+ 
+ @see userID
+ @see userName
+ */
+@property (nonatomic, retain) NSString *userEmail;
+
+
+/**
+ Indicates if the app crash in the previous session
+ 
+ Use this on startup, to check if the app starts the first time after it crashed
+ previously. You can use this also to disable specific events, like asking
+ the user to rate your app.
+ 
+ @warning This property only has a correct value, once `[BITHockeyManager startManager]` was
+ invoked!
+ */
 @property (nonatomic, readonly) BOOL didCrashInLastSession;
 
-// If you want to use HockeyApp instead of your own server, this is required
-@property (nonatomic, retain) NSString *appIdentifier;
+
+/**
+ Provides the time between startup and crash in seconds
+ 
+ Use this in together with `didCrashInLastSession` to detect if the app crashed very
+ early after startup. This can be used to delay app initialization until the crash
+ report has been sent to the server or if you want to do any other actions like
+ cleaning up some cache data etc.
+ 
+ Note that sending a crash reports starts as early as 1.5 seconds after the application
+ did finish launching!
+ 
+ The `BITCrashManagerDelegate` protocol provides some delegates to inform if sending
+ a crash report was finished successfully, ended in error or was cancelled by the user.
+ 
+ *Default*: _-1_
+ @see didCrashInLastSession
+ @see BITCrashManagerDelegate
+ */
+@property (nonatomic, readonly) NSTimeInterval timeintervalCrashInLastSessionOccured;
+
+
+///-----------------------------------------------------------------------------
+/// @name Debug Logging
+///-----------------------------------------------------------------------------
+
+/**
+ Flag that determines whether additional logging output should be generated
+ by the manager and all modules.
+ 
+ This is ignored if the app is running in the App Store and reverts to the
+ default value in that case.
+ 
+ *Default*: _NO_
+ */
+@property (nonatomic, assign, getter=isDebugLogEnabled) BOOL debugLogEnabled;
+
+
+///-----------------------------------------------------------------------------
+/// @name Helper
+///-----------------------------------------------------------------------------
+
+
+/**
+ Flag that determines whether the application is installed and running
+ from an App Store installation.
+ 
+ Returns _YES_ if the app is installed and running from the App Store
+ Returns _NO_ if the app is installed via debug, ad-hoc or enterprise distribution
+ */
+@property (nonatomic, readonly, getter=isAppStoreEnvironment) BOOL appStoreEnvironment;
+
+
+/**
+ *  Detect if a debugger is attached to the app process
+ *
+ *  This is only invoked once on app startup and can not detect if the debugger is being
+ *  attached during runtime!
+ *
+ *  @return BOOL if the debugger is attached on app startup
+ */
+- (BOOL)isDebuggerAttached;
+
+
+/**
+ * Lets the app crash for easy testing of the SDK
+ *
+ * The best way to use this is to trigger the crash with a button action.
+ *
+ * Make sure not to let the app crash in `applicationDidFinishLaunching` or any other
+ * startup method! Since otherwise the app would crash before the SDK could process it.
+ *
+ * Note that our SDK provides support for handling crashes that happen early on startup.
+ * Check the documentation for more information on how to use this.
+ *
+ * If the SDK detects an App Store environment, it will _NOT_ cause the app to crash!
+ */
+- (void)generateTestCrash;
+
 
 @end

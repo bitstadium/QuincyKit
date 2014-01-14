@@ -1,6 +1,6 @@
     Author: Andreas Linde <mail@andreaslinde.de>
 
-    Copyright (c) 2009-2012 Andreas Linde.
+    Copyright (c) 2009-2014 Andreas Linde.
     All rights reserved.
 
     Permission is hereby granted, free of charge, to any person
@@ -144,23 +144,31 @@ The server requires at least PHP 5.2 and a MySQL server installation!
   There is currently no checking if a package is found in the directory before symbolification is started, no matter if it was or not, the result will be uploaded to the server
   
 
-# IPHONE PROJECT INSTALLATION
+# iOS Setup
 
-- Include `BWQuincyManager.h`, `BWQuincyManager.m` and `Quincy.bundle` into your project
+For QuincyKit 3.0:
+
+- Include `BWQuincyManager.h`, `BWQuincyManager.m`, `BWQuincyManagerDelegate.h`, `BWCrashReportTextFormatter.h`, `BWCrashReportTextFormatter.m`, and `Quincy.bundle` into your project
 - Include `CrashReporter.framework` into your project
-- Add the "-all_load" flag to your projects build configurations "Other Linker Flags"
 - Add the Apple framework `SystemConfiguration.framework` to your project
-- In your `appDelegate.h` include
+- In your `appDelegate.m` include
 
-        #import "BWQuincyManager.h"
+      #import "BWQuincyManager.h"
 
-  and let your appDelegate implement the protocol `BWQuincyManagerDelegate`
-- In your appDelegate applicationDidFinishLaunching function include
+- In your appDelegate `applicationDidFinishLaunching:` implementation include
 
-        [[BWQuincyManager sharedQuincyManager] setSubmissionURL:@"http://yourserver.com/crash_v200.php"];
+      [[BWQuincyManager sharedQuincyManager] setSubmissionURL:@"http://yourserver.com/crash_v300.php"];
+      [[BWQuincyManager sharedQuincyManager] startManager];
+      
+- If you want to implement any of the delegates, add the following before the `startManager` call:
+
+      [[BWQuincyManager sharedQuincyManager] setDelegate:self];
+  
+  and set the protocol to your appDelegate:
+  
+      @interface YourAppDelegate : NSObject <BWQuincyManagerDelegate> {}
       
 - Done.
-- When testing the connection and a server side error appears after sending a crash log, the error code is printed in the console. Error code values are listed in `BWQuincyManager.h`
 
 
 # MAC PROJECT INSTALLATION
@@ -234,18 +242,19 @@ Requires Max OS X 10.5+
 
 ## iOS
 
-Requires iOS 4.3+ (Starting version 2.1.9 armv6 is not supported any more!)
+Requires iOS 6.0+ (iOS 4.3 as lowest deployment target)
+Supports armv7, armv7s, arm64
 
-## ARC Support
+## Support for non ARC projects
 
-If you are including QuincyKit in a project with Automatic Reference Counting (ARC) enabled, you will need to set the `-fno-objc-arc` compiler flag on all of the QuincyKit source files. To do this in Xcode, go to your active target and select the "Build Phases" tab. In the "Compiler Flags" column, set `-fno-objc-arc` for each of the QuincyKit source files.
+If you are including QuincyKit in a project without Automatic Reference Counting (ARC) enabled, you will need to set the `-fobjc-arc` compiler flag on all of the QuincyKit source files. To do this in Xcode, go to your active target and select the "Build Phases" tab. In the "Compiler Flags" column, set `-fobjc-arc` for each of the QuincyKit source files.
 
 
 # ACKNOWLEDGMENTS
 
 **The following 3rd party open source libraries have been used:**
 
-- PLCrashReporter by Landon Fuller (http://code.google.com/p/plcrashreporter/)
+- PLCrashReporter by Landon Fuller (http://plcrashreporter.org/)
 - bluescreen css framework (http://blueprintcss.org/)
 
 
@@ -254,5 +263,4 @@ Feel free to add enhancements, fixes, changes and provide them back to the commu
 Thanks  
 Andreas Linde  
 http://www.andreaslinde.com/
-http://www.buzzworks.de/
 http://www.hockeyapp.net/

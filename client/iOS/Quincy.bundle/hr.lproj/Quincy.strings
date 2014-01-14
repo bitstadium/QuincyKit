@@ -6,25 +6,25 @@
 
 
 /* Replacement for app name, if it could not be detected */
-"CrashAppNamePlaceholder" = "Deze app";
+"CrashAppNamePlaceholder" = "Ova aplikacija";
 
 /* Title showing in the alert box when crash report data has been found */
-"CrashDataFoundTitle" = "%@ is onverwacht gestopt";
+"CrashDataFoundTitle" = "%@ Neočekivani Završetak";
 
 /* Description explaining that crash data has been found and ask the user if the data might be uploaded to the developers server */
-"CrashDataFoundAnonymousDescription" = "Wilt u een anoniem rapport versturen zodat we het probleem kunnen oplossen?";
+"CrashDataFoundAnonymousDescription" = "Želite li poslati anonimno izviješće da možemo riješiti problem?";
 
 /* Description explaining that crash data has been found and ask the user if the non anonymous data might be uplaoded to the developers server */
-"CrashDataFoundDescription" = "Wilt u een rapport versturen zodat we het probleem kunnen oplossen?";
+"CrashDataFoundDescription" = "Želite li poslati izviješće da možemo riješiti problem?";
 
 /* Alert box button if the users wants to send crash data always automatically */
-"CrashSendReportAlways" = "Verstuur altijd";
+"CrashSendReportAlways" = "Uvijek Šalji";
 
 /* Alert box button to send the crash report once */
-"CrashSendReport" = "Verstuur rapport";
+"CrashSendReport" = "Pošalji Izvijeće";
 
 /* Alert box button to decline sending the report */
-"CrashDontSendReport" = "Verstuur niet";
+"CrashDontSendReport" = "Ne Šalji";
 
 /* Text showing in a processing box that the crash data is being uploaded to the server */
-"CrashReportSending" = "Versturen…";
+"CrashReportSending" = "Slanje…";

@@ -2,7 +2,8 @@
  * Author: Andreas Linde <mail@andreaslinde.de>
  *         Kent Sutherland
  *
- * Copyright (c) 2009-2011 Andreas Linde & Kent Sutherland.
+ * Copyright (c) 2012-2014 HockeyApp, Bit Stadium GmbH.
+ * Copyright (c) 2011 Andreas Linde & Kent Sutherland.
  * All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person
@@ -28,19 +29,16 @@
  */
 
 #import <UIKit/UIKit.h>
-#import "BWQuincyManager.h"
 
 @class QuincyDemoViewController;
 
-@interface QuincyDemoAppDelegate : NSObject <UIApplicationDelegate, BWQuincyManagerDelegate> {
-	UIApplication *_application;
-  
+@interface QuincyDemoAppDelegate : NSObject <UIApplicationDelegate> {
 	IBOutlet UIWindow *window;
 	IBOutlet QuincyDemoViewController *viewController;
 }
 
-@property (nonatomic, retain) IBOutlet UIWindow *window;
-@property (nonatomic, retain) IBOutlet QuincyDemoViewController *viewController;
+@property (nonatomic, strong) IBOutlet UIWindow *window;
+@property (nonatomic, strong) IBOutlet QuincyDemoViewController *viewController;
 
 @end
 

@@ -2,7 +2,8 @@
  * Author: Andreas Linde <mail@andreaslinde.de>
  *         Kent Sutherland
  *
- * Copyright (c) 2009-2011 Andreas Linde & Kent Sutherland.
+ * Copyright (c) 2012-2014 HockeyApp, Bit Stadium GmbH.
+ * Copyright (c) 2011 Andreas Linde & Kent Sutherland.
  * All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person
@@ -29,45 +30,31 @@
 
 #import "QuincyDemoAppDelegate.h"
 #import "QuincyDemoViewController.h"
+#import "BWQuincyManager.h"
+
+@interface QuincyDemoAppDelegate () <BWQuincyManagerDelegate>
+
+@end
 
 @implementation QuincyDemoAppDelegate
 
 @synthesize window;
 @synthesize viewController;
 
-- (void)applicationDidFinishLaunching:(UIApplication *)application {
-	_application = application;
-	
-	// Override point for customization after app launch    
-	[window addSubview:viewController.view];
-	[window makeKeyAndVisible];
-  
+- (void)applicationDidFinishLaunching:(UIApplication *)application {	
   // setSubmissionURL for self hosted Example: http://yourserver.com/crash_v200.php
   // setAppIdentifier for HockeyApp Example: 6463991af4a2da3f9cb320533c83b156
-  //    [[BWQuincyManager sharedQuincyManager] setSubmissionURL:@"http://yourserver.com/crash_v200.php"];
-  //    [[BWQuincyManager sharedQuincyManager] setAppIdentifier:@"6463991af4a2da3f9cb320533c83b156"];
   
   [[BWQuincyManager sharedQuincyManager] setDelegate:self];
+  [[BWQuincyManager sharedQuincyManager] setDebugLogEnabled:YES];
+  
+  [[BWQuincyManager sharedQuincyManager] startManager];
+
+	// Override point for customization after app launch
+	[window addSubview:viewController.view];
+	[window makeKeyAndVisible];
 }
 
-
-- (void)dealloc {
-	[viewController release];
-	[window release];
-	[super dealloc];
-}
-
-
-#pragma mark BWQuincyManagerDelegate
-
--(void)connectionOpened {
-	_application.networkActivityIndicatorVisible = YES;
-}
-
-
--(void)connectionClosed {
-	_application.networkActivityIndicatorVisible = NO;
-}
 
 
 @end

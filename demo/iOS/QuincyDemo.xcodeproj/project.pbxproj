@@ -11,6 +11,7 @@
 		1D60589B0D05DD56006BFB54 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 29B97316FDCFA39411CA2CEA /* main.m */; };
 		1D60589F0D05DD5A006BFB54 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1D30AB110D05D00D00671497 /* Foundation.framework */; };
 		1DF5F4E00D08C38300B7A737 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1DF5F4DF0D08C38300B7A737 /* UIKit.framework */; };
+		1E23DBA1188225B600674A67 /* Default-568h@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 1E23DBA0188225B600674A67 /* Default-568h@2x.png */; };
 		1E542D41135A2D6E001D7981 /* QuincyDemoViewController.xib in Resources */ = {isa = PBXBuildFile; fileRef = 1E542D40135A2D6E001D7981 /* QuincyDemoViewController.xib */; };
 		1E542D51135A2F84001D7981 /* BWQuincyManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 1E542D50135A2F84001D7981 /* BWQuincyManager.m */; };
 		1E542D5E135A2FFA001D7981 /* Quincy.bundle in Resources */ = {isa = PBXBuildFile; fileRef = 1E542D5D135A2FFA001D7981 /* Quincy.bundle */; };
@@ -30,6 +31,8 @@
 		1D3623250D0F684500981E51 /* QuincyDemoAppDelegate.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = QuincyDemoAppDelegate.m; sourceTree = "<group>"; };
 		1D6058910D05DD3D006BFB54 /* QuincyDemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = QuincyDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1DF5F4DF0D08C38300B7A737 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
+		1E23DBA0188225B600674A67 /* Default-568h@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Default-568h@2x.png"; sourceTree = "<group>"; };
+		1E23DBA21882354100674A67 /* BWQuincyManagerDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = BWQuincyManagerDelegate.h; sourceTree = "<group>"; };
 		1E542D40135A2D6E001D7981 /* QuincyDemoViewController.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = QuincyDemoViewController.xib; sourceTree = "<group>"; };
 		1E542D4F135A2F84001D7981 /* BWQuincyManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BWQuincyManager.h; sourceTree = "<group>"; };
 		1E542D50135A2F84001D7981 /* BWQuincyManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = BWQuincyManager.m; sourceTree = "<group>"; };
@@ -89,6 +92,7 @@
 			children = (
 				1E542D4F135A2F84001D7981 /* BWQuincyManager.h */,
 				1E542D50135A2F84001D7981 /* BWQuincyManager.m */,
+				1E23DBA21882354100674A67 /* BWQuincyManagerDelegate.h */,
 				1E982A0216026C8600C23A79 /* BWCrashReportTextFormatter.h */,
 				1E982A0316026C8600C23A79 /* BWCrashReportTextFormatter.m */,
 				1E542D5D135A2FFA001D7981 /* Quincy.bundle */,
@@ -127,6 +131,7 @@
 				1E542D40135A2D6E001D7981 /* QuincyDemoViewController.xib */,
 				28AD733E0D9D9553002E5188 /* MainWindow.xib */,
 				1E542D74135A3075001D7981 /* MainWindow-iPad.xib */,
+				1E23DBA0188225B600674A67 /* Default-568h@2x.png */,
 				8D1107310486CEB800E47090 /* Info.plist */,
 			);
 			name = Resources;
@@ -204,6 +209,7 @@
 				1E542D41135A2D6E001D7981 /* QuincyDemoViewController.xib in Resources */,
 				1E542D5E135A2FFA001D7981 /* Quincy.bundle in Resources */,
 				1E542D75135A3075001D7981 /* MainWindow-iPad.xib in Resources */,
+				1E23DBA1188225B600674A67 /* Default-568h@2x.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -233,6 +239,7 @@
 					armv6,
 					armv7,
 				);
+				CLANG_ENABLE_OBJC_ARC = YES;
 				COPY_PHASE_STRIP = NO;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -246,7 +253,7 @@
 				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
 				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
 				INFOPLIST_FILE = Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 3.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 4.3;
 				PRODUCT_NAME = QuincyDemo;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -260,6 +267,7 @@
 					armv6,
 					armv7,
 				);
+				CLANG_ENABLE_OBJC_ARC = YES;
 				COPY_PHASE_STRIP = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -271,7 +279,7 @@
 				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
 				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
 				INFOPLIST_FILE = Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 3.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 4.3;
 				PRODUCT_NAME = QuincyDemo;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};

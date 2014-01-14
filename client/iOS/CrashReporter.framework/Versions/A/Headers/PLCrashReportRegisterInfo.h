@@ -27,48 +27,26 @@
  */
 
 #import <Foundation/Foundation.h>
-#import <mach/machine.h>
 
-/**
- * @ingroup constants
- *
- * The type encodings supported for CPU types and subtypes. Currently only Apple
- * Mach-O defined encodings are supported.
- *
- * @internal
- * These enum values match the protobuf values. Keep them synchronized.
- */
-typedef enum {
-    /** Unknown cpu type encoding. */
-    PLCrashReportProcessorTypeEncodingUnknown = 0,
-
-    /** Apple Mach-defined processor types. */
-    PLCrashReportProcessorTypeEncodingMach = 1
-} PLCrashReportProcessorTypeEncoding;
-
-@interface PLCrashReportProcessorInfo : NSObject {
+@interface PLCrashReportRegisterInfo : NSObject {
 @private
-    /** Type encoding */
-    PLCrashReportProcessorTypeEncoding _typeEncoding;
-
-    /** CPU type */
-    uint64_t _type;
-
-    /** CPU subtype */
-    uint64_t _subtype;
+    /** Register name */
+    NSString *_registerName;
+    
+    /** Register value */
+    uint64_t _registerValue;
 }
 
-- (id) initWithTypeEncoding: (PLCrashReportProcessorTypeEncoding) typeEncoding
-                       type: (uint64_t) type
-                    subtype: (uint64_t) subtype;
+- (id) initWithRegisterName: (NSString *) registerName registerValue: (uint64_t) registerValue;
 
-/** The CPU type encoding. */
-@property(nonatomic, readonly) PLCrashReportProcessorTypeEncoding typeEncoding;
+/**
+ * Register name.
+ */
+@property(nonatomic, readonly) NSString *registerName;
 
-/** The CPU type. */
-@property(nonatomic, readonly) uint64_t type;
-
-/** The CPU subtype. */
-@property(nonatomic, readonly) uint64_t subtype;
+/**
+ * Register value.
+ */
+@property(nonatomic, readonly) uint64_t registerValue;
 
 @end
