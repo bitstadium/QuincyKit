@@ -231,9 +231,9 @@ Requires Max OS X 10.5+
 Requires iOS 6.0+ (iOS 4.3 as lowest deployment target)
 Supports armv7, armv7s, arm64
 
-## Support for non ARC projects
+## iOS Support for non ARC projects
 
-If you are including QuincyKit in a project without Automatic Reference Counting (ARC) enabled, you will need to set the `-fobjc-arc` compiler flag on all of the QuincyKit source files. To do this in Xcode, go to your active target and select the "Build Phases" tab. In the "Compiler Flags" column, set `-fobjc-arc` for each of the QuincyKit source files.
+If you are including QuincyKit in an iOS project without Automatic Reference Counting (ARC) enabled, you will need to set the `-fobjc-arc` compiler flag on all of the QuincyKit source files. To do this in Xcode, go to your active target and select the "Build Phases" tab. In the "Compiler Flags" column, set `-fobjc-arc` for each of the QuincyKit source files.
 
 
 # ACKNOWLEDGMENTS
