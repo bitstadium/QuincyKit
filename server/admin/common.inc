@@ -265,7 +265,8 @@ function crashLogGroupArray($logdata) {
         $lines = explode("\n", $matches[1]);
         foreach ($lines as $line) {
             // we limit this to report version 104
-            preg_match('/^\s*(\w+)\s*-\s*(\w+)\s*(\+)?([\S]+)\s+([\S]+)\s+\<?([0-9A-Fa-f]{32})?>?\s*(.*)\s*$/i', $line, $binaryImageMatches);
+            $architectures = 'armv6|i386|x86_64|ppc|ppc64|armv4t|armv5|armv6|armv7|armv7s|arm64|arm-unknown';
+            preg_match('/^\s*(\w+)\s*-\s*(\w+)\s*(\+)?(.+)\s+('.$architectures.')\s+\<?([0-9A-Fa-f]{32})?>?\s*(.*)\s*$/i', $line, $binaryImageMatches);
             if (is_array($binaryImageMatches) && count($binaryImageMatches) >= 2) {
                 $image["loadAddress"] = $binaryImageMatches[1];
                 $image["endAddress"] = $binaryImageMatches[2];
