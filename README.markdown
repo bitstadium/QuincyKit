@@ -46,11 +46,11 @@
 ## Server side files
 
 - `/server/database_schema.sql` contains all the default tables
-- `/server/crash_v200.php` is the file that is invoked by the iPhone app
+- `/server/crash_v300.php` is the file that is invoked by the iPhone app
 - `/server/config.php` contains database access information
 - `/server/test_setup.php` simple script that checks if everything required on the server is available
 - `/server/admin/` contains all administration scripts
-- `/server/admin/symbolicate.php` needs to be copied to a local mac, and the url has to be adjusted to access the scripts on your server
+- `/server/admin/symbolicate.php` needs to be copied to a local Mac, and the url has to be adjusted to access the scripts on your server
 
 
 # SERVER INSTALLATION
@@ -83,19 +83,9 @@ The server requires at least PHP 5.2 and a MySQL server installation!
 - If you are upgrading a previous edition, invoke 'migrate.php' first to update the database setup
 
 
-## UPDATE TO QUINCYKIT 2.0
+## UPDATE SERVER TO QUINCYKIT 3.0
 
-- Add the new database fields to the following tables:
-
-  **apps**
-  
-        `hockeyappidentifier` text default NULL
-
-  **crash**
-
-        `jailbreak` int(11) unsigned default '0'
-    
-- If you are upgrading from an early version, please make sure the database follows the schema defined in *database_schema.sql*.
+Database schema and clients changed. Therefor it is recommended to setup a new installation!
 
 
 ## SERVER ENABLE PUSH NOTIFICATIONS

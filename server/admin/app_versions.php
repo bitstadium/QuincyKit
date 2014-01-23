@@ -3,7 +3,7 @@
 	/*
 	 * Author: Andreas Linde <mail@andreaslinde.de>
 	 *
-	 * Copyright (c) 2009-2011 Andreas Linde & Kent Sutherland.
+	 * Copyright (c) 2009-2014 Andreas Linde & Kent Sutherland.
 	 * All rights reserved.
 	 *
 	 * Permission is hereby granted, free of charge, to any person
@@ -64,7 +64,7 @@ if ($version != "" && $deletecrashes == "1") {
     $query = "DELETE FROM ".$dbgrouptable." WHERE bundleidentifier = '".$bundleidentifier."' and affected = '".$version."'";
     $result = mysql_query($query) or die(end_with_result('Error in SQL '.$query));
 } else if ($bundleidentifier != "" && $status != "" && $id == "" && $version != "") {
-	$query = "SELECT id FROM ".$dbversiontable." WHERE bundleidentifier = '".$bundleidentifier."' and version = '".$row[1]."'";
+	$query = "SELECT id FROM ".$dbversiontable." WHERE bundleidentifier = '".$bundleidentifier."' and version = '".$version."'";
 	$result = mysql_query($query) or die(end_with_result('Error in SQL '.$query));
 	
 	$numrows = mysql_num_rows($result);
@@ -162,7 +162,7 @@ if ($numrows > 0) {
 	// get the status
 	while ($row = mysql_fetch_row($result)) {
 		if ($platformticks != "") $platformticks = $platformticks.", ";
-		$platformticks .= "'".mapPlatform($row[0])."'";
+		$platformticks .= "'".$row[0]."'";
 		if ($platformvalues != "") $platformvalues = $platformvalues.", ";
 		$platformvalues .= $row[1];
 	}
@@ -175,7 +175,7 @@ $cols2 = '<colgroup><col width="950"/></colgroup>';
 echo '<table>'.$cols2.'<tr><th>Group Details</th></tr>';
 echo '<tr><td>';
             
-show_search("", -1, true, "");
+show_search("", -1);
 
 echo '</tr></td></table>';
 
@@ -300,27 +300,8 @@ if ($numrows > 0) {
 		
 		echo "</td><td>".$groups."</td><td>".$totalcrashes."</td><td>";
 		
-		if ($totalcrashes == 0 && $groups == 0)
-		{
-			// only show delete button if this version is nowwhere assigned as fix version
-			$query2 = "SELECT count(*) FROM ".$dbgrouptable." WHERE bundleidentifier = '".$bundleidentifier."' and fix = '".$version."'";
-			$result2 = mysql_query($query2) or die(end_with_result('Error in SQL '.$query2));
-			$numrows2 = mysql_num_rows($result2);
-			$showdelete = false;
-			if ($numrows2 > 0) {
-				$row2 = mysql_fetch_row($result2);
-				if ($row2[0] == 0)
-				{
-				    $showdelete = true;
-				}
-				
-				mysql_free_result($result2);
-			}
-			
-			if ($showdelete == true || $version == "")
-			{
-				echo " <a href='app_versions.php?id=".$id."&bundleidentifier=".$bundleidentifier."' class='button' onclick='return confirm(\"Do you really want to delete this item?\");'>Delete</a>";
-			}
+		if ($totalcrashes == 0 && $groups == 0) {			
+			echo " <a href='app_versions.php?id=".$id."&bundleidentifier=".$bundleidentifier."' class='button' onclick='return confirm(\"Do you really want to delete this item?\");'>Delete</a>";
 		} else {
                 echo "<a href='app_versions.php?deletecrashes=1&bundleidentifier=".$bundleidentifier."&version=".$version."' class='button redButton' onclick='return confirm(\"Do you really want to delete all items?\");'>Delete Crashes</a>";
 		}

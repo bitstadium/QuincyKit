@@ -3,7 +3,7 @@
 	/*
 	* Author: Andreas Linde <mail@andreaslinde.de>
 	*
-	* Copyright (c) 2009-2011 Andreas Linde.
+	* Copyright (c) 2009-2014 Andreas Linde.
 	* All rights reserved.
 	*
 	* Permission is hereby granted, free of charge, to any person

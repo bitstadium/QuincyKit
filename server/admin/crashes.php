@@ -3,7 +3,7 @@
 	/*
 	 * Author: Andreas Linde <mail@andreaslinde.de>
 	 *
-	 * Copyright (c) 2009-2011 Andreas Linde & Kent Sutherland.
+	 * Copyright (c) 2009-2014 Andreas Linde & Kent Sutherland.
 	 * All rights reserved.
 	 *
 	 * Permission is hereby granted, free of charge, to any person
@@ -56,6 +56,9 @@ $pagelink = "";
 
 if ($search != "" && $type != "") {
 	$pagelink = '?bundleidentifier='.$bundleidentifier.'&search='.$search.'&type='.$type;
+    if ($version != "") {
+        $pagelink .= "&version=".$version;
+    }
 	$whereclause = " WHERE bundleidentifier = '".$bundleidentifier."'";
 	if ($type == SEARCH_TYPE_ID)
         $whereclause .= " AND id = '".$search."'";
@@ -65,6 +68,10 @@ if ($search != "" && $type != "") {
         $whereclause .= " AND log like '%".$search."%'";
     else if ($type  == SEARCH_TYPE_CONTACT)
         $whereclause .= " AND contact like '%".$search."%'";
+    else if ($type  == SEARCH_TYPE_USERID)
+        $whereclause .= " AND userid like '%".$search."%'";
+    else if ($type  == SEARCH_TYPE_USERNAME)
+        $whereclause .= " AND username like '%".$search."%'";
     if ($version != "")
     	$whereclause .= " AND version = '".$version."'";
 } else if ($groupid == "") {
@@ -77,7 +84,7 @@ if ($search != "" && $type != "") {
 
 show_header('- List');
 
-$cols = '<colgroup><col width="80"/><col width="140"/><col width="310"/><col width="350"/></colgroup>';
+$cols = '<colgroup><col width="20"/><col width="80"/><col width="140"/><col width="360"/><col width="300"/></colgroup>';
 
 echo '<h2>';
 
@@ -90,22 +97,7 @@ if ($version != "")
     echo create_link('Version '.$version, 'groups.php', false, 'bundleidentifier,version').' - ';
 
 if ($groupid != "") {
-	$query = "SELECT pattern FROM ".$dbgrouptable." WHERE id = ".$groupid;
-	$result = mysql_query($query) or die(end_with_result('Error in SQL '.$query));
-
-	$numrows = mysql_num_rows($result);
-	if ($numrows == 1) {
-        $row = mysql_fetch_row($result);
-        $title = $row[0];
-        if (strlen($title) > 20) {
-            $title = substr($title,0,20)."...";
-        }
-        echo create_link($title, 'crashes.php', false, $pagelink).'</h2>';
-	} else {
-        echo create_link('Crashes', 'crashes.php', false, $pagelink).'</h2>';
-	}
-	mysql_free_result($result);
-
+    echo create_link($groupid, 'crashes.php', false, $pagelink).'</h2>';
 } else {
     echo create_link('Crashes', 'crashes.php', false, $pagelink).'</h2>';
 }
@@ -115,6 +107,7 @@ if ($search != "" || $type != "")
 
 $osticks = "";
 $osvalues = "";
+$platformticks = "";
 
 $crashestime = false;
 $crashvaluesarray = array();
@@ -123,15 +116,17 @@ $crashvalues = "";
 if ($groupid !='') {
     $cols2 = '<colgroup><col width="280"/><col width="340"/><col width="340"/></colgroup>';
 
-    $query = "SELECT fix, description FROM ".$dbgrouptable." WHERE id = '".$groupid."'";
+    $query = "SELECT location, exception, reason, description FROM ".$dbgrouptable." WHERE id = '".$groupid."'";
     $result = mysql_query($query) or die(end_with_result('Error in SQL '.$query));
 
     $numrows = mysql_num_rows($result);
     if ($numrows > 0) {
         // get the status
         while ($row = mysql_fetch_row($result)) {
-            $fix = $row[0];
-            $description = $row[1];
+            $location = $row[0];
+            $exception = $row[1];
+            $reason = $row[2];
+            $description = $row[3];
             
             $cols2 = '<colgroup><col width="316"/><col width="316"/><col width="315"/></colgroup>';
 			echo '<table>'.$cols2.'<tr><th>Platform Overview</th><th>Crashes over time</th><th>System OS Overview</th></tr>';
@@ -171,7 +166,7 @@ if ($groupid !='') {
 				// get the status
 				while ($row2 = mysql_fetch_row($result2)) {
 					if ($platformticks != "") $platformticks = $platformticks.", ";
-					$platformticks .= "'".mapPlatform($row2[0])."'";
+					$platformticks .= "'".$row2[0]."'";
 					if ($platformvalues != "") $platformvalues = $platformvalues.", ";
 					$platformvalues .= $row2[1];
 				}
@@ -180,16 +175,17 @@ if ($groupid !='') {
 			
 			
 			
-			$cols2 = '<colgroup><col width="950"/></colgroup>';
-			echo '<table>'.$cols2.'<tr><th>Group Details</th></tr>';
-			echo '<tr><td>';
-            
+			$cols2 = '<colgroup><col width="100"/><col width="850"/></colgroup>';
+			echo '<table>'.$cols2.'<tr><th colspan="2">Group Details</th></tr>';
+    		echo '<tr><td><b>Location:</b></td><td>'.$location.'</td></tr>';
+    		echo '<tr><td><b>Exception:</b></td><td>'.$exception.'</td></tr>';
+            echo '<tr><td><b>Reason:</b></td><td>'.$reason.'</td></tr>';
+			echo '<tr><td><b>Description:</b></td><td>';
             echo '<form name="groupmetadata" action="" method="get">';
-            echo '<b style="vertical-align: top;">Description:</b><textarea id="description'.$groupid.'" cols="50" rows="2" name="description" class="description" style="margin-left: 10px;">'.$description.'</textarea>';
-            echo '<b style="vertical-align: top; margin-left:20px;">Assigned Fix Version:</b><input style="vertical-align: top; margin-left:10px;" type="text" id="fixversion'.$groupid.'" name="fixversion" size="20" maxlength="20" value="'.$fix.'"/>';
+            echo '<textarea id="description'.$groupid.'" cols="100" rows="2" name="description" class="description" style="margin-left: 10px;width:700px">'.$description.'</textarea>';
             echo "<a href=\"javascript:updateGroupMeta(".$groupid.",'".$bundleidentifier."')\" class='button' style='float: right;'>Update</a>";
          	  echo create_issue($bundleidentifier, currentPageURL());
-            echo '</form></td>';
+            echo '</form></td></tr></table>';
             
             // get the amount of crashes
             $amount = 0;
@@ -206,12 +202,12 @@ if ($groupid !='') {
    	mysql_free_result($result);
 }
 
-echo '<table id="crashlist">'.$cols;
-echo "<thead><tr><th>System</th><th>Timestamp</th><th>User / Contact</th><th>Action</th></tr></thead>";
+echo '<table id="crashlist" class="hover">'.$cols;
+echo "<thead><tr><th>JB</th><th>System</th><th>Timestamp</th><th>User ID / Name / Email</th><th>Actions</th></tr></thead>";
 echo '<tbody>';
 
 // get all crashes
-$query = "SELECT userid, contact, systemversion, timestamp, id, jailbreak, platform FROM ".$dbcrashtable.$whereclause." ORDER BY systemversion desc, timestamp desc";
+$query = "SELECT userid, username, contact, systemversion, timestamp, id, jailbreak, platform FROM ".$dbcrashtable.$whereclause." ORDER BY systemversion desc, timestamp desc";
 $result = mysql_query($query) or die(end_with_result('Error in SQL '.$query));
 
 $numrows = mysql_num_rows($result);
@@ -219,12 +215,13 @@ if ($numrows > 0) {
 	// get the status
 	while ($row = mysql_fetch_row($result)) {
 		$userid = $row[0];
-		$contact = $row[1];
-		$systemversion = $row[2];
-		$timestamp = $row[3];
-		$crashid = $row[4];
-		$jailbreak = $row[5];
-		$platform = $row[6];
+		$username = $row[1];
+		$contact = $row[2];
+		$systemversion = $row[3];
+		$timestamp = $row[4];
+		$crashid = $row[5];
+		$jailbreak = $row[6];
+		$platform = $row[7];
 				
 		$todo = 2;
 		$query2 = "SELECT done FROM ".$dbsymbolicatetable." WHERE crashid = ".$crashid;
@@ -252,36 +249,41 @@ if ($numrows > 0) {
                 $timestamp = "<font color='".$color72h."'>".$timestamp."</font>";
             else
                 $timestamp = "<font color='".$colorOther."'>".$timestamp."</font>";
-                
+          
             // add the value to the chart stuff
-            
+      
             if (!array_key_exists($timeindex, $crashvaluesarray)) {
                 $crashvaluesarray[$timeindex] = 0;
             }
             $crashvaluesarray[$timeindex]++;
 		}
 
-		echo "<tr id='crashrow".$crashid."' valign='top' align='center'>";
-		echo "<td>".$systemversion;
-		if ($platform != "") echo "<br/>".mapPlatform($platform);
-		if ($jailbreak == 1) echo "<br/>Jailbroken";
+		echo "<tr id='crashrow".$crashid."' valign='top' align='center' class='clickableRow' data-url='javascript:showCrashID(".$crashid.")'>";
+        
+        echo "<td>";
+		if ($jailbreak == 1) echo "x";
+        echo "</td>";
+		
+        echo "<td>".$systemversion;
+		if ($platform != "") echo "<br/>".$platform;
 		echo "</td>";
-		echo "<td>".$timestamp."</td><td>".$userid."<br/>".$contact."</td><td>";
-		echo "<a href='javascript:showCrashID(".$crashid.")' class='button'>View</a>";
-
+		
+        echo "<td>".$timestamp."</td>";
+        
+        echo "<td>".$userid."<br/>".$username."<br/>".$contact."</td>";
+        
+		echo "<td>";
 		echo "<a href='actionapi.php?action=downloadcrashid&id=".$crashid."' class='button'>Download</a> ";
 		echo "<span id='symbolicate".$crashid."'>";
-		if ($todo == 0)
-			echo "Symbolicating...";
-		else {
-    		echo "<a href='javascript:symbolicateCrashID(".$crashid.")' class='button'>Symbolicate";
+		if ($todo != 0) {
+    		echo "<a href='javascript:symbolicateCrashID(".$crashid.")' class='button'>";
     		if ($todo != 2)
-                echo " again";
+                echo "Resymbolicate";
+            else
+                echo "Symbolicate";
     		echo "</a>";
         }
-
-        echo "</span>";
-			
+        echo "</span>";	
         echo " <a href='javascript:deleteCrashID(".$crashid.",";
         if ($groupid != "") {
             echo $groupid;
@@ -313,8 +315,15 @@ $(document).ready(function(){
         height: "330px",
         scrolling: "yes"
     });
+    $(".clickableRow").click(function() {
+          window.document.location = $(this).data("url");
+    });
 
-<?php include "jqplot.php" ?>
+<?php 
+  if ($platformticks != "") {
+    include "jqplot.php";
+  }
+?>
 });
 </script>
 

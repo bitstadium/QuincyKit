@@ -4,7 +4,7 @@
 	/*
 	 * Author: Andreas Linde <mail@andreaslinde.de>
 	 *
-	 * Copyright (c) 2009-2011 Andreas Linde.
+	 * Copyright (c) 2009-2014 Andreas Linde.
 	 * All rights reserved.
 	 *
 	 * Permission is hereby granted, free of charge, to any person
@@ -61,9 +61,11 @@ define("FAILURE_PHP_PROWL_CLASS", -41);                 // PHP: Prowl class is n
 define("FAILURE_PHP_CURL_LIB", -41);                    // PHP: cURL library missing vital functions or does not support SSL. cURL w/SSL is required to execute ProwlPHP.
 
 define("SEARCH_TYPE_ID", 0);                            // Search for a crash ID
-define("SEARCH_TYPE_DESCRIPTION", 1);                   // Search for in the crash descriptions
-define("SEARCH_TYPE_CRASHLOG", 2);                      // Search for in the crashlogs
-define("SEARCH_TYPE_CONTACT", 3);			// Search for in the Contact Name
+define("SEARCH_TYPE_DESCRIPTION", 1);                   // Search in the crash descriptions
+define("SEARCH_TYPE_CRASHLOG", 2);                      // Search in the crashlogs
+define("SEARCH_TYPE_CONTACT", 3);			            // Search in the Contact/Email
+define("SEARCH_TYPE_USERID", 4);			            // Search in the User ID
+define("SEARCH_TYPE_USERNAME", 5);			            // Search in the User Name
 
 $statusversions = array(0 => 'Unknown', 1 => 'In development', 2 => 'Submitted', 3 => 'Available', 4 => 'Discontinued');
 

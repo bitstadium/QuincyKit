@@ -8,6 +8,7 @@
 -- PHP Version: 5.2.6-3
 
 SET SQL_MODE="NO_AUTO_VALUE_ON_ZERO";
+SET FOREIGN_KEY_CHECKS = 0;
 
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
@@ -38,8 +39,8 @@ CREATE TABLE IF NOT EXISTS `apps` (
   `notifypush` text default NULL,
   `hockeyappidentifier` text default NULL,
   PRIMARY KEY  (`id`),
-  KEY `symbolicate` (`symbolicate`)
-) ENGINE=MyISAM  DEFAULT CHARSET=latin1;
+  KEY `bundleIdentifier` (`bundleidentifier`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -49,6 +50,7 @@ CREATE TABLE IF NOT EXISTS `apps` (
 
 -- contains all crash log data
 -- userid: if there was some kind of user/device identification provided in the crash log, this contains the string provided
+-- username: if there was some kind of user name provided, this contains the string provided
 -- contact: if there was some kind of contact information provided, this contains the string
 -- systemversion: the version of the operation system running when this crash was sent (!!), could be different to the version the crash happened
 -- bundleidentifier: the bundle identifier of the application this crash report is associated with
@@ -61,6 +63,7 @@ CREATE TABLE IF NOT EXISTS `apps` (
 CREATE TABLE IF NOT EXISTS `crash` (
   `id` bigint(20) unsigned NOT NULL auto_increment,
   `userid` varchar(255) collate utf8_unicode_ci default NULL,
+  `username` varchar(255) collate utf8_unicode_ci default NULL,
   `contact` varchar(255) collate utf8_unicode_ci default NULL,
   `systemversion` varchar(25) collate utf8_unicode_ci default NULL,
   `platform` varchar(25) collate utf8_unicode_ci default NULL,
@@ -74,18 +77,10 @@ CREATE TABLE IF NOT EXISTS `crash` (
   `groupid` bigint(20) unsigned default '0',
   `jailbreak` int(11) unsigned default '0',
   PRIMARY KEY  (`id`),
-  KEY `jailbreak` (`jailbreak`),
-  KEY `timestamp` (`timestamp`),
-  KEY `applicationname` (`applicationname`),
-  KEY `userid` (`userid`),
-  KEY `version` (`version`),
-  KEY `platform` (`platform`),
-  KEY `senderversion` (`senderversion`),
-  KEY `contact` (`contact`),
-  KEY `systemversion` (`systemversion`),
+  KEY `groupid` (`groupid`),
   KEY `bundleidentifier` (`bundleidentifier`),
-  FULLTEXT KEY `log` (`log`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+  CONSTRAINT `FK_CRASH_GROUPID` FOREIGN KEY (`groupid`) REFERENCES `crash_groups` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -104,18 +99,16 @@ CREATE TABLE IF NOT EXISTS `crash_groups` (
   `id` bigint(20) unsigned NOT NULL auto_increment,
   `bundleidentifier` varchar(250) collate utf8_unicode_ci default NULL,
   `affected` varchar(20) collate utf8_unicode_ci default NULL,
-  `fix` varchar(20) collate utf8_unicode_ci default NULL,
   `pattern` varchar(250) collate utf8_unicode_ci NOT NULL default '',
+  `location` varchar(250) collate utf8_unicode_ci NOT NULL default '',
+  `exception` varchar(250) collate utf8_unicode_ci NOT NULL default '',
+  `reason` text collate utf8_unicode_ci,
   `description` text collate utf8_unicode_ci,
   `amount` bigint(20) default '0',
   `latesttimestamp` bigint(20) default '0',
   PRIMARY KEY  (`id`),
-  KEY `affected` (`affected`,`fix`),
-  KEY `applicationname` (`bundleidentifier`),
-  KEY `pattern` (`pattern`),
-  KEY `amount` (`amount`),
-  KEY `latesttimestamp` (`latesttimestamp`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+  KEY `bundleIdentifier` (`bundleidentifier`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -133,7 +126,7 @@ CREATE TABLE IF NOT EXISTS `symbolicated` (
   PRIMARY KEY  (`id`),
   KEY `crashid` (`crashid`),
   KEY `done` (`done`)
-) ENGINE=MyISAM  DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
 
 -- --------------------------------------------------------
 
@@ -154,4 +147,4 @@ CREATE TABLE IF NOT EXISTS `versions` (
   PRIMARY KEY  (`id`),
   KEY `version` (`version`,`status`),
   KEY `applicationname` (`bundleidentifier`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;

@@ -19,6 +19,14 @@ use Math::BigInt;
 use List::MoreUtils qw(uniq);
 use File::Basename qw(basename);
 use File::Glob ':glob';
+use Env qw(DEVELOPER_DIR);
+use Config;
+no warnings "portable";
+
+require bigint;
+if($Config{ivsize} < 8) {
+    bigint->import(qw(hex));
+}
 
 #############################
 
@@ -43,33 +51,27 @@ my %entity2char = (
     amp    => '&',  # ampersand 
     'gt'    => '>',  # greater than
     'lt'    => '<',  # less than
-    quot   => '"',  # double quote;  this " character in the comment keeps Xcode syntax coloring happy 
-    apos   => "'",  # single quote '
+    quot   => '"',  # double quote
+    apos   => "'",  # single quote
     );
 
-# Array of all the supported architectures.
-my %architectures = (
-    ARM      =>  "armv6",
-    X86      =>  "i386",
-    "X86-64" =>  "x86_64",
-    PPC      =>  "ppc",
-    "PPC-64" =>  "ppc64",
-    "ARMV4T" =>  "armv4t",
-    "ARMV5"  =>  "armv5",
-    "ARMV6"  =>  "armv6",
-    "ARMV7"  =>  "armv7",
-    "ARMV7S" =>  "armv7s",
-);
 #############################
 
 # Find otool from the latest iphoneos
-my $otool = "xcrun -sdk iphoneos otool";
-my $atos = "xcrun -sdk iphoneos atos";
-my $lipo = "xcrun -sdk iphoneos lipo";
-my $size = "xcrun -sdk iphoneos size";
+my $otool = `'/usr/bin/xcrun' -sdk iphoneos -find otool`;
+my $atos  = `'/usr/bin/xcrun' -sdk iphoneos -find atos`;
+my $lipo  = `'/usr/bin/xcrun' -sdk iphoneos -find lipo`;
+my $size  = `'/usr/bin/xcrun' -sdk iphoneos -find size`;
+
+chomp $otool;
+chomp $atos;
+chomp $lipo;
+chomp $size;
 
 print STDERR "otool path is '$otool'\n" if $opt{v};
 print STDERR "atos path is '$atos'\n" if $opt{v};
+print STDERR "lipo path is '$lipo'\n" if $opt{v};
+print STDERR "size path is '$size'\n" if $opt{v};
 
 #############################
 # run the script
@@ -193,21 +195,28 @@ sub getSymbolPathFor_dsymUuid{
     print STDERR "\@dsym_paths = ( @dsym_paths )\n" if $opt{v};
     print STDERR "\@exec_names = ( @exec_names )\n" if $opt{v};
     
+    my @app_bundles_next_to_dsyms;
+    foreach my $dsymdir (@dsym_paths) {
+        my ($dsympath) = $dsymdir =~ /(^.*)\.dSYM/i;
+        push(@app_bundles_next_to_dsyms, $dsympath . '.app');
+    }
+    
     my @exec_paths  = ();
     foreach my $exec_name (@exec_names) {
         #We need to find all of the apps with the given name (both in- and outside of any archive)
         #First, use spotlight to find un-archived apps:
-        my $cmd = "mdfind \"kMDItemContentType == com.apple.application-bundle && kMDItemFSName == '$exec_name.app'\"";
+        my $cmd = "mdfind \"kMDItemContentType == com.apple.application-bundle && (kMDItemAlternateNames == '$exec_name.app' || kMDItemDisplayName == '$exec_name' || kMDItemDisplayName == '$exec_name.app')\"";
         print STDERR "Running $cmd\n" if $opt{v};
         
-        foreach my $app_bundle (split(/\n/, `$cmd`)) {
+        my @app_bundles = (@app_bundles_next_to_dsyms, split(/\n/, `$cmd`));
+        foreach my $app_bundle (@app_bundles) {
             if( -f "$app_bundle/$exec_name") {
                 push(@exec_paths, "$app_bundle/$exec_name");
             }
         }
         
         #Find any naked executables
-        $cmd = "mdfind \"kMDItemContentType == public.unix-executable && kMDItemFSName == '$exec_name'\"";
+        $cmd = "mdfind \"kMDItemContentType == public.unix-executable && kMDItemDisplayName == '$exec_name'\"";
         print STDERR "Running $cmd\n" if $opt{v};
         
         foreach my $exec_file (split(/\n/, `$cmd`)) {
@@ -248,11 +257,11 @@ sub getSymbolPathFor_dsymUuid{
 
 #########
 
-sub matchesUUID {
+sub matchesUUID {  
     my ($path, $uuid, $arch) = @_;
     
     if ( ! -f $path ) {
-        print STDERR "## $path doesn't exist \n" if $opt{v};
+        print STDERR "## $path doesn't exist " if $opt{v};
         return 0;
     }
     
@@ -300,6 +309,7 @@ sub matchesUUID {
         }
     } else {
         print STDERR "Can't understand the output from otool ($TEST_uuid -> $cmd)\n";
+        return 0;
     }
 
     return 0;
@@ -427,14 +437,14 @@ sub parse_sections {
 }
 
 sub parse_images {
-    my ($log_ref, $report_version, $default_arch) = @_;
+    my ($log_ref, $report_version) = @_;
     
     my $section = parse_section($log_ref,'Binary Images Description',multiline=>1);
     if (!defined($section)) {
-    	$section = parse_section($log_ref,'Binary Images',multiline=>1); # new format
+        $section = parse_section($log_ref,'Binary Images',multiline=>1); # new format
     }
     if (!defined($section)) {
-    	die "Error: Can't find \"Binary Images\" section in log file";
+        die "Error: Can't find \"Binary Images\" section in log file";
     }
     
     my @lines = split /\n/, $section;
@@ -444,10 +454,10 @@ sub parse_images {
     my ($pat, $app, %captures);
 
     # FIXME: This should probably be passed in as an argument
-#    my $default_arch = 'armv6';
+    my $default_arch = 'armv6';
     
     #To get all the architectures for string matching.
-    my $arch_flattened = join('|', values(%architectures));
+    my $architectures = "armv[4-8][tfsk]?|arm64";
     
     # Once Perl 5.10 becomes the default in Mac OS X, named regexp 
     # capture buffers of the style (?<name>pattern) would make this 
@@ -469,7 +479,7 @@ sub parse_images {
             ^\s* (\w+) \s* \- \s* (\w+) \s*     (?# the range base and extent [1,2] )                                                                                                                                 
             (\+)?                               (?# the application may have a + in front of the name [3] )                                                                                                   
             (.+)                                (?# bundle name [4] )                                                                                                                                                 
-            \s+ ('.$arch_flattened.') \s+       (?# the image arch [5] )                                                                                                                                          
+            \s+ ('.$architectures.') \s+        (?# the image arch [5] )
             \<?([[:xdigit:]]{32})?\>?           (?# possible UUID [6] )                                                                                                                                               
             \s* (\/.*)\s*$                      (?# first fwdslash to end we hope is path [7] )                                                                                                                       
             ';
@@ -505,49 +515,49 @@ sub parse_images {
     for my $line (@lines) {
         next if $line =~ /PEF binary:/; # ignore these
         
-    $line =~ s/(&(\w+);?)/$entity2char{$2} || $1/eg;
+        $line =~ s/(&(\w+);?)/$entity2char{$2} || $1/eg;
         
-	if ($line =~ /$pat/ox) {
+        if ($line =~ /$pat/ox) {
+        
+            # Dereference references 
+            my %image;
+            while((my $key, my $val) = each(%captures)) {
+                $image{$key} = ${$captures{$key}} || '';
+                #print "image{$key} = $image{$key}\n";
+            }
+        
+            if ($report_version == 6 || $report_version == 9) { # TheRealKerni 
+                $image{uuid} =~ /(.{8})[-](.{4})[-](.{4})[-](.{4})[-](.{12})/;
+                $image{uuid} = "$1$2$3$4$5";
+            }
+		
+            $image{uuid} = lc $image{uuid};
+            $image{arch} = $image{arch} || $default_arch;
+        
+            # Just take the first instance.  That tends to be the app.
+            my $bundlename = $image{bundlename};
+            $app = $bundlename if (!defined $app && defined $image{plus} && length $image{plus});
 
-        # Dereference references 
-        my %image;
-        while((my $key, my $val) = each(%captures)) {
-            $image{$key} = ${$captures{$key}} || '';
-			#print "image{$key} = $image{$key}\n";
-        }
-		
-		if ($report_version == 6 || $report_version == 9) { # TheRealKerni 
-		    $image{uuid} =~ /(.{8})[-](.{4})[-](.{4})[-](.{4})[-](.{12})/;
-            $image{uuid} = "$1$2$3$4$5";
-		}
-		
-		$image{uuid} = lc $image{uuid};
-		$image{arch} = $image{arch} || $default_arch;
-		
-		# Just take the first instance.  That tends to be the app.
-        my $bundlename = $image{bundlename};
-        $app = $bundlename if (!defined $app && defined $image{plus} && length $image{plus});
-        
-		# frameworks and apps (and whatever) may share the same name, so disambiguate
-        if ( defined($images{$bundlename}) ) {
-			# follow the chain of hash items until the end
-            my $nextIDKey = $bundlename;
-             while ( length($nextIDKey) ) {
-                 last if ( !length($images{$nextIDKey}{nextID}) );
-                 $nextIDKey = $images{$nextIDKey}{nextID};
-             }
-			
-			 # add ourselves to that chain
-            $images{$nextIDKey}{nextID} = $image{base};
-			
-			# and store under the key we just recorded
-            $bundlename = $bundlename . $image{base};
-        }
-		
-		# we are the end of the nextID chain
-		$image{nextID} = "";
-            
-		$images{$bundlename} = \%image;
+            # frameworks and apps (and whatever) may share the same name, so disambiguate
+            if ( defined($images{$bundlename}) ) {
+                # follow the chain of hash items until the end
+                my $nextIDKey = $bundlename;
+                while ( length($nextIDKey) ) {
+                    last if ( !length($images{$nextIDKey}{nextID}) );
+                    $nextIDKey = $images{$nextIDKey}{nextID};
+                }
+
+                # add ourselves to that chain
+                $images{$nextIDKey}{nextID} = $image{base};
+
+                # and store under the key we just recorded
+                $bundlename = $bundlename . $image{base};
+            }
+
+            # we are the end of the nextID chain
+            $image{nextID} = "";
+
+            $images{$bundlename} = \%image;
         }
     }
     
@@ -594,42 +604,44 @@ sub fixup_last_exception_backtrace {
     return ($log_ref, $repl);
 }
 
-sub parse_last_exception_backtrace {
-    print STDERR "Parsing last exception backtrace\n" if $opt{v};
-    my ($backtrace,$images, $inHex) = @_;
-    my @lines = split /\n/,$backtrace;
-    
-    my %frames = ();
-    
-    # these two have to be parallel; we'll lookup by hex, and replace decimal if needed
-    my @hexAddr;
-    my @replAddr;
-    
-    for my $line (@lines) {
-        # end once we're done with the frames
-        last if $line =~ /\)/;
-        last if !length($line);
-        
-        if ($inHex && $line =~ /0x([[:xdigit:]]+)/) {
-            push @hexAddr, sprintf("0x%08s", $1);
-            push @replAddr, "0x".$1;
-        }
-        elsif ($line =~ /(\d+)/) {
-            push @hexAddr, sprintf("0x%08x", $1);
-            push @replAddr, $1;
-        }
-    }
-    
-    # we don't have a hint as to the binary assignment of these frames
-    # map_addresses will do it for us
-    return map_addresses(\@hexAddr,$images,\@replAddr);
-}
+#sub parse_last_exception_backtrace {
+#    print STDERR "Parsing last exception backtrace\n" if $opt{v};
+#    my ($backtrace,$images, $inHex) = @_;
+#    my @lines = split /\n/,$backtrace;
+#    
+#    my %frames = ();
+#    
+#    # these two have to be parallel; we'll lookup by hex, and replace decimal if needed
+#    my @hexAddr;
+#    my @replAddr;
+#    
+#    for my $line (@lines) {
+#        # end once we're done with the frames
+#        last if $line =~ /\)/;
+#        last if !length($line);
+#        
+#        if ($inHex && $line =~ /0x([[:xdigit:]]+)/) {
+#            push @hexAddr, sprintf("0x%08s", $1);
+#            push @replAddr, "0x".$1;
+#        }
+#        elsif ($line =~ /(\d+)/) {
+#            push @hexAddr, sprintf("0x%08x", $1);
+#            push @replAddr, $1;
+#        }
+#    }
+#    
+#    # we don't have a hint as to the binary assignment of these frames
+#    # map_addresses will do it for us
+#    return map_addresses(\@hexAddr,$images,\@replAddr);
+#}
 
 # returns an oddly-constructed hash:
 #  'string-to-replace' => { bundle=>..., address=>... }
 sub parse_backtrace {
-    my ($backtrace,$images) = @_;
+    my ($backtrace,$images,$decrement) = @_;
     my @lines = split /\n/,$backtrace;
+    
+    my $is_first = 1;
     
     my %frames = ();
     for my $line (@lines) {
@@ -641,20 +653,27 @@ sub parse_backtrace {
         }x ) {
             my($bundle,$replace,$address) = ($1,$2,$3);
             #print STDERR "Parse_bt: $bundle,$replace,$address\n" if ($opt{v});
-			
-			# disambiguate within our hash of binaries
-			$bundle = findImageByNameAndAddress($images, $bundle, $address);
+            
+            # disambiguate within our hash of binaries
+            $bundle = findImageByNameAndAddress($images, $bundle, $address);
             
             # skip unless we know about the image of this frame
             next unless 
             $$images{$bundle} or
             $bundle = resolve_partial_id($bundle,$images);
             
+            my $raw_address = $address;
+            if($decrement && !$is_first) {
+                $address = sprintf("0x%X", (hex($address) & ~1) - 1);
+            }
+            
             $frames{$replace} = {
                 'address' => $address,
+                'raw_address' => $raw_address,
                 'bundle'  => $bundle,
             };
             
+            $is_first   = 0;
         }
         #        else { print "unable to parse backtrace line $line\n" }
     }
@@ -672,10 +691,10 @@ sub slurp_file {
     
     # - or "" mean read from stdin, otherwise use the given filename
     if($file && $file ne '-') {
-    	open $fh,"<",$file or die "while reading $file, $! : ";
+        open $fh,"<",$file or die "while reading $file, $! : ";
     } else {
-    	open $fh,"<&STDIN" or die "while readin STDIN, $! : ";
-    	$readingFromStdin = 1;
+        open $fh,"<&STDIN" or die "while readin STDIN, $! : ";
+        $readingFromStdin = 1;
     }
     
     $data = <$fh>;
@@ -698,38 +717,16 @@ sub slurp_file {
 sub parse_OSVersion {
     my ($log_ref) = @_;
     my $section = parse_section($log_ref,'OS Version');
-	if ( $section =~ /\s([0-9\.]+)\s+\(Build (\w+)/ ) {
-		return ($1, $2)
-	}
-	if ( $section =~ /\s([0-9\.]+)\s+\((\w+)/ ) {
-		return ($1, $2)
-	}
-	if ( $section =~ /\s([0-9\.]+)/ ) {
-		return ($1, "")
-	}
+    if ( $section =~ /\s([0-9\.]+)\s+\(Build (\w+)/ ) {
+        return ($1, $2)
+    }
+    if ( $section =~ /\s([0-9\.]+)\s+\((\w+)/ ) {
+        return ($1, $2)
+    }
+    if ( $section =~ /\s([0-9\.]+)/ ) {
+        return ($1, "")
+    }
     die "Error: can't parse OS Version string $section";
-}
-
-# Map from the "Code Type" field of the crash log, to a Mac OS X
-# architecture name that can be understood by otool.
-sub parse_arch {
-    my ($log_ref) = @_;
-    my $codeType = parse_section($log_ref,'Code Type');
-    
-    my $value = 0;
-    
-	if ( $codeType eq "X86-64 (Native)" ) {
-	    $value = "X86-64";
-	} elsif ( $codeType eq "PPC-64 (Native)" ) {
-	    $value = "PPC-64";
-	} else {
-	    $codeType =~ /(\w+)/;
-	    $value = $1;
-	}
-
-    my $arch = $architectures{$value};
-    die "Error: Unknown architecture $1" unless defined $arch;
-    return $arch;
 }
 
 sub parse_report_version {
@@ -759,7 +756,7 @@ sub findImageByNameAndAddress {
     my ($images,$bundle,$address) = @_;
     my $key = $bundle;
     
-    #print STDERR "findImageByNameAndAddress($bundle,$address) ... \n";
+    #print STDERR "findImageByNameAndAddress($bundle,$address) ... ";
     
     my $binary = $$images{$bundle};
     
@@ -824,7 +821,7 @@ sub fetch_symbolled_binaries {
                 next;
             }
         }
-                
+        
         print STDERR "\r${pre}checking address range for $b$post" if $opt{v};
         $pre .= ".";
         
@@ -860,7 +857,7 @@ sub symbolize_frames {
     my %frames_to_lookup = ();
     my %arch_map = ();
     my %base_map = ();
- 
+    
     for my $k (keys %$bt) {
         my $frame = $$bt{$k};
         my $lib = $$images{$$frame{bundle}};
@@ -872,16 +869,9 @@ sub symbolize_frames {
             next;
         }
         
-        # adjust address for sliding
-        my $address = $$frame{address};
-        if($$lib{slide}) {
-            $address = sprintf "0x%08x", hex($$frame{address}) + $$lib{slide};
-            $$frame{address} = $address;
-        }
-        
         # list of address to lookup, mapped to the frame object, for
         # each library
-        $frames_to_lookup{$$lib{symbol}}{$address} = $frame;
+        $frames_to_lookup{$$lib{symbol}}{$$frame{address}} = $frame;
         $arch_map{$$lib{symbol}} = $$lib{arch};
         $base_map{$$lib{symbol}} = $$lib{base};
     }
@@ -895,7 +885,7 @@ sub symbolize_frames {
         # run atos with the addresses and binary files we just gathered
         my $arch = $arch_map{$symbol};
         my $base = $base_map{$symbol};
-        my $cmd = "$atos -arch $arch -o '$escapedSymbol' @{[ keys %$frames ]} | ";
+        my $cmd = "$atos -arch $arch -l $base -o '$escapedSymbol' @{[ keys %$frames ]} | ";
         
         print STDERR "Running $cmd\n" if $opt{v};
         
@@ -908,13 +898,18 @@ sub symbolize_frames {
         foreach my $symbolled_frame (@symbolled_frames) {
             
             $symbolled_frame =~ s/\s*\(in .*?\)//; # clean up -- don't need to repeat the lib here
-			
-			# find the correct frame -- the order should match since we got the address list with keys
+            
+            # find the correct frame -- the order should match since we got the address list with keys
             my ($k,$frame) = each(%$frames);
-			
-			if ( $symbolled_frame !~ /^\d/ ) {
-				# only symbolicate if we fetched something other than an address
-				$$frame{symbolled} = $symbolled_frame;
+            
+            if ( $symbolled_frame !~ /^\d/ ) {
+                # only symbolicate if we fetched something other than an address
+                #re-increment any offset that we had to artifically decrement
+                if($$frame{raw_address} ne $$frame{address}) {
+                    $symbolled_frame =~ s|(.+ \+) (\d+)|$1." ".($2 + 1)|e;
+                }
+                
+                $$frame{symbolled} = $symbolled_frame;
                 $references++;
             }
             
@@ -938,17 +933,13 @@ sub replace_symbolized_frames {
     my $re = join "|" , map { quotemeta } keys %$bt;
     
     my $log = $$log_ref;
-    if (length($re) > 0) {
-        $log =~ s#$re#
-        my $frame = $$bt{$&};
+    $log =~ s#$re#
+    my $frame = $$bt{$&};
+    $$frame{raw_address} ." ". $$frame{symbolled};
+    #esg;
     
-        if($$frame{address} && $$frame{symbolled}) {
-            $$frame{address} ." ". $$frame{symbolled};
-        }   
-        #esg;
+    $log =~ s/(&(\w+);?)/$entity2char{$2} || $1/eg;
     
-        $log =~ s/(&(\w+);?)/$entity2char{$2} || $1/eg;
-    }
     return \$log;
 }
 
@@ -988,15 +979,8 @@ sub symbolicate_log {
     my $report_version = parse_report_version($log_ref);
     $report_version or die "No crash report version in $file";
     
-    # extract arch -- this doesn't really mean much now that we can mulitple archs in a backtrace.  Manage the arch in each stack frame.
-    my $arch = parse_arch($log_ref);
-    print STDERR "Arch of Logfile: $arch\n" if $opt{v};
-
     # read the binary images
-    my ($images,$first_bundle) = parse_images($log_ref, $report_version, $arch);
-    
-    # -A option: just lookup app symbols
-    $images = { $first_bundle => $$images{$first_bundle} } if $opt{A};
+    my ($images,$first_bundle) = parse_images($log_ref, $report_version);
     
     if ( $opt{v} ) {
         print STDERR keys(%$images) . " binary images referenced:\n";
@@ -1009,13 +993,12 @@ sub symbolicate_log {
         print "\n";
     }
     
-    # just parse out crashing thread
     my $bt = {};
     my $threads = parse_sections($log_ref,'Thread\s+\d+\s?(Highlighted|Crashed)?',multiline=>1);
     for my $thread (values %$threads) {
         # merge all of the frames from all backtraces into one
         # collection
-        my $b = parse_backtrace($thread,$images);
+        my $b = parse_backtrace($thread,$images,0);
         @$bt{keys %$b} = values %$b;
     }
     
@@ -1027,12 +1010,12 @@ sub symbolicate_log {
     if (defined $exception) {
         ($log_ref, $exception) = fixup_last_exception_backtrace($log_ref, $exception, $images);
         #my $e = parse_last_exception_backtrace($exception, $images, 1);
-        my $e = parse_backtrace($exception, $images);
+        my $e = parse_backtrace($exception, $images,1);
         
         # treat these frames in the same was as any thread
         @$bt{keys %$e} = values %$e;
     }
-
+    
     # sort out just the images needed for this backtrace
     prune_used_images($images,$bt);
     if ( $opt{v} ) {

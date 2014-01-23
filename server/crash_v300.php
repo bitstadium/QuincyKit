@@ -4,6 +4,7 @@
    * Author: Andreas Linde <mail@andreaslinde.de>
    *         Kenth Sutherland
    *
+   * Copyright (c) 2014 Andreas Linde.
    * Copyright (c) 2009-2011 Andreas Linde & Kent Sutherland.
    * All rights reserved.
    *
@@ -34,6 +35,7 @@
 //
 
 require_once('config.php');
+require_once('admin/common.inc');
 
 if (!class_exists('XMLReader', false)) die(xml_for_result(FAILURE_PHP_XMLREADER_CLASS));
 
@@ -74,28 +76,6 @@ foreach($_REQUEST as $fields => $value) {
 
 function xml_for_result($result) {
   return '<?xml version="1.0" encoding="UTF-8"?><result>'.$result.'</result>'; 
-}
-
-function parseblock($matches, $appString) {
-  $result_offset = "";
-  //make sure $matches[1] exists
-  if (is_array($matches) && count($matches) >= 2) {
-    $result = explode("\n", $matches[1]);
-    foreach ($result as $line) {
-      // search for the first occurance of the application name
-      if (strpos($line, $appString) !== false && strpos($line, "uncaught_exception_handler (PLCrashReporter.m:") === false) {
-        preg_match('/[0-9]+\s+[^\s]+\s+([^\s]+) /', $line, $matches);
-
-        if (count($matches) >= 2) {
-          if ($result_offset != "")
-            $result_offset .= "%";
-          $result_offset .= $matches[1];
-        }
-      }
-    }
-  }
-
-  return $result_offset;
 }
 
 function doPost($url, $postdata) {
@@ -257,6 +237,7 @@ while ($reader->read()) {
     $crashes[$crashIndex]["senderversion"] = "";
     $crashes[$crashIndex]["version"] = "";
     $crashes[$crashIndex]["userid"] = "";
+    $crashes[$crashIndex]["username"] = "";
     $crashes[$crashIndex]["contact"] = "";
     $crashes[$crashIndex]["description"] = "";
     $crashes[$crashIndex]["logdata"] = "";
@@ -278,6 +259,8 @@ while ($reader->read()) {
     $crashes[$crashIndex]["systemversion"] = mysql_real_escape_string(reading($reader, "systemversion"));
   } else if ($reader->name == "userid" && $reader->nodeType == XMLReader::ELEMENT) {
     $crashes[$crashIndex]["userid"] = mysql_real_escape_string(reading($reader, "userid"));
+  } else if ($reader->name == "username" && $reader->nodeType == XMLReader::ELEMENT) {
+    $crashes[$crashIndex]["username"] = mysql_real_escape_string(reading($reader, "username"));
   } else if ($reader->name == "contact" && $reader->nodeType == XMLReader::ELEMENT) {
     $crashes[$crashIndex]["contact"] = mysql_real_escape_string(reading($reader, "contact"));
   } else if ($reader->name == "description" && $reader->nodeType == XMLReader::ELEMENT) {
@@ -422,11 +405,6 @@ foreach ($crashes as $crash) {
   	  exit;
     }
 
-  	// is this a jailbroken device?
-  	$jailbreak = 0;
-  	if(strpos($crash["logdata"], "MobileSubstrate") !== false)
-      $jailbreak = 1;
-
     // Since analyzing the log data seems to have problems, first add it to the database, then read it, since it seems that one is fine then
 
     // first check if the version status is not discontinued
@@ -453,172 +431,17 @@ foreach ($crashes as $crash) {
       continue;
   	}
 
-    // now try to find the offset of the crashing thread to assign this crash to a crash group
 
-  	// this stores the offset which we need for grouping
-  	$crash_offset = "";
-  	$appcrashtext = "";
-
-  	preg_match('%Application Specific Information:.*?\n(.*?)\n\n%is', $crash["logdata"], $appcrashinfo);
-  	if (is_array($appcrashinfo) && count($appcrashinfo) == 2) {
-      $appcrashtext = str_replace("\\", "", $appcrashinfo[1]);
-      $appcrashtext = str_replace("'", "\'", $appcrashtext);
+    $error = groupCrashReport($crash, $link, $notify);
+    if ($error != "") {
+        die(xml_for_result($error));
     }
-
-  	// extract the block which contains the data of the crashing thread
-    preg_match('%Last Exception Backtrace:\n(.*?)\n\n%is', $crash["logdata"], $matches);
-    $crash_offset = parseblock($matches, $crash["applicationname"]);	
-    if ($crash_offset == "") {
-      $crash_offset = parseblock($matches, $crash["bundleidentifier"]);
-    }
-
-    if ($crash_offset == "") {
-      preg_match('%Thread [0-9]+ Crashed:.*?\n(.*?)\n\n%is', $crash["logdata"], $matches);
-      $crash_offset = parseblock($matches, $crash["applicationname"]);	
-      if ($crash_offset == "") {
-        $crash_offset = parseblock($matches, $crash["bundleidentifier"]);
-      }
-    }
-    if ($crash_offset == "") {
-      preg_match('%Thread [0-9]+ Crashed:\n(.*?)\n\n%is', $crash["logdata"], $matches);
-      $crash_offset = parseblock($matches, $crash["applicationname"]);
-      if ($crash_offset == "") {
-        $crash_offset = parseblock($matches, $crash["bundleidentifier"]);
-      }
-    }
-
-  	// stores the group this crashlog is associated to, by default to none
-  	$log_groupid = 0;
-
-  	// if the offset string is not empty, we try a grouping
-  	if (strlen($crash_offset) > 0) {
-  		// get all the known bug patterns for the current app version
-  		$query = "SELECT id, fix, amount, description FROM ".$dbgrouptable." WHERE bundleidentifier = '".$crash["bundleidentifier"]."' and affected = '".$crash["version"]."' and pattern = '".mysql_real_escape_string($crash_offset)."'";
-  		$result = mysql_query($query) or die(xml_for_result(FAILURE_SQL_FIND_KNOWN_PATTERNS));
-
-  		$numrows = mysql_num_rows($result);
-
-  		if ($numrows == 1) {
-        // assign this bug to the group
-        $row = mysql_fetch_row($result);
-        $log_groupid = $row[0];
-        $amount = $row[2];
-        $desc = $row[3];
-
-        mysql_free_result($result);
-
-        // update the occurances of this pattern
-        $query = "UPDATE ".$dbgrouptable." SET amount=amount+1, latesttimestamp = ".time()." WHERE id=".$log_groupid;
-        $result = mysql_query($query) or die(xml_for_result(FAILURE_SQL_UPDATE_PATTERN_OCCURANCES));
-
-        if ($desc != "" && $appcrashtext != "") {
-          $desc = str_replace("'", "\'", $desc);
-          $noAddressDesc = preg_replace('/0x[0-9a-f]+/', '', $desc);
-          $noAddressCrashText = preg_replace('/0x[0-9a-f]+/', '', $appcrashtext);
-          if (strpos($noAddressDesc, $noAddressCrashText) === false) {
-            $appcrashtext = $desc."\n".$appcrashtext;
-            $query = "UPDATE ".$dbgrouptable." SET description='".mysql_real_escape_string($appcrashtext)."' WHERE id=".$log_groupid;
-            $result = mysql_query($query) or die(xml_for_result('Error in SQL '.$query));
-          }
-        }
-
-        // check the status of the bugfix version
-        $query = "SELECT status FROM ".$dbversiontable." WHERE bundleidentifier = '".$crash["bundleidentifier"]."' and version = '".$row[1]."'";
-        $result = mysql_query($query) or die(xml_for_result(FAILURE_SQL_CHECK_BUGFIX_STATUS));
-
-        $numrows = mysql_num_rows($result);
-        if ($numrows == 1) {
-        	$row = mysql_fetch_row($result);
-        	$crash["fix_status"] = $row[0];
-        }
-
-        if ($notify_amount_group > 1 && $notify_amount_group == $amount && $notify >= NOTIFY_ACTIVATED) {
-          // send prowl notification
-          if ($push_activated) {
-            $prowl->push(array(
-          		'application'=>$crash["appname"],
-          		'event'=>'Critical Crash',
-          		'description'=>'Version '.$crash["version"].' Pattern '.$crash_offset.' has a MORE than '.$notify_amount_group.' crashes!\n Sent at ' . date('H:i:s'),
-          		'priority'=>0,
-            ),true);
-          }
-
-          // send boxcar notification
-          if($boxcar_activated) {
-          	$boxcar = new Boxcar($boxcar_uid, $boxcar_pwd);
-          	print_r($boxcar->send($crash["appname"], 'Version '.$crash["version"].' Pattern '.$crash_offset.' has a MORE than '.$notify_amount_group.' crashes!\n Sent at ' . date('H:i:s')));
-          }
-
-          // send email notification
-          if ($mail_activated) {
-            $subject = $crash["appname"].': Critical Crash';
-      
-            if ($crash_url != '')
-              $url = "<".$crash_url."admin/crashes.php?bundleidentifier=".$crash["bundleidentifier"]."&version=".$crash["version"]."&groupid=".$log_groupid.">\n\n";
-            else
-              $url = "\n";
-            $message = "Version ".$crash["version"]." Pattern ".$crash_offset." has MORE than ".$notify_amount_group." crashes!\n".$url."Sent at ".date('H:i:s');
-            // $message .= $c;
-
-            mail($notify_emails, $subject, $message, 'From: '.$mail_from. "\r\n");
-          }
-        }
-      
-        mysql_free_result($result);
-      } else if ($numrows == 0) {
-        // create a new pattern for this bug and set amount of occurrances to 1
-        $query = "INSERT INTO ".$dbgrouptable." (bundleidentifier, affected, pattern, amount, latesttimestamp, description) values ('".$crash["bundleidentifier"]."', '".$crash["version"]."', '".$crash_offset."', 1, ".time().", '".$appcrashtext."')";
-        $result = mysql_query($query) or die(xml_for_result(FAILURE_SQL_ADD_PATTERN));
-
-        $log_groupid = mysql_insert_id($link);
-
-        if ($notify == NOTIFY_ACTIVATED) {
-          // send push notification
-          if ($push_activated) {
-            $prowl->push(array(
-              'application'=>$crash["appname"],
-              'event'=>'New Crash type',
-              'description'=>'Version '.$crash["version"].' has a new type of crash!\n Sent at ' . date('H:i:s'),
-              'priority'=>0,
-        		),true);
-        	}
-
-          // send email notification
-          if ($mail_activated) {
-            $subject = $crash["appname"].': New Crash type';
-
-            if ($crash_url != '')
-              $url = "<".$crash_url."admin/crashes.php?bundleidentifier=".$crash["bundleidentifier"]."&version=".$crash["version"]."&groupid=".$log_groupid.">\n\n";
-            else
-              $url = "\n";
-            $message = "Version ".$crash["version"]." has a new type of crash!\n\n".$url."Sent at ".date('H:i:s');
-            // $message .= $c;
-
-            mail($notify_emails, $subject, $message, 'From: '.$mail_from. "\r\n");
-          }
-        }
-      }
-  	}
-
-      // now insert the crashlog into the database
-  	$query = "INSERT INTO ".$dbcrashtable." (userid, contact, bundleidentifier, applicationname, systemversion, platform, senderversion, version, description, log, groupid, timestamp, jailbreak) values ('".$crash["userid"]."', '".$crash["contact"]."', '".$crash["bundleidentifier"]."', '".$crash["applicationname"]."', '".$crash["systemversion"]."', '".$crash["platform"]."', '".$crash["senderversion"]."', '".$crash["version"]."', '".$crash["description"]."', '".mysql_real_escape_string($crash["logdata"])."', '".$log_groupid."', '".date("Y-m-d H:i:s")."', ".$jailbreak.")";
-  	$result = mysql_query($query) or die(xml_for_result(FAILURE_SQL_ADD_CRASHLOG));
-
-  	$new_crashid = mysql_insert_id($link);
-
-  	// if this crash log has to be manually symbolicated, add a todo entry
-  	if ($symbolicate) {
-      $query = "INSERT INTO ".$dbsymbolicatetable." (crashid, done) values (".$new_crashid.", 0)";
-      $result = mysql_query($query) or die(xml_for_result(FAILURE_SQL_ADD_SYMBOLICATE_TODO));
-  	}
+    
   	$lastError = 0;
   } else if ($acceptlog == false) {
   	$lastError = FAILURE_INVALID_INCOMING_DATA;
   	continue;
   }
-
-  if ($crash["fix_status"] > $best_status)
-    $best_status = $crash["fix_status"];
 }
 
 /* schliessen der Verbinung */

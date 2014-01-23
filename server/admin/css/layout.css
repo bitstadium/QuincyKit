@@ -38,6 +38,11 @@ th {
   background: #ddd;
 }
 
+table.hover tr:hover {
+  background-color: #deeefe;
+  cursor: pointer;
+}
+
 a.redButton:hover {
     background-color: #ff0000!important;
     color: white!important;
