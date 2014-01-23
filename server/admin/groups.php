@@ -186,10 +186,10 @@ if ($numrows > 0) {
         echo "<form name='groupmetadata".$groupid."' action='' method='get'>";
 		echo '<table class="hover">'.$cols;
 
-		echo "<tr id='grouprow".$groupid."' class='clickableRow' data-url='crashes.php?groupid=".$groupid."&bundleidentifier=".$bundleidentifier."&version=".$version."'>";
-        echo "<td>".$amount."</td>";
-		echo "<td><b>".$location."</b><br/><font color='#777'>".$reason."<br/><i>".$description."</i></font></td>";
-        echo "<td>";
+		echo "<tr id='grouprow".$groupid."' data-url='crashes.php?groupid=".$groupid."&bundleidentifier=".$bundleidentifier."&version=".$version."'>";
+        echo "<td class='clickable'>".$amount."</td>";
+		echo "<td class='clickable'><b>".$location."</b><br/><font color='#777'>".$reason."<br/><i>".$description."</i></font></td>";
+        echo "<td class='clickable'>";
 		if ($lastupdate != 0) {
             $timestring = date("Y-m-d H:i:s", $lastupdate);
 			if (time() - $lastupdate < 60*24*24)
@@ -243,8 +243,12 @@ mysql_close($link);
 </div>
 <script type="text/javascript">
 $(document).ready(function(){
-    $(".clickableRow").click(function() {
-          window.document.location = $(this).data("url");
+    $(".clickable").click(function() {
+        row = $(this).parent();
+        url = row.data("url");
+        if (url != null) {
+            window.document.location = url;
+        }
     });
 <?php include "jqplot.php" ?>
 });

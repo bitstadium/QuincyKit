@@ -258,19 +258,19 @@ if ($numrows > 0) {
             $crashvaluesarray[$timeindex]++;
 		}
 
-		echo "<tr id='crashrow".$crashid."' valign='top' align='center' class='clickableRow' data-url='javascript:showCrashID(".$crashid.")'>";
+		echo "<tr id='crashrow".$crashid."' valign='top' align='center' data-url='javascript:showCrashID(".$crashid.")'>";
         
-        echo "<td>";
+        echo "<td class='clickable'>";
 		if ($jailbreak == 1) echo "x";
         echo "</td>";
 		
-        echo "<td>".$systemversion;
+        echo "<td class='clickable'>".$systemversion;
 		if ($platform != "") echo "<br/>".$platform;
 		echo "</td>";
 		
-        echo "<td>".$timestamp."</td>";
+        echo "<td class='clickable'>".$timestamp."</td>";
         
-        echo "<td>".$userid."<br/>".$username."<br/>".$contact."</td>";
+        echo "<td class='clickable'>".$userid."<br/>".$username."<br/>".$contact."</td>";
         
 		echo "<td>";
 		echo "<a href='actionapi.php?action=downloadcrashid&id=".$crashid."' class='button'>Download</a> ";
@@ -315,8 +315,12 @@ $(document).ready(function(){
         height: "330px",
         scrolling: "yes"
     });
-    $(".clickableRow").click(function() {
-          window.document.location = $(this).data("url");
+    $(".clickable").click(function() {
+        row = $(this).parent();
+        url = row.data("url");
+        if (url != null) {
+            window.document.location = url;
+        }
     });
 
 <?php 
