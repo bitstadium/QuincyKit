@@ -268,7 +268,7 @@ while ($reader->read()) {
   } else if ($reader->name == "log" && $reader->nodeType == XMLReader::ELEMENT) {
     $crashes[$crashIndex]["logdata"] = reading($reader, "log");
   } else if ($reader->name == "platform" && $reader->nodeType == XMLReader::ELEMENT) {
-    $crashes[$crashIndex]["platform"] = reading($reader, "platform");
+    $crashes[$crashIndex]["platform"] = mysql_real_escape_string(reading($reader, "platform"));
   }
 }
 
