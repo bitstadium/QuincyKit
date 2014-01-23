@@ -76,6 +76,7 @@
   NSTimeInterval _maxTimeIntervalOfCrashForReturnMainApplicationDelay;
   
   NSInteger         _statusCode;
+  NSMutableURLRequest *_request;
   NSURLConnection   *_urlConnection;
   NSMutableData     *_responseData;
   

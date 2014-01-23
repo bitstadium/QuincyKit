@@ -118,6 +118,7 @@ typedef NS_ENUM (NSInteger, BWQuincyErrorReason) {
     
     _delegate = nil;
     _companyName = nil;
+    _request = nil;
     
     _fileManager = [[NSFileManager alloc] init];
     _askUserDetails = YES;
@@ -867,28 +868,27 @@ typedef NS_ENUM (NSInteger, BWQuincyErrorReason) {
 #pragma mark - Networking
 
 - (void)postXML:(NSString*)xml {
-  NSMutableURLRequest *request = nil;
   NSString *boundary = @"----FOO";
   
   if (self.appIdentifier) {
-    request = [NSMutableURLRequest requestWithURL:
-               [NSURL URLWithString:[NSString stringWithFormat:@"%@api/2/apps/%@/crashes?sdk=%@&sdk_version=%@&feedbackEnabled=no",
-                                     self.submissionURL,
-                                     [self encodeAppIdentifier],
-                                     SDK_NAME,
-                                     SDK_VERSION
-                                     ]
-                ]];
+    _request = [[NSMutableURLRequest requestWithURL:
+                 [NSURL URLWithString:[NSString stringWithFormat:@"%@api/2/apps/%@/crashes?sdk=%@&sdk_version=%@&feedbackEnabled=no",
+                                       self.submissionURL,
+                                       [self encodeAppIdentifier],
+                                       SDK_NAME,
+                                       SDK_VERSION
+                                       ]
+                  ]] retain];
   } else {
-    request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:self.submissionURL]];
+    _request = [[NSMutableURLRequest requestWithURL:[NSURL URLWithString:self.submissionURL]] retain];
   }
   
-  [request setValue:@"Quincy/Mac" forHTTPHeaderField:@"User-Agent"];
-  [request setValue:@"gzip" forHTTPHeaderField:@"Accept-Encoding"];
-  [request setTimeoutInterval: 15];
-  [request setHTTPMethod:@"POST"];
+  [_request setValue:@"Quincy/Mac" forHTTPHeaderField:@"User-Agent"];
+  [_request setValue:@"gzip" forHTTPHeaderField:@"Accept-Encoding"];
+  [_request setTimeoutInterval: 15];
+  [_request setHTTPMethod:@"POST"];
   NSString *contentType = [NSString stringWithFormat:@"multipart/form-data; boundary=%@", boundary];
-  [request setValue:contentType forHTTPHeaderField:@"Content-type"];
+  [_request setValue:contentType forHTTPHeaderField:@"Content-type"];
   
   NSMutableData *postBody =  [NSMutableData data];
   [postBody appendData:[[NSString stringWithFormat:@"--%@\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
@@ -900,7 +900,7 @@ typedef NS_ENUM (NSInteger, BWQuincyErrorReason) {
   }
   [postBody appendData:[xml dataUsingEncoding:NSUTF8StringEncoding]];
   [postBody appendData:[[NSString stringWithFormat:@"\r\n--%@--\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
-  [request setHTTPBody:postBody];
+  [_request setHTTPBody:postBody];
   
   _statusCode = 200;
   
@@ -915,7 +915,7 @@ typedef NS_ENUM (NSInteger, BWQuincyErrorReason) {
       [self.delegate quincyManagerWillSendCrashReport:self];
     }
     
-    NSData *synchronousResponseData = [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:&error];
+    NSData *synchronousResponseData = [NSURLConnection sendSynchronousRequest:_request returningResponse:&response error:&error];
     
     _responseData = [[NSMutableData alloc] initWithData:synchronousResponseData];
     _statusCode = [response statusCode];
@@ -925,7 +925,7 @@ typedef NS_ENUM (NSInteger, BWQuincyErrorReason) {
     
     _responseData = [[NSMutableData alloc] init];
     
-    _urlConnection = [[NSURLConnection alloc] initWithRequest:request delegate:self];
+    _urlConnection = [[NSURLConnection alloc] initWithRequest:_request delegate:self];
     
     if (!_urlConnection) {
       BWQuincyLog(@"INFO: Sending crash reports could not start!");
@@ -995,6 +995,26 @@ typedef NS_ENUM (NSInteger, BWQuincyErrorReason) {
 }
 
 #pragma mark - NSURLConnection Delegate
+
+-(NSURLRequest *)connection:(NSURLConnection *)connection
+            willSendRequest:(NSURLRequest *)request
+           redirectResponse:(NSURLResponse *)redirectResponse
+{
+  if (redirectResponse) {
+    // via Steven Fisher: http://stackoverflow.com/a/10787143/474794
+    // The request you initialized the connection with should be kept as _request.
+    // Instead of trying to merge the pieces of _request into Cocoa
+    // touch's proposed redirect request, we make a mutable copy of the
+    // original request, change the URL to match that of the proposed
+    // request, and return it as the request to use.
+    //
+    NSMutableURLRequest *r = [[_request mutableCopy] autorelease];
+    [r setURL: [request URL]];
+    return r;
+  } else {
+    return request;
+  }
+}
 
 - (void)connection:(NSURLConnection *)connection didReceiveResponse:(NSURLResponse *)response {
   if ([response isKindOfClass:[NSHTTPURLResponse class]]) {

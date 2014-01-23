@@ -139,6 +139,7 @@ NSString *BWQuincyLocalize(NSString *stringToken) {
   NSMutableData *_responseData;
   NSInteger _statusCode;
   
+  NSMutableURLRequest *_request;
   NSURLConnection *_urlConnection;
   
   BOOL _sendingInProgress;
@@ -173,6 +174,7 @@ NSString *BWQuincyLocalize(NSString *stringToken) {
     _crashCallBacks = nil;
     
     _crashIdenticalCurrentVersion = YES;
+    _request = nil;
     _urlConnection = nil;
     _responseData = nil;
     _sendingInProgress = NO;
@@ -974,29 +976,28 @@ NSString *BWQuincyLocalize(NSString *stringToken) {
  *	@param	xml	The XML data that needs to be send to the server
  */
 - (void)postXML:(NSString*)xml {
-  NSMutableURLRequest *request = nil;
   NSString *boundary = @"----FOO";
   
   if (self.appIdentifier) {
-    request = [NSMutableURLRequest requestWithURL:
-               [NSURL URLWithString:[NSString stringWithFormat:@"%@api/2/apps/%@/crashes?sdk=%@&sdk_version=%@&feedbackEnabled=no",
-                                     self.submissionURL,
-                                     [self encodeAppIdentifier],
-                                     SDK_NAME,
-                                     SDK_VERSION
-                                     ]
-                ]];
+    _request = [NSMutableURLRequest requestWithURL:
+                [NSURL URLWithString:[NSString stringWithFormat:@"%@api/2/apps/%@/crashes?sdk=%@&sdk_version=%@&feedbackEnabled=no",
+                                      self.submissionURL,
+                                      [self encodeAppIdentifier],
+                                      SDK_NAME,
+                                      SDK_VERSION
+                                      ]
+                 ]];
   } else {
-    request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:self.submissionURL]];
+    _request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:self.submissionURL]];
   }
   
-  [request setCachePolicy: NSURLRequestReloadIgnoringLocalCacheData];
-  [request setValue:@"Quincy/iOS" forHTTPHeaderField:@"User-Agent"];
-  [request setValue:@"gzip" forHTTPHeaderField:@"Accept-Encoding"];
-  [request setTimeoutInterval: 15];
-  [request setHTTPMethod:@"POST"];
+  [_request setCachePolicy: NSURLRequestReloadIgnoringLocalCacheData];
+  [_request setValue:@"Quincy/iOS" forHTTPHeaderField:@"User-Agent"];
+  [_request setValue:@"gzip" forHTTPHeaderField:@"Accept-Encoding"];
+  [_request setTimeoutInterval: 15];
+  [_request setHTTPMethod:@"POST"];
   NSString *contentType = [NSString stringWithFormat:@"multipart/form-data; boundary=%@", boundary];
-  [request setValue:contentType forHTTPHeaderField:@"Content-type"];
+  [_request setValue:contentType forHTTPHeaderField:@"Content-type"];
 	
   NSMutableData *postBody =  [NSMutableData data];
   [postBody appendData:[[NSString stringWithFormat:@"--%@\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
@@ -1009,14 +1010,14 @@ NSString *BWQuincyLocalize(NSString *stringToken) {
   [postBody appendData:[xml dataUsingEncoding:NSUTF8StringEncoding]];
   [postBody appendData:[[NSString stringWithFormat:@"\r\n--%@--\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
   
-  [request setHTTPBody:postBody];
+  [_request setHTTPBody:postBody];
 	
   _statusCode = 200;
 	
   //Release when done in the delegate method
   _responseData = [[NSMutableData alloc] init];
 	
-  _urlConnection = [[NSURLConnection alloc] initWithRequest:request delegate:self];
+  _urlConnection = [[NSURLConnection alloc] initWithRequest:_request delegate:self];
   
   if (!_urlConnection) {
     BWQuincyLog(@"INFO: Sending crash reports could not start!");
@@ -1031,6 +1032,26 @@ NSString *BWQuincyLocalize(NSString *stringToken) {
 }
 
 #pragma mark - NSURLConnection Delegate
+
+-(NSURLRequest *)connection:(NSURLConnection *)connection
+            willSendRequest:(NSURLRequest *)request
+           redirectResponse:(NSURLResponse *)redirectResponse
+{
+  if (redirectResponse) {
+    // via Steven Fisher: http://stackoverflow.com/a/10787143/474794
+    // The request you initialized the connection with should be kept as _request.
+    // Instead of trying to merge the pieces of _request into Cocoa
+    // touch's proposed redirect request, we make a mutable copy of the
+    // original request, change the URL to match that of the proposed
+    // request, and return it as the request to use.
+    //
+    NSMutableURLRequest *r = [_request mutableCopy];
+    [r setURL: [request URL]];
+    return r;
+  } else {
+    return request;
+  }
+}
 
 - (void)connection:(NSURLConnection *)connection didReceiveResponse:(NSURLResponse *)response {
   if ([response isKindOfClass:[NSHTTPURLResponse class]]) {
