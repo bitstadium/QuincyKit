@@ -222,9 +222,9 @@ echo '</table></form>';
 
 // get all applications and their versions, amount of groups and amount of total bug reports
 if ($acceptallapps)
-	$query = "SELECT bundleidentifier, version, status, notify, id FROM ".$dbversiontable." ORDER BY bundleidentifier asc, version desc, status desc";
+	$query = "SELECT bundleidentifier, version, status, notify, id FROM ".$dbversiontable." ORDER BY bundleidentifier asc, INET_ATON(SUBSTRING_INDEX(CONCAT(version, '.0.0.0'),  '.', 4)) desc, status desc";
 else
-	$query = "SELECT bundleidentifier, version, status, notify, id FROM ".$dbversiontable." WHERE bundleidentifier = '".$bundleidentifier."' ORDER BY bundleidentifier asc, version desc, status desc";
+	$query = "SELECT bundleidentifier, version, status, notify, id FROM ".$dbversiontable." WHERE bundleidentifier = '".$bundleidentifier."' ORDER BY bundleidentifier asc, INET_ATON(SUBSTRING_INDEX(CONCAT(version, '.0.0.0'),  '.', 4)) desc, status desc";
 
 $result = mysql_query($query) or die(end_with_result('Error in SQL '.$query));
 
