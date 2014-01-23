@@ -2,6 +2,7 @@
  * Author: Andreas Linde <mail@andreaslinde.de>
  *         Kent Sutherland
  *
+ * Copyright (c) 2012-2013 HockeyApp, Bit Stadium GmbH.
  * Copyright (c) 2011 Andreas Linde & Kent Sutherland.
  * All rights reserved.
  *
@@ -32,40 +33,63 @@
 @class BWQuincyManager;
 
 @interface BWQuincyUI : NSWindowController {
+  IBOutlet NSTextField  *nameTextField;
+  IBOutlet NSTextField  *emailTextField;
   IBOutlet NSTextField  *descriptionTextField;
   IBOutlet NSTextView   *crashLogTextView;
-
+  
+  IBOutlet NSTextField  *nameTextFieldTitle;
+  IBOutlet NSTextField  *emailTextFieldTitle;
+  
+  IBOutlet NSTextField  *introductionText;
+  IBOutlet NSTextField  *commentsTextFieldTitle;
+  IBOutlet NSTextField  *problemDescriptionTextFieldTitle;
+  
   IBOutlet NSTextField  *noteText;
-
+  
+  IBOutlet NSButton   *disclosureButton;
   IBOutlet NSButton   *showButton;
   IBOutlet NSButton   *hideButton;
   IBOutlet NSButton   *cancelButton;
   IBOutlet NSButton   *submitButton;
   
+  NSMenu              *_mainAppMenu;
+  
   BWQuincyManager   *_quincyManager;
   
-  NSString      *_xml;
-  
-  NSString      *_crashFile;
   NSString      *_companyName;
   NSString      *_applicationName;
   
-  NSMutableString   *_consoleContent;
-  NSString      *_crashLogContent;
+  NSMutableString   *_logContent;
+  NSString          *_userName;
+  NSString          *_userEmail;
+  NSString          *_crashLogContent;
+  NSString          *_crashFile;
   
+  BOOL showUserDetails;
   BOOL showComments;
   BOOL showDetails;
 }
 
-- (id)initWithManager:(BWQuincyManager *)quincyManager crashFile:(NSString *)crashFile companyName:(NSString *)companyName applicationName:(NSString *)applicationName;
+// defines the users name or user id
+@property (nonatomic, retain) NSString *userName;
 
-- (void) askCrashReportDetails;
+// defines the users email address
+@property (nonatomic, retain) NSString *userEmail;
 
-- (IBAction) cancelReport:(id)sender;
-- (IBAction) submitReport:(id)sender;
-- (IBAction) showDetails:(id)sender;
-- (IBAction) hideDetails:(id)sender;
-- (IBAction) showComments:(id)sender;
+
+- (instancetype)initWithManager:(BWQuincyManager *)quincyManager crashReportFile:(NSString *)crashReportFile crashReport:(NSString *)crashReport logContent:(NSString *)logContent companyName:(NSString *)companyName applicationName:(NSString *)applicationName askUserDetails:(BOOL)askUserDetails;
+
+- (void)askCrashReportDetails;
+
+- (IBAction)cancelReport:(id)sender;
+- (IBAction)submitReport:(id)sender;
+- (IBAction)showDetails:(id)sender;
+- (IBAction)hideDetails:(id)sender;
+- (IBAction)showComments:(id)sender;
+
+- (BOOL)showUserDetails;
+- (void)setShowUserDetails:(BOOL)value;
 
 - (BOOL)showComments;
 - (void)setShowComments:(BOOL)value;

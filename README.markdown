@@ -171,38 +171,34 @@ For QuincyKit 3.0:
 - Done.
 
 
-# MAC PROJECT INSTALLATION
+# MAC Setup
 
+- Open the `Quincy.xcodeproj` in the folder `client/Mac/`
+- Build the `Quincy.framework`
 - Include `Quincy.framework` into your project
-- In your `appDelegate.h` include
+- In your `appDelegate.m` include
 
-        #import <Quincy/BWQuincyManager.h>
-
-- In your appDelegate.h add the BWQuincyManagerDelegate protocol to your appDelegate
-
-        @interface DemoAppDelegate : NSObject <BWQuincyManagerDelegate> {}
+      #import <Quincy/BWQuincyManager.h>
 
 - In your `appDelegate` change the invocation of the main window to the following structure
 
-        // this delegate method is required
-        - (void) showMainApplicationWindow
-        {
-            // launch the main app window
-            // remember not to automatically show the main window if using NIBs
-            [window makeFirstResponder: nil];
-            [window makeKeyAndOrderFront:nil];
-        }
+      - (void)applicationDidFinishLaunching:(NSNotification *)note
+      {
+        // Launch the crash reporter task
+        [[BWQuincyManager sharedQuincyManager] setSubmissionURL:@"http://yourserver.com/crash_v200.php"];
+        [[BWQuincyManager sharedQuincyManager] setDelegate:self];
+      }
+     
+- If you want to implement any of the delegates, add the following before the `startManager` call:
 
-
-        - (void)applicationDidFinishLaunching:(NSNotification *)note
-        {
-          // Launch the crash reporter task
-          [[BWQuincyManager sharedQuincyManager] setSubmissionURL:@"http://yourserver.com/crash_v200.php"];
-          [[BWQuincyManager sharedQuincyManager] setDelegate:self];
-        }
-
-- The Mac version is **NOT** compatible with the Mac App Store Sandbox requirements any more!
+      [[BWQuincyManager sharedQuincyManager] setDelegate:self];
   
+  and set the protocol to your appDelegate:
+  
+      @interface YourAppDelegate : NSObject <BWQuincyManagerDelegate> {}
+
+- If you want to catch additional exceptions which the Mac runtime usually does not forward, open the `Info.plist` and set `Principal class` to `BWQuincyCrashExceptionApplication`. Check the header file of that class for further documentation.
+
 - Done.
 
 

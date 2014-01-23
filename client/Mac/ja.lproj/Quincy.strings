@@ -1,0 +1,45 @@
+/*
+ Localizable.strings
+ HockeySDK
+ 
+ Provided by Neville Nason
+ Copyright (c) 2012-2013 HockeyApp, Bit Stadium GmbH. All rights reserved.
+ Copyright (c) 2012 Codenauts UG (haftungsbeschränkt). All rights reserved.
+ */
+
+/* Window title string, with placeholder for the AppName */
+"WindowTitle" = "%@障害報告";
+
+/* Introduction text, with app name placeholder first and company placeholder second */
+"IntroductionText" = "前回の使用時%@が強制終了した記録が残されています。記録を%@へ送信しますか？";
+
+/* Name Text Title */
+"NameTextTitle" = "お名前";
+
+/* Email Text Title */
+"EmailTextTitle" = "メールアドレス";
+
+/* Comments Disclosure Text */
+"CommentsDisclosureTitle" = "コメント欄";
+
+/* User description placeholder */
+"UserDescriptionPlaceholder" = "再現手順がわかりましたらご記述ください。";
+
+/* Problems Details Box  Title */
+"ProblemDetailsTitle" = "障害の詳細、システム構成情報";
+
+/* Privacy note text */
+"PrivacyNote" = "報告内容に個人情報は含まれておりません。";
+
+/* Show Details Button */
+"ShowDetailsButtonTitle" = "詳細を表示";
+
+/* HIde Details Button */
+"HideDetailsButtonTitle" = "詳細を隠す";
+
+/* Cancel Button */
+"CancelButtonTitle" = "キャンセル";
+
+/* Send Button */
+"SendButtonTitle" = "送信";
+

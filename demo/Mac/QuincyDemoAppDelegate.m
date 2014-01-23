@@ -28,12 +28,19 @@
  */
 
 #import "QuincyDemoAppDelegate.h"
+#import <Quincy/BWQuincyManager.h>
+
+@interface QuincyDemoAppDelegate () <BWQuincyManagerDelegate>
+
+@end
+
 
 @implementation QuincyDemoAppDelegate
 
 // set the main nibs window to hidden on startup
 // this delegate method is required to be implemented!
-- (void) showMainApplicationWindow {
+
+- (void) showMainApplicationWindowForCrashManager:(BWQuincyManager *)quincyManager {
   [window makeFirstResponder: nil];
   [window makeKeyAndOrderFront:nil];
 }
@@ -46,9 +53,10 @@
 // setAppIdentifier for HockeyApp Example: 658b693ff4c164e65168fe0f43112ac0
 //  [[BWQuincyManager sharedQuincyManager] setAppIdentifier:@"658b693ff4c164e65168fe0f43112ac0"];
 //  [[BWQuincyManager sharedQuincyManager] setSubmissionURL:@"http://yourserver.com/crash_v200.php"];
+//  [[BWQuincyManager sharedQuincyManager] startManager];
 
-  [[BWQuincyManager sharedQuincyManager] setCompanyName:@"My company"];
   [[BWQuincyManager sharedQuincyManager] setDelegate:self];
+  [[BWQuincyManager sharedQuincyManager] startManager];
 }
 
 
