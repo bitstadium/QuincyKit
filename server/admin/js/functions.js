@@ -87,7 +87,6 @@ function updateGroupMeta (groupid, bundleidentifier) {
             action: 'updategroupid', 
             id: groupid, 
             bundleidentifier: bundleidentifier, 
-            fixversion: $("#fixversion" + groupid).val(), 
             description: $("#description" + groupid).val()
         }),
         success: function(data) {
