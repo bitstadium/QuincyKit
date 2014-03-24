@@ -390,7 +390,7 @@ function crashLogGroupArray($logdata) {
 }
 
 function groupCrashReport($crash, $dblink, $notify) {
-    global $dbversiontable, $dbgrouptable, $dbcrashtable, $notify_default_version;
+    global $dbversiontable, $dbgrouptable, $dbcrashtable, $dbsymbolicatetable, $notify_default_version;
     
     $bundleidentifier = $crash["bundleidentifier"];
     $version = $crash["version"];
@@ -545,8 +545,8 @@ function groupCrashReport($crash, $dblink, $notify) {
 
       	$new_crashid = mysql_insert_id($dblink);
 
-      	// if this crash log has to be manually symbolicated, add a todo entry
-      	if ($symbolicate) {
+        // if this crash log has to be manually symbolicated, add a todo entry
+        if ($crash["symbolicate"]) {
           $query = "INSERT INTO ".$dbsymbolicatetable." (crashid, done) values (".$new_crashid.", 0)";
           $result = mysql_query($query);
           if (!$result) return FAILURE_SQL_ADD_SYMBOLICATE_TODO;
