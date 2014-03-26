@@ -136,7 +136,7 @@ function doPost($url, $postdata) {
 
 $allowed_args = ',xmlstring,';
 
-/* Verbindung aufbauen, auswählen einer Datenbank */
+/* Verbindung aufbauen, ausw?hlen einer Datenbank */
 $link = mysql_connect($server, $loginsql, $passsql)
   or die(xml_for_result(FAILURE_DATABASE_NOT_AVAILABLE));
 mysql_select_db($base) or die(xml_for_result(FAILURE_DATABASE_NOT_AVAILABLE));
@@ -346,6 +346,9 @@ foreach ($crashes as $crash) {
 
       // get the app name
       $crash["appname"] = $row[2];
+
+      // symbolicate?
+      $crash["symbolicate"] = $symbolicate;
 
       $notify_emails = $row[3];
       $notify_pushids = $row[4];
