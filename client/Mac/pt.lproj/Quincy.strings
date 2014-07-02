@@ -1,0 +1,44 @@
+/*
+ Localizable.strings
+ HockeySDK
+ 
+ Created by André Campana on 02.07.2014
+ Copyright (c) 2012-2013 HockeyApp, Bit Stadium GmbH. All rights reserved.
+ Copyright (c) 2012 Codenauts UG (haftungsbeschränkt). All rights reserved.
+ */
+
+/* Window title string, with placeholder for the AppName */
+"WindowTitle" = "Relatótio de Problemas para %@";
+
+/* Introduction text, with app name placeholder first and company placeholder second */
+"IntroductionText" = "%@ fechou inesperadamente durante sua última execução. Gostaria de enviar um relatório de erros para %@?";
+
+/* Name Text Title */
+"NameTextTitle" = "Nome";
+
+/* Email Text Title */
+"EmailTextTitle" = "Email";
+
+/* Comments Disclosure Text */
+"CommentsDisclosureTitle" = "Comentários";
+
+/* User description placeholder */
+"UserDescriptionPlaceholder" = "Por favor, descreva quaisquer passos necessários para reproduzir o problema.";
+
+/* Problems Details Box  Title */
+"ProblemDetailsTitle" = "Detalhes do problema e configurações do sistema";
+
+/* Privacy note text */
+"PrivacyNote" = "Apenas os dados aqui apresentados serão enviados no relatório. Nenhum dado pessoal será enviado.";
+
+/* Show Details Button */
+"ShowDetailsButtonTitle" = "Mostrar Detalhes";
+
+/* HIde Details Button */
+"HideDetailsButtonTitle" = "Esconder Detalhes";
+
+/* Cancel Button */
+"CancelButtonTitle" = "Cancelar";
+
+/* Send Button */
+"SendButtonTitle" = "Enviar";

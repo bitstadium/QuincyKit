@@ -68,6 +68,7 @@
 		1EFE86FC1885B5FB00C64FB3 /* BWQuincyManagerPrivate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BWQuincyManagerPrivate.h; sourceTree = SOURCE_ROOT; };
 		1EFE86FE1885BFFD00C64FB3 /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = System/Library/Frameworks/IOKit.framework; sourceTree = SDKROOT; };
 		1EFE87091885D06D00C64FB3 /* CrashReporter.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = CrashReporter.framework; sourceTree = SOURCE_ROOT; };
+		653CCB2B1964A22800E33FE7 /* pt */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = pt; path = pt.lproj/Quincy.strings; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -213,6 +214,7 @@
 				ja,
 				nb,
 				sv,
+				pt,
 			);
 			mainGroup = 1EB58DBE18859B43001FF6BB;
 			productRefGroup = 1EB58DC918859B43001FF6BB /* Products */;
@@ -279,6 +281,7 @@
 				1EFE86E218859D1B00C64FB3 /* ja */,
 				1EFE86E318859D2400C64FB3 /* nb */,
 				1EFE86E418859D2B00C64FB3 /* sv */,
+				653CCB2B1964A22800E33FE7 /* pt */,
 			);
 			name = Quincy.strings;
 			sourceTree = "<group>";
