@@ -232,8 +232,8 @@ NSString *BWQuincyLocalize(NSString *stringToken) {
 
 - (void) dealloc {
   [self unregisterObservers];
-  
   [_urlConnection cancel];
+  [super dealloc];
 }
 
 
