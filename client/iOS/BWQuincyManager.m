@@ -583,7 +583,7 @@ NSString *BWQuincyLocalize(NSString *stringToken) {
         [metaDict setObject:(self.userName ?: @"") forKey:kQuincyMetaUserName];
         [metaDict setObject:(self.userEmail ?: @"") forKey:kQuincyMetaUserEmail];
         
-        if (self.delegate != nil && [self.delegate respondsToSelector:@selector(crashReportDescription)]) {
+          if (self.delegate != nil && [self.delegate respondsToSelector:@selector(applicationLogForQuincyManager:)]) {
           applicationLog = [self.delegate applicationLogForQuincyManager:self] ?: @"";
         }
         [metaDict setObject:applicationLog forKey:kQuincyMetaApplicationLog];
