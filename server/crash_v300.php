@@ -149,6 +149,11 @@ if (!isset($xmlstring)) $xmlstring = "";
 
 if ($xmlstring == "") die(xml_for_result(FAILURE_INVALID_POST_DATA));
 
+// If magic quotes are turned on the xml won't be readable without striping the slashes
+if (get_magic_quotes_gpc()) { 
+  $xmlstring = stripslashes($xmlstring);
+}
+
 // Fix parsing bug in pre 1.0 mac client and iOS client, fixed in latest commi
 $xmlstring = str_replace("<description><![CDATA[", "<description>", $xmlstring);
 $xmlstring = str_replace("]]></description>", "</description>", $xmlstring);
