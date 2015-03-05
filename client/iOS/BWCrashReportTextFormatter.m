@@ -263,6 +263,9 @@ static NSInteger bw_binaryImageSort(id binary1, id binary2, void *context) {
     [text appendFormat: @"Date/Time:       %@\n", [rfc3339Formatter stringFromDate:report.systemInfo.timestamp]];
     [text appendFormat: @"OS Version:      %@ %@ (%@)\n", osName, report.systemInfo.operatingSystemVersion, osBuild];
     [text appendFormat: @"Report Version:  104\n"];
+
+  	[rfc3339Formatter release];
+	[enUSPOSIXLocale release];
   }
   
   [text appendString: @"\n"];

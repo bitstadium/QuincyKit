@@ -566,14 +566,15 @@ NSString *BWQuincyLocalize(NSString *stringToken) {
       if (report == nil) {
         BWQuincyLog(@"WARNING: Could not parse crash report");
       } else {
-        if ([report.processInfo respondsToSelector:@selector(processStartTime)]) {
+		  if ([report.processInfo respondsToSelector:@selector(processStartTime)]) {
           if (report.systemInfo.timestamp && report.processInfo.processStartTime) {
             _timeintervalCrashInLastSessionOccured = [report.systemInfo.timestamp timeIntervalSinceDate:report.processInfo.processStartTime];
           }
         }
-        
+		[report release];
+
         [crashData writeToFile:[_crashesDir stringByAppendingPathComponent: cacheFilename] atomically:YES];
-        
+
         // write the meta file
         NSMutableDictionary *metaDict = [NSMutableDictionary dictionaryWithCapacity:4];
         NSString *applicationLog = @"";
@@ -598,6 +599,8 @@ NSString *BWQuincyLocalize(NSString *stringToken) {
         }
       }
     }
+
+	[crashData release];
   }
 	
   // Purge the report
@@ -759,7 +762,8 @@ NSString *BWQuincyLocalize(NSString *stringToken) {
       PLCrashReporterConfig *config = [[PLCrashReporterConfig alloc] initWithSignalHandlerType: signalHandlerType
                                                                          symbolicationStrategy: PLCrashReporterSymbolicationStrategyAll];
       _plCrashReporter = [[PLCrashReporter alloc] initWithConfiguration: config];
-      
+	  [config release];
+
       // Check if we previously crashed
       if ([_plCrashReporter hasPendingCrashReport]) {
         _didCrashInLastSession = YES;
@@ -917,6 +921,8 @@ NSString *BWQuincyLocalize(NSString *stringToken) {
       
       // store this crash report as user approved, so if it fails it will retry automatically
       [_approvedCrashReports setObject:[NSNumber numberWithBool:YES] forKey:filename];
+
+	  [report release];
     } else {
       // we cannot do anything with this report, so delete it
       [_fileManager removeItemAtPath:filename error:&error];
@@ -1045,7 +1051,7 @@ NSString *BWQuincyLocalize(NSString *stringToken) {
     // original request, change the URL to match that of the proposed
     // request, and return it as the request to use.
     //
-    NSMutableURLRequest *r = [_request mutableCopy];
+    NSMutableURLRequest *r = [[_request mutableCopy] autorelease];
     [r setURL: [request URL]];
     return r;
   } else {
