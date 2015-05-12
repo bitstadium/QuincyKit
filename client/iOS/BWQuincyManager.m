@@ -245,8 +245,6 @@ NSString *BWQuincyLocalize(NSString *stringToken) {
  * This saves the list of approved crash reports
  */
 - (void)saveSettings {
-  NSString *errorString = nil;
-  
   NSMutableDictionary *rootObj = [NSMutableDictionary dictionaryWithCapacity:2];
   if (_approvedCrashReports && [_approvedCrashReports count] > 0)
     [rootObj setObject:_approvedCrashReports forKey:kQuincyApprovedCrashReports];
@@ -260,13 +258,12 @@ NSString *BWQuincyLocalize(NSString *stringToken) {
   if (self.userEmail)
     [rootObj setObject:self.userEmail forKey:kQuincyMetaUserEmail];
 
-  NSData *plist = [NSPropertyListSerialization dataFromPropertyList:(id)rootObj
-                                                             format:NSPropertyListBinaryFormat_v1_0
-                                                   errorDescription:&errorString];
+  NSError * error;
+  NSData *plist = [NSPropertyListSerialization dataWithPropertyList:rootObj format:NSPropertyListBinaryFormat_v1_0 options:0 error:&error];
   if (plist) {
     [plist writeToFile:_settingsFile atomically:YES];
   } else {
-    BWQuincyLog(@"ERROR: Writing settings. %@", errorString);
+    BWQuincyLog(@"ERROR: Writing settings. %@", error.description);
   }
 }
 
@@ -276,19 +273,12 @@ NSString *BWQuincyLocalize(NSString *stringToken) {
  * This contains the list of approved crash reports
  */
 - (void)loadSettings {
-  NSString *errorString = nil;
-  NSPropertyListFormat format;
-  
   if (![_fileManager fileExistsAtPath:_settingsFile])
     return;
   
   NSData *plist = [NSData dataWithContentsOfFile:_settingsFile];
   if (plist) {
-    NSDictionary *rootObj = (NSDictionary *)[NSPropertyListSerialization
-                                             propertyListFromData:plist
-                                             mutabilityOption:NSPropertyListMutableContainersAndLeaves
-                                             format:&format
-                                             errorDescription:&errorString];
+    NSDictionary *rootObj = [NSPropertyListSerialization propertyListWithData:plist options:NSPropertyListMutableContainersAndLeaves format:NULL error:NULL];
     
     if ([rootObj objectForKey:kQuincyApprovedCrashReports])
       [_approvedCrashReports setDictionary:[rootObj objectForKey:kQuincyApprovedCrashReports]];
@@ -577,7 +567,6 @@ NSString *BWQuincyLocalize(NSString *stringToken) {
         // write the meta file
         NSMutableDictionary *metaDict = [NSMutableDictionary dictionaryWithCapacity:4];
         NSString *applicationLog = @"";
-        NSString *errorString = nil;
         
         [metaDict setObject:(self.userID ?: @"") forKey:kQuincyMetaUserID];
         [metaDict setObject:(self.userName ?: @"") forKey:kQuincyMetaUserName];
@@ -587,14 +576,12 @@ NSString *BWQuincyLocalize(NSString *stringToken) {
           applicationLog = [self.delegate applicationLogForQuincyManager:self] ?: @"";
         }
         [metaDict setObject:applicationLog forKey:kQuincyMetaApplicationLog];
-        
-        NSData *plist = [NSPropertyListSerialization dataFromPropertyList:(id)metaDict
-                                                                   format:NSPropertyListBinaryFormat_v1_0
-                                                         errorDescription:&errorString];
+
+        NSData *plist = [NSPropertyListSerialization dataWithPropertyList:metaDict format:NSPropertyListBinaryFormat_v1_0 options:0 error:&error];
         if (plist) {
           [plist writeToFile:[NSString stringWithFormat:@"%@.meta", [_crashesDir stringByAppendingPathComponent: cacheFilename]] atomically:YES];
         } else {
-          BWQuincyLog(@"ERROR: Writing crash meta data failed. %@", error);
+          BWQuincyLog(@"ERROR: Writing crash meta data failed. %@", error.description);
         }
       }
     }
@@ -875,17 +862,10 @@ NSString *BWQuincyLocalize(NSString *stringToken) {
       NSString *applicationLog = @"";
       NSString *description = @"";
       
-      NSString *errorString = nil;
-      NSPropertyListFormat format;
-      
       NSData *plist = [NSData dataWithContentsOfFile:[filename stringByAppendingString:@".meta"]];
       if (plist) {
-        NSDictionary *metaDict = (NSDictionary *)[NSPropertyListSerialization
-                                                  propertyListFromData:plist
-                                                  mutabilityOption:NSPropertyListMutableContainersAndLeaves
-                                                  format:&format
-                                                  errorDescription:&errorString];
-        
+        NSDictionary *metaDict = [NSPropertyListSerialization propertyListWithData:plist options:NSPropertyListMutableContainersAndLeaves format:NULL error:&error];
+
         username = [metaDict objectForKey:kQuincyMetaUserName] ?: @"";
         useremail = [metaDict objectForKey:kQuincyMetaUserEmail] ?: @"";
         userid = [metaDict objectForKey:kQuincyMetaUserID] ?: @"";
@@ -1084,10 +1064,7 @@ NSString *BWQuincyLocalize(NSString *stringToken) {
     
     if (self.appIdentifier) {
       // HockeyApp uses PList XML format
-      NSMutableDictionary *response = [NSPropertyListSerialization propertyListFromData:_responseData
-                                                                       mutabilityOption:NSPropertyListMutableContainersAndLeaves
-                                                                                 format:nil
-                                                                       errorDescription:NULL];
+      NSMutableDictionary *response = [NSPropertyListSerialization propertyListWithData:_responseData options:NSPropertyListMutableContainersAndLeaves format:NULL error:&error];
       BWQuincyLog(@"INFO: Received API response: %@", response);
     } else {
       BWQuincyLog(@"Received API response: %@", [[NSString alloc] initWithBytes:[_responseData bytes] length:[_responseData length] encoding: NSUTF8StringEncoding]);
