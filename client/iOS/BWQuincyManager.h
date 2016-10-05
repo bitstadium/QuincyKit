@@ -78,7 +78,7 @@
  
  @warning If you start the app with the Xcode debugger attached, detecting crashes will _NOT_ be enabled!
  */
-@interface BWQuincyManager : NSObject
+@interface BWQuincyManager : NSObject<NSURLSessionTaskDelegate,NSURLSessionDataDelegate>
 
 #pragma mark - Public Methods
 

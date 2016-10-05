@@ -141,6 +141,7 @@ NSString *BWQuincyLocalize(NSString *stringToken) {
   
   NSMutableURLRequest *_request;
   NSURLConnection *_urlConnection;
+  NSURLSession *_urlSession;
   
   BOOL _sendingInProgress;
   BOOL _isSetup;
@@ -176,6 +177,7 @@ NSString *BWQuincyLocalize(NSString *stringToken) {
     _crashIdenticalCurrentVersion = YES;
     _request = nil;
     _urlConnection = nil;
+    _urlSession = nil;
     _responseData = nil;
     _sendingInProgress = NO;
     
@@ -1016,10 +1018,19 @@ NSString *BWQuincyLocalize(NSString *stringToken) {
 	
   //Release when done in the delegate method
   _responseData = [[NSMutableData alloc] init];
-	
-  _urlConnection = [[NSURLConnection alloc] initWithRequest:_request delegate:self];
-  
-  if (!_urlConnection) {
+
+  //use NSURLSession not use NSURLConnection
+  //_urlConnection = [[NSURLConnection alloc] initWithRequest:_request delegate:self];
+  NSURLSessionConfiguration *sessionConfiguration = [NSURLSessionConfiguration defaultSessionConfiguration];
+  _urlSession = [NSURLSession sessionWithConfiguration:sessionConfiguration
+                                                delegate:self
+                                           delegateQueue:nil];
+  NSURLSessionDataTask *task = [_urlSession dataTaskWithRequest:_request];
+  [task resume];
+
+  //use NSURLSession not use NSURLConnection
+  //if (!_urlConnection) {
+  if (!_urlSession) {
     BWQuincyLog(@"INFO: Sending crash reports could not start!");
     _sendingInProgress = NO;
   } else {
@@ -1130,6 +1141,91 @@ NSString *BWQuincyLocalize(NSString *stringToken) {
 	
   _responseData = nil;
   _urlConnection = nil;
+}
+
+#pragma mark - NSURLSession Delegate
+
+- (void)URLSession:(NSURLSession *)session dataTask:(NSURLSessionDataTask *)dataTask
+didReceiveResponse:(NSURLResponse *)response
+ completionHandler:(void (^)(NSURLSessionResponseDisposition disposition))completionHandler {
+    if ([response isKindOfClass:[NSHTTPURLResponse class]]) {
+        _statusCode = [(NSHTTPURLResponse *)response statusCode];
+    }
+    completionHandler(NSURLSessionResponseAllow);
+}
+
+- (void)URLSession:(NSURLSession *)session dataTask:(NSURLSessionDataTask *)dataTask didReceiveData:(NSData *)data {
+    [_responseData appendData:data];
+}
+
+- (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task didCompleteWithError:(NSError *)error {
+    if (error) {
+        if (self.delegate != nil && [self.delegate respondsToSelector:@selector(crashManager:didFailWithError:)]) {
+            [self.delegate crashManager:self didFailWithError:error];
+        }
+        
+        BWQuincyLog(@"ERROR: %@", [error localizedDescription]);
+        
+        _sendingInProgress = NO;
+        
+        _responseData = nil;
+        _urlSession = nil;
+    } else {
+        // HTTPリクエスト成功処理
+        NSError *error = nil;
+        if (_statusCode >= 200 && _statusCode < 400 && _responseData != nil && [_responseData length] > 0) {
+            [self cleanCrashReports];
+            
+            if (self.appIdentifier) {
+                // HockeyApp uses PList XML format
+                NSMutableDictionary *response = [NSPropertyListSerialization propertyListFromData:_responseData
+                                                                                 mutabilityOption:NSPropertyListMutableContainersAndLeaves
+                                                                                           format:nil
+                                                                                 errorDescription:NULL];
+                BWQuincyLog(@"INFO: Received API response: %@", response);
+            } else {
+                BWQuincyLog(@"Received API response: %@", [[NSString alloc] initWithBytes:[_responseData bytes] length:[_responseData length] encoding: NSUTF8StringEncoding]);
+            }
+            
+            if (self.delegate != nil && [self.delegate respondsToSelector:@selector(crashManagerDidFinishSendingCrashReport:)]) {
+                [self.delegate crashManagerDidFinishSendingCrashReport:self];
+            }
+        } else if (_statusCode == 400 && self.appIdentifier) {
+            [self cleanCrashReports];
+            
+            error = [NSError errorWithDomain:kBWQuincyErrorDomain
+                                        code:BWQuincyAPIAppVersionRejected
+                                    userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"The server rejected receiving crash reports for this app version!", NSLocalizedDescriptionKey, nil]];
+            
+            if (self.delegate != nil && [self.delegate respondsToSelector:@selector(crashManager:didFailWithError:)]) {
+                [self.delegate crashManager:self didFailWithError:error];
+            }
+            
+            BWQuincyLog(@"ERROR: %@", [error localizedDescription]);
+        } else {
+            if (_responseData == nil || [_responseData length] == 0) {
+                error = [NSError errorWithDomain:kBWQuincyErrorDomain
+                                            code:BWQuincyAPIReceivedEmptyResponse
+                                        userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"Sending failed with an empty response!", NSLocalizedDescriptionKey, nil]];
+            } else {
+                error = [NSError errorWithDomain:kBWQuincyErrorDomain
+                                            code:BWQuincyAPIErrorWithStatusCode
+                                        userInfo:[NSDictionary dictionaryWithObjectsAndKeys:[NSString stringWithFormat:@"Sending failed with status code: %li", (long)_statusCode], NSLocalizedDescriptionKey, nil]];
+            }
+            
+            if (self.delegate != nil && [self.delegate respondsToSelector:@selector(crashManager:didFailWithError:)]) {
+                [self.delegate crashManager:self didFailWithError:error];
+            }
+            
+            BWQuincyLog(@"ERROR: %@", [error localizedDescription]);
+        }
+        
+        _sendingInProgress = NO;
+        
+        _responseData = nil;
+        _urlSession = nil;
+        
+    }
 }
 
 
